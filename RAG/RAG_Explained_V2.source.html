@@ -1,0 +1,793 @@
+<meta charset="utf-8">
+<title>RAG Explained by Jyothi Prakash Kalmanje</title>
+<style>
+  @page { size: 3400px 4254px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width:3400px; height:4254px; background:#eceef5;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#10142b;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:4254px; padding:26px; display:grid;
+    grid-template-columns:1500px 896px 908px;
+    grid-template-rows:120px 800px 700px 700px 600px 720px 430px;
+    gap:22px; }
+  .span2a{grid-column:1/span 2} .span2b{grid-column:2/span 2} .span3{grid-column:1/span 3}
+
+  .title { grid-column:1/span 3; background:#141a3c; border-radius:12px; color:#fff;
+           display:flex; align-items:center; justify-content:space-between; padding:0 34px; }
+  .title h1 { font-size:44px; letter-spacing:1.2px; font-weight:700; }
+  .title .tag { font-size:19px; color:#9fabe0; font-weight:500; text-align:right; line-height:1.35; }
+  .title .v { display:inline-block; background:#4c3bb5; padding:3px 13px; border-radius:5px;
+              font-size:17px; font-weight:700; letter-spacing:1px; margin-left:14px; vertical-align:middle; }
+
+  .panel { background:#fff; border:2px solid #c6cade; border-radius:12px; overflow:hidden;
+           display:flex; flex-direction:column; }
+  .phead { background:#1f2a63; color:#fff; padding:11px 19px; font-size:24px; font-weight:700;
+           letter-spacing:.5px; display:flex; justify-content:space-between; align-items:baseline; flex:none; }
+  .phead .sub { font-size:15px; font-weight:500; color:#a6b0dd; letter-spacing:0; }
+  .pbody { padding:12px 15px; flex:1; min-height:0; }
+
+  .mono{font-family:Menlo,Consolas,monospace}
+  table{border-collapse:collapse;width:100%;font-size:14.6px}
+  th{background:#dde1f2;color:#1f2a63;text-align:left;padding:5px 8px;font-size:13.8px;border:1px solid #bcc3de}
+  td{padding:4px 8px;border:1px solid #ced4e6;vertical-align:top}
+  tbody tr:nth-child(even){background:#f6f7fc}
+  table.tight td{padding:2.5px 8px}
+
+  .h3{font-size:15.2px;font-weight:700;color:#4c3bb5;margin:9px 0 5px;letter-spacing:.3px}
+  .h3:first-child{margin-top:0}
+  .callout{background:#fff6e8;border:1.5px solid #e8b366;padding:8px 11px;font-size:13.8px;
+           line-height:1.47;border-radius:5px;margin-top:8px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#e9f8f3;border-color:#6fc9b0} .callout.g b{color:#0b6b57}
+  .callout.p{background:#f2effd;border-color:#a99ae8} .callout.p b{color:#4c3bb5}
+  .callout.r{background:#fef2f2;border-color:#e59a9a} .callout.r b{color:#b91c1c}
+  ul{margin-left:18px;font-size:14.6px;line-height:1.5} li{margin-bottom:3px}
+  .code{background:#10142b;border-radius:7px;padding:9px 11px;font-family:Menlo,Consolas,monospace;
+        font-size:12.8px;line-height:1.5;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .m{color:#c4b5fd}
+  .heur{display:inline-block;background:#eef1f8;color:#5a6488;font-size:11.5px;font-weight:700;
+        padding:1px 6px;border-radius:3px;letter-spacing:.4px;vertical-align:middle}
+  svg{display:block}
+
+  .grid10{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;height:100%}
+  .pat{border:1.5px solid #c6cade;border-radius:8px;padding:8px 9px;background:#fbfcff;
+       display:flex;flex-direction:column}
+  .pat .top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+  .pnum{background:#1f2a63;color:#fff;width:23px;height:23px;border-radius:50%;font-size:13.5px;
+        font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .pname{font-size:14.6px;font-weight:700;color:#1f2a63;line-height:1.15}
+  .pflow{background:#10142b;color:#cfd6f0;font-family:Menlo,Consolas,monospace;font-size:10.8px;
+         line-height:1.4;padding:6px 7px;border-radius:4px;margin:5px 0 6px}
+  .pflow .hi{color:#8fe3c6} .pflow .lm{color:#c4b5fd}
+  .pmeta{font-size:12.4px;line-height:1.38;color:#2a3050;margin-bottom:3px}
+  .pmeta b{color:#4c3bb5}
+  .ptag{margin-top:auto;font-size:11.6px;color:#6b7391;border-top:1px solid #e2e6f2;padding-top:4px}
+
+  .chk{columns:3;column-gap:22px;font-size:14.2px;line-height:1.5}
+  .chk div{break-inside:avoid;margin-bottom:5px;padding-left:20px;text-indent:-20px}
+  .chk b{color:#1f2a63}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>RAG EXPLAINED <span style="font-weight:400;color:#9fabe0;font-size:30px">by Jyothi Prakash Kalmanje</span><span class="v">V2</span></h1>
+  <div class="tag">Production-Grade Retrieval-Augmented Generation<br>
+    <span style="font-size:16px;color:#7a86bb">Architecture · retrieval quality · evaluation · security · operations</span></div>
+</div>
+
+<!-- ============ 1. PRODUCTION PIPELINE ============ -->
+<div class="panel span2a">
+  <div class="phead">1 &nbsp;· &nbsp;THE PRODUCTION RAG PIPELINE
+    <span class="sub">every stage that a demo skips</span></div>
+  <div class="pbody" style="padding:6px 10px">
+  <svg viewBox="0 0 2380 720" width="2380" height="720">
+    <defs>
+      <marker id="t1" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8 z" fill="#0d9488"/></marker>
+      <marker id="t2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8 z" fill="#7c3aed"/></marker>
+      <marker id="t3" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8 z" fill="#b91c1c"/></marker>
+    </defs>
+
+    <!-- INDEXING -->
+    <rect x="8" y="8" width="2364" height="196" rx="10" fill="#f0fbf8" stroke="#0d9488" stroke-width="2.5"/>
+    <text x="24" y="34" font-size="17" font-weight="700" fill="#0b6b57">A · INDEXING PATH — offline, incremental, must handle updates and deletes</text>
+    <g>
+      <rect x="24" y="48" width="188" height="88" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="118" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Source systems</text>
+      <text x="118" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">CMS · wiki · S3 · DB</text>
+      <text x="118" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">tickets · contracts</text>
+
+      <rect x="236" y="48" width="188" height="88" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="330" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Parse + extract</text>
+      <text x="330" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">layout, tables, OCR</text>
+      <text x="330" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">strip boilerplate</text>
+
+      <rect x="448" y="48" width="188" height="88" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="542" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Chunk</text>
+      <text x="542" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">+ carry section path</text>
+      <text x="542" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">+ parent linkage</text>
+
+      <rect x="660" y="48" width="188" height="88" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="754" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Enrich</text>
+      <text x="754" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">ACL, tenant, date</text>
+      <text x="754" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">source, doc version</text>
+
+      <rect x="872" y="48" width="188" height="88" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="966" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Embed</text>
+      <text x="966" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">batched, retried</text>
+      <text x="966" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">model version pinned</text>
+
+      <rect x="1084" y="48" width="210" height="88" rx="7" fill="#e6f7f2" stroke="#0d9488" stroke-width="2.5"/>
+      <text x="1189" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Vector index</text>
+      <text x="1189" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">dense vectors + payload</text>
+      <text x="1189" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">HNSW / IVF</text>
+
+      <rect x="1318" y="48" width="210" height="88" rx="7" fill="#e6f7f2" stroke="#0d9488" stroke-width="2.5"/>
+      <text x="1423" y="72" font-size="14.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Lexical index</text>
+      <text x="1423" y="93" font-size="12" fill="#3d6b61" text-anchor="middle">BM25 / sparse</text>
+      <text x="1423" y="112" font-size="12" fill="#3d6b61" text-anchor="middle">for exact-token recall</text>
+
+      <rect x="1552" y="48" width="360" height="88" rx="7" fill="#fff" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4"/>
+      <text x="1732" y="70" font-size="14" font-weight="700" fill="#475569" text-anchor="middle">Upsert by stable document ID</text>
+      <text x="1568" y="92" font-size="12" fill="#475569">Re-ingest replaces prior chunks for that doc.</text>
+      <text x="1568" y="112" font-size="12" fill="#475569">Deleted source ⇒ chunks must be deleted too.</text>
+
+      <rect x="1936" y="48" width="424" height="88" rx="7" fill="#fef2f2" stroke="#b91c1c" stroke-width="2"/>
+      <text x="1952" y="70" font-size="14" font-weight="700" fill="#b91c1c">The delete path is the one teams forget</text>
+      <text x="1952" y="92" font-size="12" fill="#7f1d1d">A revoked or retracted document that stays in the index</text>
+      <text x="1952" y="112" font-size="12" fill="#7f1d1d">keeps being retrieved and cited. That is a compliance defect.</text>
+
+      <line x1="212" y1="92" x2="230" y2="92" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="424" y1="92" x2="442" y2="92" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="636" y1="92" x2="654" y2="92" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="848" y1="92" x2="866" y2="92" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="1060" y1="92" x2="1078" y2="92" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="1060" y1="92" x2="1312" y2="92" stroke="#0d9488" stroke-width="2.5" stroke-dasharray="5,4" marker-end="url(#t1)"/>
+    </g>
+    <text x="24" y="168" font-size="13.5" fill="#134e4a"><tspan font-weight="700">Both indexes are built from the same chunks.</tspan> Dense captures meaning; sparse captures the literal token. Production retrieval queries both.</text>
+    <text x="24" y="190" font-size="13.5" fill="#134e4a">Metadata written here (tenant, ACL, date, version) is what makes filtering, security and freshness possible later — it cannot be retrofitted at query time.</text>
+
+    <!-- SERVING -->
+    <rect x="8" y="218" width="2364" height="286" rx="10" fill="#f4f2fe" stroke="#7c3aed" stroke-width="2.5"/>
+    <text x="24" y="244" font-size="17" font-weight="700" fill="#5b21b6">B · SERVING PATH — online, on the critical latency path</text>
+
+    <g>
+      <rect x="24" y="258" width="150" height="80" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="99" y="282" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">Query</text>
+      <text x="99" y="303" font-size="11.5" fill="#6b5b90" text-anchor="middle">+ user identity</text>
+      <text x="99" y="321" font-size="11.5" fill="#6b5b90" text-anchor="middle">+ conversation state</text>
+
+      <rect x="198" y="258" width="160" height="80" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="278" y="282" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">Rewrite / route</text>
+      <text x="278" y="303" font-size="11.5" fill="#6b5b90" text-anchor="middle">resolve pronouns</text>
+      <text x="278" y="321" font-size="11.5" fill="#6b5b90" text-anchor="middle">decide: retrieve or not</text>
+
+      <rect x="382" y="258" width="160" height="80" rx="7" fill="#eef1f8" stroke="#5a6488" stroke-width="2"/>
+      <text x="462" y="282" font-size="14" font-weight="700" fill="#3a4468" text-anchor="middle">Cache check</text>
+      <text x="462" y="303" font-size="11.5" fill="#5a6488" text-anchor="middle">exact + semantic</text>
+      <text x="462" y="321" font-size="11.5" fill="#5a6488" text-anchor="middle">hit ⇒ skip the rest</text>
+
+      <rect x="566" y="252" width="188" height="46" rx="7" fill="#e6f7f2" stroke="#0d9488" stroke-width="2"/>
+      <text x="660" y="270" font-size="13.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Dense search (ANN)</text>
+      <text x="660" y="288" font-size="11.5" fill="#3d6b61" text-anchor="middle">top ~50–100 candidates</text>
+      <rect x="566" y="304" width="188" height="46" rx="7" fill="#e6f7f2" stroke="#0d9488" stroke-width="2"/>
+      <text x="660" y="322" font-size="13.5" font-weight="700" fill="#0b6b57" text-anchor="middle">Lexical search (BM25)</text>
+      <text x="660" y="340" font-size="11.5" fill="#3d6b61" text-anchor="middle">top ~50–100 candidates</text>
+
+      <rect x="778" y="258" width="150" height="80" rx="7" fill="#fff" stroke="#0d9488" stroke-width="2"/>
+      <text x="853" y="282" font-size="14" font-weight="700" fill="#0b6b57" text-anchor="middle">Fuse (RRF)</text>
+      <text x="853" y="303" font-size="11.5" fill="#3d6b61" text-anchor="middle">merge both lists</text>
+      <text x="853" y="321" font-size="11.5" fill="#3d6b61" text-anchor="middle">rank-based, no tuning</text>
+
+      <rect x="952" y="258" width="164" height="80" rx="7" fill="#fff5e6" stroke="#d97706" stroke-width="2.5"/>
+      <text x="1034" y="282" font-size="14" font-weight="700" fill="#92400e" text-anchor="middle">Rerank</text>
+      <text x="1034" y="303" font-size="11.5" fill="#78350f" text-anchor="middle">cross-encoder</text>
+      <text x="1034" y="321" font-size="11.5" fill="#78350f" text-anchor="middle">→ top 3–10</text>
+
+      <rect x="1140" y="258" width="164" height="80" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="1222" y="282" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">Assemble context</text>
+      <text x="1222" y="303" font-size="11.5" fill="#6b5b90" text-anchor="middle">expand to parents</text>
+      <text x="1222" y="321" font-size="11.5" fill="#6b5b90" text-anchor="middle">order by position bias</text>
+
+      <rect x="1328" y="258" width="150" height="80" rx="7" fill="#efe9fd" stroke="#7c3aed" stroke-width="2.5"/>
+      <text x="1403" y="282" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">LLM</text>
+      <text x="1403" y="303" font-size="11.5" fill="#6b5b90" text-anchor="middle">grounded prompt</text>
+      <text x="1403" y="321" font-size="11.5" fill="#6b5b90" text-anchor="middle">cite-or-refuse</text>
+
+      <rect x="1502" y="258" width="164" height="80" rx="7" fill="#fef2f2" stroke="#b91c1c" stroke-width="2"/>
+      <text x="1584" y="282" font-size="14" font-weight="700" fill="#b91c1c" text-anchor="middle">Guardrails</text>
+      <text x="1584" y="303" font-size="11.5" fill="#7f1d1d" text-anchor="middle">citation check, PII</text>
+      <text x="1584" y="321" font-size="11.5" fill="#7f1d1d" text-anchor="middle">injection detection</text>
+
+      <rect x="1690" y="258" width="150" height="80" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="1765" y="282" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">Answer</text>
+      <text x="1765" y="303" font-size="11.5" fill="#6b5b90" text-anchor="middle">streamed</text>
+      <text x="1765" y="321" font-size="11.5" fill="#6b5b90" text-anchor="middle">with citations</text>
+
+      <rect x="1864" y="258" width="496" height="80" rx="7" fill="#fff" stroke="#5a6488" stroke-width="2"/>
+      <text x="1880" y="280" font-size="13.5" font-weight="700" fill="#3a4468">Trace + feedback loop</text>
+      <text x="1880" y="300" font-size="11.5" fill="#5a6488">Log the query, the candidates, the reranked set, what was sent, what was cited,</text>
+      <text x="1880" y="320" font-size="11.5" fill="#5a6488">and the user's verdict. Without this you cannot debug or improve anything.</text>
+
+      <line x1="174" y1="298" x2="192" y2="298" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#t2)"/>
+      <line x1="358" y1="298" x2="376" y2="298" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#t2)"/>
+      <line x1="542" y1="298" x2="560" y2="298" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#t2)"/>
+      <line x1="754" y1="298" x2="772" y2="298" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="928" y1="298" x2="946" y2="298" stroke="#0d9488" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="1116" y1="298" x2="1134" y2="298" stroke="#d97706" stroke-width="2.5" marker-end="url(#t1)"/>
+      <line x1="1304" y1="298" x2="1322" y2="298" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#t2)"/>
+      <line x1="1478" y1="298" x2="1496" y2="298" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#t2)"/>
+      <line x1="1666" y1="298" x2="1684" y2="298" stroke="#b91c1c" stroke-width="2.5" marker-end="url(#t3)"/>
+      <line x1="1840" y1="298" x2="1858" y2="298" stroke="#5a6488" stroke-width="2.5" stroke-dasharray="5,3" marker-end="url(#t2)"/>
+    </g>
+
+    <rect x="24" y="360" width="1150" height="132" rx="8" fill="#fff" stroke="#c6cade" stroke-width="2"/>
+    <text x="40" y="384" font-size="15" font-weight="700" fill="#1f2a63">The four stages a prototype does not have</text>
+    <text x="40" y="408" font-size="13.5" fill="#2a3050"><tspan font-weight="700" fill="#0b6b57">1 · Lexical retrieval alongside dense</tspan> — recovers exact tokens that embeddings blur.</text>
+    <text x="40" y="430" font-size="13.5" fill="#2a3050"><tspan font-weight="700" fill="#92400e">2 · Reranking</tspan> — commonly the single highest-return upgrade to a naive pipeline.</text>
+    <text x="40" y="452" font-size="13.5" fill="#2a3050"><tspan font-weight="700" fill="#b91c1c">3 · Guardrails</tspan> — retrieved text is untrusted input, and must be treated as such.</text>
+    <text x="40" y="474" font-size="13.5" fill="#2a3050"><tspan font-weight="700" fill="#3a4468">4 · Tracing</tspan> — the difference between engineering the system and guessing at it.</text>
+
+    <rect x="1194" y="360" width="1166" height="132" rx="8" fill="#f2effd" stroke="#a99ae8" stroke-width="2"/>
+    <text x="1210" y="384" font-size="15" font-weight="700" fill="#4c3bb5">Recall first, then precision — why two stages beat one</text>
+    <text x="1210" y="408" font-size="13.5" fill="#2a3050">Vector search is a <tspan font-weight="700">recall</tspan> instrument: cheap, approximate, run over millions of chunks. Ask it for the top 3 and</text>
+    <text x="1210" y="430" font-size="13.5" fill="#2a3050">the right passage is often ranked 7th and silently dropped. Ask for 50–100 and it is almost certainly in there.</text>
+    <text x="1210" y="452" font-size="13.5" fill="#2a3050">The reranker is a <tspan font-weight="700">precision</tspan> instrument: expensive per pair, but only ever sees those 50–100 candidates.</text>
+    <text x="1210" y="474" font-size="13.5" fill="#2a3050">Cast a wide net cheaply, then sort it accurately. Neither stage can do both jobs well alone.</text>
+
+    <rect x="24" y="508" width="2336" height="196" rx="10" fill="#fffaf0" stroke="#d97706" stroke-width="2.5"/>
+    <text x="40" y="534" font-size="16" font-weight="700" fill="#92400e">WHAT ACTUALLY SEPARATES A DEMO FROM A PRODUCTION SYSTEM</text>
+    <g font-size="13.5">
+      <text x="40" y="560" font-weight="700" fill="#92400e">Demo</text>
+      <text x="40" y="584" fill="#451a03">One embedding model, one vector store, top-k = 3</text>
+      <text x="40" y="606" fill="#451a03">Judged by "the answers look good"</text>
+      <text x="40" y="628" fill="#451a03">Every user sees every document</text>
+      <text x="40" y="650" fill="#451a03">Index built once, by hand</text>
+      <text x="40" y="672" fill="#451a03">Failures are debugged by re-reading the prompt</text>
+      <text x="40" y="694" fill="#451a03">Cost and latency discovered in production</text>
+
+      <line x1="1150" y1="548" x2="1150" y2="700" stroke="#d97706" stroke-width="1.5"/>
+
+      <text x="1180" y="560" font-weight="700" fill="#0b6b57">Production</text>
+      <text x="1180" y="584" fill="#134e4a">Hybrid retrieval, reranking, parent expansion, tuned top-k</text>
+      <text x="1180" y="606" fill="#134e4a">Judged against a golden set, on retrieval and generation separately</text>
+      <text x="1180" y="628" fill="#134e4a">ACL enforced <tspan font-style="italic">inside</tspan> the retrieval filter, per tenant and per user</text>
+      <text x="1180" y="650" fill="#134e4a">Incremental indexing with updates, deletes and backfill</text>
+      <text x="1180" y="672" fill="#134e4a">Failures are triaged with traces, in a fixed diagnostic order</text>
+      <text x="1180" y="694" fill="#134e4a">Latency and cost budgeted per stage and monitored</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 2. WHAT RAG IS ============ -->
+<div class="panel">
+  <div class="phead">2 &nbsp;· &nbsp;FUNDAMENTALS <span class="sub">what is actually happening</span></div>
+  <div class="pbody">
+    <div style="font-size:14.6px;line-height:1.5">
+      RAG gives a language model access to information it was never trained on. Instead of answering from
+      parameters alone, the system <b>retrieves relevant source text at query time</b> and puts it in the prompt.
+      The model then reasons over supplied evidence rather than recalled facts.
+    </div>
+    <div class="h3">Why not just fine-tune?</div>
+    <table class="tight">
+      <thead><tr><th style="width:30%">Need</th><th>Right tool</th></tr></thead>
+      <tbody>
+        <tr><td>Facts that change</td><td><b>RAG</b> — update the index, no retraining</td></tr>
+        <tr><td>Per-user / per-tenant data</td><td><b>RAG</b> — one model, filtered retrieval</td></tr>
+        <tr><td>Citations required</td><td><b>RAG</b> — the source is known by construction</td></tr>
+        <tr><td>Behaviour, tone, output format</td><td><b>Fine-tuning</b> — teaches style, not facts</td></tr>
+        <tr><td>Domain vocabulary in embeddings</td><td><b>Embedding fine-tune</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>They are complementary, not competing.</b> Fine-tuning changes how a model
+      behaves; retrieval changes what it knows. Mature systems frequently use both.</div>
+
+    <div class="h3">Why bigger context windows did not remove the need</div>
+    <ul>
+      <li><b>Cost</b> — input tokens are charged on every call; retrieval sends thousands, not millions</li>
+      <li><b>Latency</b> — prompt processing grows with context length</li>
+      <li><b>Accuracy</b> — relevant facts buried among irrelevant ones are used less reliably</li>
+      <li><b>Access control</b> — you cannot enforce per-user permissions by pasting the whole corpus</li>
+    </ul>
+    <div class="callout"><b>Position bias is real and measurable.</b> Published work on long-context behaviour
+      ("lost in the middle", Liu et al., 2023) found models use information at the <b>start and end</b> of a
+      context more reliably than material buried in the middle. Practical consequence: after reranking, place
+      the strongest passages at the edges of the assembled context, not in the centre.</div>
+
+    <div class="h3">The two independent failure surfaces</div>
+    <table class="tight">
+      <thead><tr><th style="width:34%">Failure</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><b>Retrieval failure</b></td><td>The evidence never reached the model. No prompt can fix this.</td></tr>
+        <tr><td><b>Generation failure</b></td><td>Evidence was present and the model still answered wrongly.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Measure them separately.</b> A single end-to-end quality score cannot tell you
+      which half is broken, so it cannot tell you what to fix.</div>
+  </div>
+</div>
+
+<!-- ============ 3. CHUNKING ============ -->
+<div class="panel">
+  <div class="phead">3 &nbsp;· &nbsp;CHUNKING <span class="sub">decided before everything else</span></div>
+  <div class="pbody">
+    <table class="tight">
+      <thead><tr><th style="width:31%">Strategy</th><th>When it is the right choice</th></tr></thead>
+      <tbody>
+        <tr><td><b>Fixed-size</b></td><td>Prototypes only. Splits mid-sentence and destroys meaning at every boundary.</td></tr>
+        <tr><td><b>Recursive separator</b></td><td>Solid general default: split on paragraph, then sentence, then word.</td></tr>
+        <tr><td><b>Semantic</b></td><td>Boundaries placed where the topic shifts. Good for continuous prose.</td></tr>
+        <tr><td><b>Document-aware</b></td><td>Best for structured content — headings and sections are free, author-supplied boundaries.</td></tr>
+        <tr><td><b>Hierarchical<br>(small-to-big)</b></td><td>Search a small precise child, send its larger parent to the model. Precision <i>and</i> context.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="h3">Parameters that matter <span class="heur">TUNE, DON'T COPY</span></div>
+    <table class="tight">
+      <thead><tr><th style="width:31%">Parameter</th><th>Trade-off it controls</th></tr></thead>
+      <tbody>
+        <tr><td><b>Chunk size</b></td><td>Small = precise retrieval, thin context. Large = rich context, diluted embedding.</td></tr>
+        <tr><td><b>Overlap</b></td><td>Insurance against boundary loss; costs storage and creates near-duplicates.</td></tr>
+        <tr><td><b>Section path in text</b></td><td>Prefixing "Returns › Damaged items" to a chunk gives the embedding context it otherwise lacks.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>These are starting points, not settings.</b> Optimal chunk size is a property of your
+      documents and your queries — short factual lookups and long analytical questions want different values.
+      The only reliable method is to vary it and measure retrieval recall on a golden set.</div>
+
+    <div class="callout g"><b>An embedding represents one idea.</b> Put three unrelated topics in a chunk and the
+      vector lands in the average of all three — near none of them. This is why oversized chunks quietly degrade
+      retrieval even though nothing looks broken.</div>
+
+    <div class="callout r"><b>Chunking failures masquerade as model failures.</b> When teams report "the LLM is
+      hallucinating," the trace often shows the correct passage was split so badly it was never retrievable.
+      Inspect the actual retrieved text before touching the model or the prompt.</div>
+  </div>
+</div>
+
+<!-- ============ 4. HYBRID ============ -->
+<div class="panel">
+  <div class="phead">4 &nbsp;· &nbsp;HYBRID RETRIEVAL <span class="sub">dense + sparse</span></div>
+  <div class="pbody">
+    <table class="tight">
+      <thead><tr><th style="width:22%"></th><th style="width:39%">Dense (vector)</th><th>Sparse (BM25)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Matches</b></td><td>Meaning, paraphrase, synonyms</td><td>Exact tokens and their statistics</td></tr>
+        <tr><td><b>Strong on</b></td><td>"how do I get money back" → refund policy</td><td>SKUs, error codes, names, acronyms</td></tr>
+        <tr><td><b>Weak on</b></td><td>Rare literal strings, IDs, versions</td><td>Wording that differs from the document</td></tr>
+        <tr><td><b>Fails by</b></td><td>Confidently returning a near-miss</td><td>Returning nothing at all</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Their failure modes are complementary, which is the whole point.</b> Ask for
+      "ERR_4021 handling" and dense search returns generic error-handling prose while BM25 finds the exact page.
+      Ask "how do I stop the nightly job hanging" and BM25 finds nothing while dense search succeeds.</div>
+
+    <div class="h3">Reciprocal Rank Fusion — combining the two lists</div>
+    <div class="code"><span class="c"># each document scored by its RANK in each list, not its score</span>
+score(d) = Σ  1 / (<span class="k">k</span> + rank<span class="m">_i</span>(d))
+           <span class="c">i ∈ retrievers</span>
+
+<span class="c"># k is a smoothing constant; k = 60 is the widely used default</span>
+<span class="c"># from the original RRF paper (Cormack et al., 2009)</span></div>
+    <div class="callout p"><b>Why rank-based fusion rather than score-based.</b> Cosine similarity and BM25
+      scores live on different, unbounded, query-dependent scales — normalising them is fragile and needs
+      constant retuning. RRF ignores the scores entirely and uses only the ordering, so it works across
+      retrievers without calibration. That robustness is why it is the common default.</div>
+
+    <div class="h3">Metadata filtering</div>
+    <div style="font-size:14.2px;line-height:1.48">
+      Filtering by tenant, date, source or document type <b>before</b> the vector search both narrows the search
+      space and enforces correctness. Check how your engine implements it: <b>pre-filtering</b> restricts the
+      candidate set before traversal; <b>post-filtering</b> retrieves first and discards afterwards, which can
+      return fewer than k results — or none — when the filter is selective.
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. RERANKING ============ -->
+<div class="panel">
+  <div class="phead">5 &nbsp;· &nbsp;RERANKING <span class="sub">the highest-return addition</span></div>
+  <div class="pbody">
+    <table class="tight">
+      <thead><tr><th style="width:26%"></th><th style="width:37%">Bi-encoder (retrieval)</th><th>Cross-encoder (rerank)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Encoding</b></td><td>Query and document encoded <i>separately</i></td><td>Query and document encoded <i>together</i></td></tr>
+        <tr><td><b>Precompute</b></td><td>Yes — documents embedded at ingest</td><td>No — must run per query-document pair</td></tr>
+        <tr><td><b>Cost</b></td><td>One embedding, then an index lookup</td><td>One model pass per candidate</td></tr>
+        <tr><td><b>Accuracy</b></td><td>Good</td><td>Substantially better</td></tr>
+        <tr><td><b>Scales to</b></td><td>Millions of documents</td><td>Tens of candidates</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>The reason the two-stage design exists.</b> A cross-encoder is more accurate
+      precisely because it lets query and document attend to each other — which is exactly why its result cannot
+      be precomputed or indexed. You cannot run it over a million chunks. So you use the cheap model to find
+      100 plausible candidates and the expensive model to order them.</div>
+
+    <div class="h3">Where it fits</div>
+    <div class="code"><span class="c"># retrieve wide, rerank narrow</span>
+candidates = hybrid_search(query, k=<span class="k">50..100</span>)   <span class="c"># recall</span>
+ranked     = reranker(query, candidates)         <span class="c"># precision</span>
+context    = ranked[:<span class="k">3..10</span>]                     <span class="c"># what the LLM sees</span></div>
+    <div style="font-size:13.6px;color:#5a6488;margin-top:5px">Candidate and final counts are
+      <span class="heur">STARTING POINTS</span> — tune both against measured recall and your latency budget.</div>
+
+    <div class="h3">Reranker families</div>
+    <table class="tight">
+      <thead><tr><th style="width:34%">Family</th><th>Character</th></tr></thead>
+      <tbody>
+        <tr><td><b>Hosted API rerankers</b><br><span style="font-size:13px;color:#6b7391">e.g. Cohere Rerank, Jina</span></td><td>Strong quality, no infrastructure, per-call cost and an external hop</td></tr>
+        <tr><td><b>Open cross-encoders</b><br><span style="font-size:13px;color:#6b7391">e.g. BGE-reranker</span></td><td>Self-hosted, no per-call fee, needs GPU capacity and ops</td></tr>
+        <tr><td><b>Late interaction</b><br><span style="font-size:13px;color:#6b7391">e.g. ColBERT-style</span></td><td>Middle ground — partially precomputable, larger index</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>The cheapest experiment worth running.</b> Adding a reranker to an existing pipeline
+      touches one stage, requires no re-indexing, and is reversible. Measure recall and faithfulness before and
+      after on the same golden set.</div>
+  </div>
+</div>
+
+<!-- ============ 6. INDEX INTERNALS ============ -->
+<div class="panel">
+  <div class="phead">6 &nbsp;· &nbsp;VECTOR INDEX INTERNALS <span class="sub">what the knobs actually do</span></div>
+  <div class="pbody">
+    <table class="tight">
+      <thead><tr><th style="width:20%">Index</th><th style="width:36%">How it works</th><th>Character</th></tr></thead>
+      <tbody>
+        <tr><td><b>Flat</b><br><span style="font-size:12.6px;color:#6b7391">brute force</span></td>
+            <td>Compares the query against every vector</td>
+            <td>Exact, 100% recall, linear cost. Correct choice for small corpora and as the accuracy baseline.</td></tr>
+        <tr><td><b>HNSW</b></td>
+            <td>Multi-layer proximity graph, greedily traversed</td>
+            <td>Fast and high recall; higher memory. The common default.</td></tr>
+        <tr><td><b>IVF</b></td>
+            <td>Vectors clustered; only nearby clusters are probed</td>
+            <td>Lower memory, needs training; recall depends on how many clusters are probed.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="h3">The parameters you will actually touch</div>
+    <table class="tight">
+      <thead><tr><th style="width:26%">Parameter</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">M</td><td>HNSW graph connectivity. Higher = better recall, more memory.</td></tr>
+        <tr><td class="mono">efConstruction</td><td>Build-time effort. Higher = better graph, slower indexing. Build cost only.</td></tr>
+        <tr><td class="mono">efSearch</td><td><b>Query-time recall/latency dial.</b> Higher = better recall, slower queries. Tunable live.</td></tr>
+        <tr><td class="mono">nlist / nprobe</td><td>IVF: number of clusters, and how many are probed per query.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>efSearch is the one to know.</b> It trades recall against latency at query time
+      without rebuilding the index — the fastest lever when retrieval quality is marginally short.</div>
+
+    <div class="h3">Quantization</div>
+    <table class="tight">
+      <thead><tr><th style="width:26%">Method</th><th>Trade</th></tr></thead>
+      <tbody>
+        <tr><td><b>Scalar (int8)</b></td><td>Large memory reduction, modest recall loss</td></tr>
+        <tr><td><b>Product (PQ)</b></td><td>Much larger reduction, greater recall loss</td></tr>
+        <tr><td><b>Binary</b></td><td>Most aggressive; usually paired with a rescoring pass over full vectors</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Approximate means approximate.</b> ANN indexes trade recall for speed by
+      construction — a passage that exists in your corpus can simply not be returned. Measure recall against a
+      flat index on a sample before assuming retrieval is exhaustive.</div>
+    <div class="callout r"><b>Recall, latency, memory — pick two.</b> Every index choice and every parameter on
+      this panel is a position on that triangle. There is no configuration that wins all three.</div>
+  </div>
+</div>
+
+<!-- ============ 7. EVALUATION ============ -->
+<div class="panel span2b">
+  <div class="phead">7 &nbsp;· &nbsp;EVALUATION
+    <span class="sub">the discipline that turns a demo into a system</span></div>
+  <div class="pbody">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+      <div>
+        <div class="h3">Step 1 — build a golden set</div>
+        <div style="font-size:14.2px;line-height:1.48">
+          A list of realistic questions, each paired with the <b>chunks that should be retrieved</b> and an
+          acceptable answer. Sourced from real user queries and support tickets, not invented at a desk.
+          Nothing else on this panel is possible without it.
+        </div>
+        <div class="code"><span class="c"># one golden record</span>
+{ <span class="k">"question"</span>: <span class="v">"refund window for damaged goods?"</span>,
+  <span class="k">"relevant_chunk_ids"</span>: [<span class="v">"policy#returns-damaged"</span>],
+  <span class="k">"reference_answer"</span>: <span class="v">"14 days from receipt…"</span>,
+  <span class="k">"tenant"</span>: <span class="v">"acme"</span> }</div>
+        <div class="callout"><b>Size it to be maintained, not to be impressive.</b> A small set that is
+          reviewed and kept current beats a large stale one. Grow it by adding every production failure you
+          diagnose <span class="heur">HEURISTIC</span>.</div>
+
+        <div class="h3">Step 2 — measure retrieval on its own</div>
+        <table class="tight">
+          <thead><tr><th style="width:32%">Metric</th><th>Question it answers</th></tr></thead>
+          <tbody>
+            <tr><td><b>Recall@k</b></td><td>Was the right chunk anywhere in the top k? <b>The first thing to measure.</b></td></tr>
+            <tr><td><b>Precision@k</b></td><td>How much of what we retrieved was actually relevant?</td></tr>
+            <tr><td><b>MRR</b></td><td>How high up was the first correct result?</td></tr>
+            <tr><td><b>NDCG@k</b></td><td>Ranking quality with graded relevance and position discount</td></tr>
+          </tbody>
+        </table>
+        <div class="callout g"><b>Recall@k bounds everything downstream.</b> If the evidence is not retrieved,
+          no reranker, prompt or model upgrade can recover it. Fix recall before tuning anything else.</div>
+      </div>
+
+      <div>
+        <div class="h3">Step 3 — measure generation separately</div>
+        <table class="tight">
+          <thead><tr><th style="width:34%">Metric</th><th>What it detects</th></tr></thead>
+          <tbody>
+            <tr><td><b>Faithfulness</b><br><span style="font-size:12.8px;color:#6b7391">groundedness</span></td>
+                <td>Is every claim supported by the retrieved context? <b>This is the hallucination metric.</b></td></tr>
+            <tr><td><b>Answer relevancy</b></td><td>Does the answer actually address the question asked?</td></tr>
+            <tr><td><b>Context precision</b></td><td>Were the retrieved chunks useful, and ranked sensibly?</td></tr>
+            <tr><td><b>Context recall</b></td><td>Did retrieval capture everything the answer needed?</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:13.4px;color:#5a6488;margin-top:6px">These four are the metric set popularised by
+          the open-source <b>RAGAS</b> framework, and are widely used as a common vocabulary for RAG evaluation.</div>
+
+        <div class="callout p"><b>High faithfulness with low relevancy is a real and common state:</b> the system
+          faithfully summarises documents that do not answer the question. Both numbers are needed — either one
+          alone can look healthy while the product is failing.</div>
+
+        <div class="h3">Step 4 — diagnose in a fixed order</div>
+        <table class="tight">
+          <thead><tr><th style="width:12%">#</th><th style="width:40%">Question</th><th>If no</th></tr></thead>
+          <tbody>
+            <tr><td><b>1</b></td><td>Is the answer in the corpus at all?</td><td>Ingestion gap — not a RAG problem</td></tr>
+            <tr><td><b>2</b></td><td>Is it in a retrievable chunk?</td><td>Fix chunking</td></tr>
+            <tr><td><b>3</b></td><td>Is it in the top-k candidates?</td><td>Fix embeddings, hybrid, filters</td></tr>
+            <tr><td><b>4</b></td><td>Does it survive reranking?</td><td>Fix or add the reranker</td></tr>
+            <tr><td><b>5</b></td><td>Did the model use it faithfully?</td><td>Fix the prompt, ordering, or model</td></tr>
+          </tbody>
+        </table>
+        <div class="callout r"><b>Skipping to step 5 is the classic mistake.</b> Prompt engineering cannot repair
+          a retrieval defect, but it will consume weeks of effort convincing you otherwise. Walk the steps in
+          order, every time.</div>
+        <div class="callout"><b>On LLM-as-judge.</b> Automated graders make continuous evaluation affordable,
+          but they are models with their own biases — including a documented tendency to favour longer answers.
+          Calibrate the judge against human labels on a sample before trusting its verdicts.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 8. PATTERNS ============ -->
+<div class="panel span3">
+  <div class="phead">8 &nbsp;· &nbsp;THE PATTERN LADDER
+    <span class="sub">each rung answers a specific failure of the one below it — climb only when measurement says to</span></div>
+  <div class="pbody" style="padding:12px 14px">
+    <div class="grid10">
+      <div class="pat"><div class="top"><div class="pnum">1</div><div class="pname">Simple RAG</div></div>
+        <div class="pflow">query → <span class="hi">retrieve</span> → <span class="lm">LLM</span></div>
+        <div class="pmeta"><b>Use as:</b> the baseline you measure everything else against.</div>
+        <div class="ptag">Never ship it, but always build it first.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">2</div><div class="pname">+ Memory</div></div>
+        <div class="pflow">query + <span class="hi">history</span> → retrieve</div>
+        <div class="pmeta"><b>Fixes:</b> follow-ups that only make sense in context.</div>
+        <div class="pmeta"><b>Watch:</b> rewrite the query before retrieving — raw pronouns retrieve nothing.</div>
+        <div class="ptag">Minimum for anything conversational.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">3</div><div class="pname">Branched</div></div>
+        <div class="pflow">decompose → <span class="hi">parallel retrieve</span> → merge</div>
+        <div class="pmeta"><b>Fixes:</b> questions whose answer spans several documents.</div>
+        <div class="pmeta"><b>Cost:</b> N retrievals and an extra LLM call.</div>
+        <div class="ptag">Comparisons and multi-part questions.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">4</div><div class="pname">HyDE</div></div>
+        <div class="pflow"><span class="lm">draft answer</span> → embed <span class="hi">that</span> → search</div>
+        <div class="pmeta"><b>Fixes:</b> question and answer embed differently, so the query is a poor probe.</div>
+        <div class="ptag">Adds an LLM call to the critical path.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">5</div><div class="pname">Adaptive</div></div>
+        <div class="pflow">route: none / <span class="hi">simple</span> / <span class="hi">multi-step</span></div>
+        <div class="pmeta"><b>Fixes:</b> paying to retrieve for queries that never needed it.</div>
+        <div class="ptag">A cost and latency lever as much as a quality one.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">6</div><div class="pname">Corrective</div></div>
+        <div class="pflow">retrieve → <span class="hi">grade</span> → retry / fallback</div>
+        <div class="pmeta"><b>Fixes:</b> answering confidently from weak or irrelevant context.</div>
+        <div class="ptag">A quality gate. Adds a retry tail to latency.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">7</div><div class="pname">Self-RAG</div></div>
+        <div class="pflow"><span class="lm">model critiques itself</span> mid-answer</div>
+        <div class="pmeta"><b>Fixes:</b> unsignalled low confidence in high-stakes answers.</div>
+        <div class="ptag">Highest complexity. Justified in regulated domains.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">8</div><div class="pname">Agentic</div></div>
+        <div class="pflow"><span class="lm">orchestrator</span> ↻ tools / sources</div>
+        <div class="pmeta"><b>Fixes:</b> tasks a single fixed retrieval step cannot express.</div>
+        <div class="pmeta"><b>Cost:</b> unbounded loops unless you cap iterations.</div>
+        <div class="ptag">Set a hard step limit and a timeout. Always.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">9</div><div class="pname">Multimodal</div></div>
+        <div class="pflow">image/table → <span class="lm">VLM</span> → embed</div>
+        <div class="pmeta"><b>Fixes:</b> answers that live in diagrams, charts and tables.</div>
+        <div class="ptag">Most enterprise PDFs are not plain text.</div></div>
+
+      <div class="pat"><div class="top"><div class="pnum">10</div><div class="pname">Graph RAG</div></div>
+        <div class="pflow">entities + <span class="hi">relationships</span> → traverse</div>
+        <div class="pmeta"><b>Fixes:</b> multi-hop questions where connection, not similarity, is the answer.</div>
+        <div class="pmeta"><b>Cost:</b> graph construction and maintenance is substantial.</div>
+        <div class="ptag">Highest build cost. Wins where relationships are the question.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 9. LATENCY & COST ============ -->
+<div class="panel">
+  <div class="phead">9 &nbsp;· &nbsp;LATENCY &amp; COST <span class="sub">budget it per stage</span></div>
+  <div class="pbody">
+    <div class="h3">Where the time goes</div>
+    <table class="tight">
+      <thead><tr><th style="width:34%">Stage</th><th>Relative contribution</th></tr></thead>
+      <tbody>
+        <tr><td>Query embedding</td><td>Small — one short input</td></tr>
+        <tr><td>ANN + lexical search</td><td>Small to moderate; grows with <span class="mono">efSearch</span> and filters</td></tr>
+        <tr><td>Reranking</td><td>Moderate — scales with candidate count</td></tr>
+        <tr><td><b>LLM generation</b></td><td><b>Usually dominant</b> — grows with input <i>and</i> output length</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Optimise the dominant term.</b> Shaving milliseconds off vector search while
+      sending 20 loosely-relevant chunks to the model is optimising the wrong stage. Fewer, better chunks
+      improve latency, cost and accuracy simultaneously — which is why reranking pays three times.</div>
+
+    <div class="h3">Perceived vs actual latency</div>
+    <ul>
+      <li><b>Stream the answer</b> — time-to-first-token is what users experience</li>
+      <li>Retrieval happens <i>before</i> the first token, so it is felt in full</li>
+      <li>Show retrieval progress; a visible step feels far shorter than a blank screen</li>
+    </ul>
+
+    <div class="h3">Cost structure</div>
+    <table class="tight">
+      <thead><tr><th style="width:34%">Component</th><th>Driver</th></tr></thead>
+      <tbody>
+        <tr><td>Indexing (one-off)</td><td>Corpus size × embedding price</td></tr>
+        <tr><td>Re-indexing</td><td>Triggered by changing embedding model — a full migration</td></tr>
+        <tr><td>Query embedding</td><td>Query volume</td></tr>
+        <tr><td>Reranking</td><td>Volume × candidate count</td></tr>
+        <tr><td><b>LLM input tokens</b></td><td><b>Usually the largest line</b> — retrieved context dominates</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>Precision is an economic argument, not only a quality one.</b> Halving the context
+      you send halves the dominant cost line and typically improves the answer.</div>
+    <div class="callout"><b>Caching, with care.</b> Exact-match caching is safe. Semantic caching returns a
+      stored answer for a <i>similar</i> question — set the similarity threshold too loosely and it confidently
+      serves answers to a question the user did not ask. Never cache across tenants or permission boundaries.</div>
+  </div>
+</div>
+
+<!-- ============ 10. SECURITY ============ -->
+<div class="panel">
+  <div class="phead">10 &nbsp;· &nbsp;SECURITY &amp; TENANCY <span class="sub">where RAG leaks</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Enforce permissions inside the retrieval filter.</b> Attach
+      ACL and tenant metadata to every chunk and apply it as a pre-filter. Retrieving broadly and discarding
+      afterwards is not access control, and instructing the model not to reveal something is not a security
+      boundary — it is a request.</div>
+
+    <div class="h3">Multi-tenant isolation</div>
+    <table class="tight">
+      <thead><tr><th style="width:32%">Approach</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><b>Index per tenant</b></td><td>Strongest isolation; overhead grows with tenant count</td></tr>
+        <tr><td><b>Namespace / partition</b></td><td>Good isolation with shared infrastructure — common default</td></tr>
+        <tr><td><b>Shared index + filter</b></td><td>Cheapest and most dangerous: one missing filter leaks across tenants</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>If you use a shared index,</b> make the tenant filter impossible to omit — inject it
+      in a wrapper that no caller can bypass, and write a test that fails when it is missing.</div>
+
+    <div class="h3">Indirect prompt injection</div>
+    <div style="font-size:14.2px;line-height:1.48">
+      Retrieved text enters the prompt. If an attacker can influence any indexed document — a shared wiki page,
+      an uploaded file, a support ticket — they can plant instructions that the model may follow.
+      <b>Retrieved content is untrusted input.</b>
+    </div>
+    <ul>
+      <li>Delimit retrieved text clearly and instruct the model to treat it as <b>data, not instructions</b></li>
+      <li>Constrain what the surrounding system is permitted to do, especially with tools</li>
+      <li>Validate outputs — particularly anything triggering an action</li>
+      <li>Control who can write into the corpus, and log it</li>
+    </ul>
+
+    <div class="callout r"><b>Embeddings are sensitive data.</b> A vector is a lossy but informative encoding of
+      its source text; published research on embedding inversion has shown meaningful portions of original text
+      can be reconstructed from embeddings alone. Treat the vector store with the same controls as the source
+      documents — encryption, access control, retention, and deletion.</div>
+    <div class="callout g"><b>Deletion must propagate.</b> A right-to-erasure request has to remove the source
+      document, its chunks, its vectors, and any cached answers derived from them.</div>
+  </div>
+</div>
+
+<!-- ============ 11. OPERATIONS ============ -->
+<div class="panel">
+  <div class="phead">11 &nbsp;· &nbsp;RUNNING IT <span class="sub">freshness and observability</span></div>
+  <div class="pbody">
+    <div class="h3">Keeping the index current</div>
+    <table class="tight">
+      <thead><tr><th style="width:30%">Event</th><th>Required handling</th></tr></thead>
+      <tbody>
+        <tr><td><b>New document</b></td><td>Chunk, embed, upsert — the easy case</td></tr>
+        <tr><td><b>Updated document</b></td><td>Replace <i>all</i> prior chunks for that ID, or stale ones linger alongside new</td></tr>
+        <tr><td><b>Deleted document</b></td><td>Remove chunks and vectors. Most commonly missed.</td></tr>
+        <tr><td><b>Permission change</b></td><td>Update ACL metadata — otherwise retrieval enforces yesterday's rules</td></tr>
+        <tr><td><b>Model change</b></td><td>Re-embed the whole corpus; plan as a migration with a dual-index cutover</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Version your index.</b> Pin the embedding model and chunking config used to build
+      it — without that record, you cannot tell whether a regression came from your data or your configuration.</div>
+
+    <div class="h3">What to log on every query</div>
+    <ul>
+      <li>The query, and the rewritten query if it was rewritten</li>
+      <li>Candidates from each retriever, with scores and ranks</li>
+      <li>The reranked set, and the chunk IDs actually sent to the model</li>
+      <li>The answer, its citations, and per-stage latency</li>
+      <li>User feedback signals — explicit ratings and implicit behaviour</li>
+    </ul>
+    <div class="callout g"><b>Log the retrieved chunk IDs above all else.</b> Almost every quality
+      investigation starts with the question "what did the model actually see?" A system that cannot answer
+      that can only be debugged by guesswork.</div>
+
+    <div class="h3">Monitor for drift</div>
+    <table class="tight">
+      <thead><tr><th style="width:36%">Signal</th><th>Suggests</th></tr></thead>
+      <tbody>
+        <tr><td>Retrieval scores trending down</td><td>Queries drifting away from corpus coverage</td></tr>
+        <tr><td>Rising "no relevant results"</td><td>A content gap users are hitting</td></tr>
+        <tr><td>Faithfulness falling</td><td>Retrieval degradation, or a model change upstream</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>Failed queries are your roadmap.</b> Questions that retrieve nothing tell you what
+      content to write next — and each belongs in the golden set.</div>
+  </div>
+</div>
+
+<!-- ============ 12. CHECKLIST ============ -->
+<div class="panel span3">
+  <div class="phead">12 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST
+    <span class="sub">what to confirm before this carries real traffic</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div><b>☐ Golden set exists</b> — real questions with known-correct source chunks, kept current</div>
+      <div><b>☐ Retrieval measured separately</b> — Recall@k tracked and known, not assumed</div>
+      <div><b>☐ Generation measured separately</b> — faithfulness and relevancy both tracked</div>
+      <div><b>☐ Recall verified against a flat index</b> — you know what ANN is missing</div>
+      <div><b>☐ Hybrid retrieval in place</b> — exact IDs and codes are findable</div>
+      <div><b>☐ Reranking evaluated</b> — measured before and after on the same set</div>
+      <div><b>☐ Chunking tuned on your data</b> — not copied from a tutorial</div>
+      <div><b>☐ Parent expansion or overlap</b> — boundary loss is mitigated</div>
+      <div><b>☐ Embedding model pinned and recorded</b> — with a re-embedding migration plan</div>
+      <div><b>☐ ACL enforced as a pre-filter</b> — never post-filtered, never left to the prompt</div>
+      <div><b>☐ Tenant isolation cannot be bypassed</b> — with a test that fails if the filter is dropped</div>
+      <div><b>☐ Retrieved content treated as untrusted</b> — injection considered and mitigated</div>
+      <div><b>☐ Vector store secured like source data</b> — encryption, access control, retention</div>
+      <div><b>☐ Delete path works end to end</b> — source, chunks, vectors, caches</div>
+      <div><b>☐ Incremental indexing handles updates</b> — no stale duplicate chunks</div>
+      <div><b>☐ Latency budgeted per stage</b> — and the dominant term identified</div>
+      <div><b>☐ Cost per query modelled</b> — input tokens accounted for</div>
+      <div><b>☐ Answers stream</b> — time-to-first-token optimised</div>
+      <div><b>☐ Every query traced</b> — retrieved chunk IDs logged</div>
+      <div><b>☐ Citations returned</b> — users can verify claims against source</div>
+      <div><b>☐ Refusal path exists</b> — the system can say it does not know</div>
+      <div><b>☐ Agentic loops bounded</b> — hard step limits and timeouts</div>
+      <div><b>☐ Semantic cache thresholds validated</b> — and never shared across tenants</div>
+      <div><b>☐ Drift monitored</b> — scores, no-result rate, faithfulness, p95 latency</div>
+      <div><b>☐ Failed queries feed back</b> — into the golden set and the content roadmap</div>
+      <div><b>☐ Rollback possible</b> — index versioned, previous configuration restorable</div>
+    </div>
+    <div class="callout p" style="margin-top:10px"><b>The single most common root cause.</b> Across systems that
+      underperform in production, the defect is far more often in retrieval — chunking, recall, ranking — than in
+      the language model. Teams reach for a bigger model because it is the easiest thing to change, not because
+      it is what the evidence points to. Measure retrieval first; it is usually where the answer is.</div>
+  </div>
+</div>
+
+</div>

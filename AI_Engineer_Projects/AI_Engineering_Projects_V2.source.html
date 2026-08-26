@@ -1,0 +1,602 @@
+<meta charset="utf-8">
+<title>AI Engineering Projects by Jyothi Prakash Kalmanje</title>
+<style>
+  @page { size: 3400px 3385px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:3385px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:3385px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 560px 850px 745px 610px 340px;
+    gap:22px; }
+  .span2{grid-column:1/span 2} .span3{grid-column:1/span 3}
+
+  .title{grid-column:1/span 3;background:#111735;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:40px;letter-spacing:1px;font-weight:700}
+  .title h1 span.by{font-weight:400;color:#95a1d4;font-size:28px}
+  .title .tag{font-size:17.5px;color:#95a1d4;font-weight:500;text-align:right;line-height:1.35}
+  .title .v{display:inline-block;background:#c2410c;padding:3px 13px;border-radius:5px;
+            font-size:16px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:22px;font-weight:700;letter-spacing:.5px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:14px;font-weight:500;letter-spacing:0;opacity:.8}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e} .c3 .phead{background:#7c2d92}
+  .c4 .phead{background:#b45309} .c5 .phead{background:#be123c} .c0 .phead{background:#1f2a63}
+  .c6 .phead{background:#334155}
+
+  table{border-collapse:collapse;width:100%;font-size:13.6px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:13px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.6px;font-weight:700;color:#1e3a8a;margin:9px 0 5px;letter-spacing:.2px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.6px;line-height:1.46} li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:12.2px;line-height:1.48;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .m{color:#c4b5fd}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:13.2px;
+           line-height:1.45;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .tag2{display:inline-block;font-size:10.6px;font-weight:700;letter-spacing:.5px;padding:1px 6px;
+        border-radius:3px;vertical-align:middle}
+  .fact{background:#dcfce7;color:#166534} .heur{background:#e5e9f2;color:#475569}
+  .ac{background:#f0fdf4;border:1.5px solid #86efac;border-radius:6px;padding:7px 10px;margin-top:7px;
+      font-size:13.2px;line-height:1.45}
+  .ac b{color:#166534}
+  .chk{columns:3;column-gap:20px;font-size:13.5px;line-height:1.48}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>AI ENGINEERING PROJECTS <span class="by">by Jyothi Prakash Kalmanje</span><span class="v">V2</span></h1>
+  <div class="tag">Architect's build guide — specifications, performance models, acceptance criteria<br>
+    <span style="font-size:15px;color:#6f7cb0">Every tuning range is marked. Nothing is asserted that cannot be derived or cited.</span></div>
+</div>
+
+<!-- ===== PORTFOLIO ARCHITECTURE ===== -->
+<div class="panel c0 span2">
+  <div class="phead">PORTFOLIO ARCHITECTURE
+    <span class="sub">five projects, two systems — build them as a composed whole</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 2196 470" width="2196" height="470">
+    <defs><marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5a6488"/></marker></defs>
+
+    <rect x="6" y="6" width="1080" height="250" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="24" y="32" font-size="16.5" font-weight="700" fill="#1e3a8a">SYSTEM A — the retrieval platform (Projects 1 + 3 + 4)</text>
+    <rect x="24" y="46" width="300" height="82" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="174" y="70" font-size="14.5" font-weight="700" fill="#1e3a8a" text-anchor="middle">P1 · RAG service</text>
+    <text x="174" y="90" font-size="12" fill="#42507a" text-anchor="middle">hybrid retrieval + rerank</text>
+    <text x="174" y="110" font-size="12" fill="#42507a" text-anchor="middle">citation-enforced generation</text>
+
+    <rect x="348" y="46" width="300" height="82" rx="7" fill="#f8effc" stroke="#7c2d92" stroke-width="2"/>
+    <text x="498" y="70" font-size="14.5" font-weight="700" fill="#7c2d92" text-anchor="middle">P3 · Observability</text>
+    <text x="498" y="90" font-size="12" fill="#42507a" text-anchor="middle">traces, metrics, cost</text>
+    <text x="498" y="110" font-size="12" fill="#42507a" text-anchor="middle">CI regression gate</text>
+
+    <rect x="672" y="46" width="300" height="82" rx="7" fill="#fdf5e8" stroke="#b45309" stroke-width="2"/>
+    <text x="822" y="70" font-size="14.5" font-weight="700" fill="#b45309" text-anchor="middle">P4 · Fine-tuned extractor</text>
+    <text x="822" y="90" font-size="12" fill="#42507a" text-anchor="middle">structured output for the</text>
+    <text x="822" y="110" font-size="12" fill="#42507a" text-anchor="middle">same domain corpus</text>
+
+    <line x1="324" y1="87" x2="344" y2="87" stroke="#5a6488" stroke-width="2.5" marker-end="url(#ar)"/>
+    <line x1="648" y1="87" x2="668" y2="87" stroke="#5a6488" stroke-width="2.5" marker-end="url(#ar)"/>
+
+    <rect x="24" y="144" width="948" height="98" rx="7" fill="#fff" stroke="#93a3c8" stroke-width="2" stroke-dasharray="6,4"/>
+    <text x="40" y="166" font-size="13.8" font-weight="700" fill="#1e3a8a">One golden evaluation set serves all three</text>
+    <text x="40" y="188" font-size="12.6" fill="#42507a">P1 uses it to measure retrieval and faithfulness. P3 runs it in CI as the regression gate.</text>
+    <text x="40" y="208" font-size="12.6" fill="#42507a">P4 reuses its domain and held-out split to prove the fine-tuned model beats the prompted baseline.</text>
+    <text x="40" y="230" font-size="12.6" font-weight="700" fill="#166534">This shared artefact is what turns three projects into one coherent engineering story.</text>
+
+    <rect x="1110" y="6" width="1080" height="250" rx="10" fill="#eefaf7" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1128" y="32" font-size="16.5" font-weight="700" fill="#0f766e">SYSTEM B — the latency-constrained runtime (Projects 2 + 5)</text>
+    <rect x="1128" y="46" width="470" height="82" rx="7" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+    <text x="1363" y="70" font-size="14.5" font-weight="700" fill="#0f766e" text-anchor="middle">P2 · Local inference service</text>
+    <text x="1363" y="90" font-size="12" fill="#42507a" text-anchor="middle">quantized SLM, measured throughput,</text>
+    <text x="1363" y="110" font-size="12" fill="#42507a" text-anchor="middle">schema-validated output</text>
+
+    <rect x="1622" y="46" width="546" height="82" rx="7" fill="#fdeef2" stroke="#be123c" stroke-width="2"/>
+    <text x="1895" y="70" font-size="14.5" font-weight="700" fill="#be123c" text-anchor="middle">P5 · Real-time voice pipeline</text>
+    <text x="1895" y="90" font-size="12" fill="#42507a" text-anchor="middle">ASR → reasoning → TTS under a budget,</text>
+    <text x="1895" y="110" font-size="12" fill="#42507a" text-anchor="middle">with degradation and replay</text>
+    <line x1="1598" y1="87" x2="1618" y2="87" stroke="#5a6488" stroke-width="2.5" marker-end="url(#ar)"/>
+
+    <rect x="1128" y="144" width="1040" height="98" rx="7" fill="#fff" stroke="#93a3c8" stroke-width="2" stroke-dasharray="6,4"/>
+    <text x="1144" y="166" font-size="13.8" font-weight="700" fill="#0f766e">P2 becomes the reasoning stage of P5</text>
+    <text x="1144" y="188" font-size="12.6" fill="#42507a">A local model is the natural choice for the voice loop: no network hop, so the LLM stage of your</text>
+    <text x="1144" y="208" font-size="12.6" fill="#42507a">latency budget is bounded by hardware you control and can measure directly.</text>
+    <text x="1144" y="230" font-size="12.6" font-weight="700" fill="#166534">The benchmark numbers from P2 become the budget line items in P5.</text>
+
+    <rect x="6" y="272" width="2184" height="192" rx="10" fill="#f6f8fd" stroke="#c7cbdd" stroke-width="2"/>
+    <text x="24" y="298" font-size="16" font-weight="700" fill="#1f2a63">CAPABILITY MATRIX — what each project actually evidences</text>
+    <g font-size="12.8">
+      <text x="24"   y="326" font-weight="700" fill="#1f2a63">Competency</text>
+      <text x="700"  y="326" font-weight="700" fill="#1e3a8a" text-anchor="middle">P1 RAG</text>
+      <text x="960"  y="326" font-weight="700" fill="#0f766e" text-anchor="middle">P2 Local</text>
+      <text x="1220" y="326" font-weight="700" fill="#7c2d92" text-anchor="middle">P3 Obs</text>
+      <text x="1480" y="326" font-weight="700" fill="#b45309" text-anchor="middle">P4 Tune</text>
+      <text x="1740" y="326" font-weight="700" fill="#be123c" text-anchor="middle">P5 RT</text>
+      <text x="1990" y="326" font-weight="700" fill="#1f2a63" text-anchor="middle">Hiring signal</text>
+      <g fill="#2f3a5c">
+        <text x="24" y="352">Distributed system design</text>
+        <text x="700" y="352" text-anchor="middle">●</text><text x="960" y="352" text-anchor="middle">○</text>
+        <text x="1220" y="352" text-anchor="middle">●</text><text x="1480" y="352" text-anchor="middle">·</text>
+        <text x="1740" y="352" text-anchor="middle">●</text><text x="1990" y="352" text-anchor="middle" fill="#166534">High</text>
+
+        <text x="24" y="376">Measurement &amp; evaluation rigour</text>
+        <text x="700" y="376" text-anchor="middle">●</text><text x="960" y="376" text-anchor="middle">●</text>
+        <text x="1220" y="376" text-anchor="middle">●</text><text x="1480" y="376" text-anchor="middle">●</text>
+        <text x="1740" y="376" text-anchor="middle">●</text><text x="1990" y="376" text-anchor="middle" fill="#166534">Highest</text>
+
+        <text x="24" y="400">Performance / cost engineering</text>
+        <text x="700" y="400" text-anchor="middle">○</text><text x="960" y="400" text-anchor="middle">●</text>
+        <text x="1220" y="400" text-anchor="middle">●</text><text x="1480" y="400" text-anchor="middle">○</text>
+        <text x="1740" y="400" text-anchor="middle">●</text><text x="1990" y="400" text-anchor="middle" fill="#166534">High</text>
+
+        <text x="24" y="424">Model training &amp; alignment</text>
+        <text x="700" y="424" text-anchor="middle">·</text><text x="960" y="424" text-anchor="middle">·</text>
+        <text x="1220" y="424" text-anchor="middle">·</text><text x="1480" y="424" text-anchor="middle">●</text>
+        <text x="1740" y="424" text-anchor="middle">·</text><text x="1990" y="424" text-anchor="middle" fill="#a35c00">Specialist</text>
+
+        <text x="24" y="448">Production operations / SRE</text>
+        <text x="700" y="448" text-anchor="middle">○</text><text x="960" y="448" text-anchor="middle">○</text>
+        <text x="1220" y="448" text-anchor="middle">●</text><text x="1480" y="448" text-anchor="middle">·</text>
+        <text x="1740" y="448" text-anchor="middle">●</text><text x="1990" y="448" text-anchor="middle" fill="#166534">Scarcest</text>
+      </g>
+      <text x="1700" y="292" font-size="11.8" fill="#5a6488">● primary evidence &nbsp; ○ partial &nbsp; · incidental</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ===== SEQUENCING ===== -->
+<div class="panel c6">
+  <div class="phead">SEQUENCING <span class="sub">order and dependency</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:8%">#</th><th style="width:30%">Project</th><th>Gate before moving on</th></tr></thead>
+      <tbody>
+        <tr><td><b>1</b></td><td><b>P1 · RAG</b> phases 1–2</td><td>End-to-end answers with citations traceable to source</td></tr>
+        <tr><td><b>2</b></td><td><b>P1</b> phase 3 — golden set</td><td>Baseline retrieval and faithfulness numbers recorded</td></tr>
+        <tr><td><b>3</b></td><td><b>P3 · Observability</b></td><td>Every request traceable; CI fails on a seeded regression</td></tr>
+        <tr><td><b>4</b></td><td><b>P2 · Local SLM</b></td><td>Three models benchmarked on identical hardware</td></tr>
+        <tr><td><b>5</b></td><td><b>P4 · Fine-tuning</b></td><td>Beats the best-prompt baseline on a held-out split</td></tr>
+        <tr><td><b>6</b></td><td><b>P5 · Real-time</b></td><td>Latency budget sums to measured total; degrades gracefully</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>Why P3 comes third, not last.</b> Observability built after the fact is
+      instrumentation bolted onto code that was not designed to be observed. Built at step 3, every subsequent
+      project inherits tracing for free — and you can prove each change improved something.</div>
+    <div class="callout"><b>Why P4 comes late.</b> Fine-tuning is only defensible when you can show a prompted
+      baseline it beats. Without P1's evaluation harness you have no baseline, and the project reduces to
+      "I ran a training script."</div>
+    <div class="h3">Effort shape <span class="tag2 heur">ESTIMATE</span></div>
+    <table>
+      <thead><tr><th style="width:36%">Project</th><th>Where the time actually goes</th></tr></thead>
+      <tbody>
+        <tr><td>P1 RAG</td><td>Data prep and eval-set curation, not the retrieval code</td></tr>
+        <tr><td>P2 Local SLM</td><td>Benchmark methodology and controlling for noise</td></tr>
+        <tr><td>P3 Observability</td><td>Deciding what to measure; wiring is quick</td></tr>
+        <tr><td>P4 Fine-tuning</td><td>Dataset cleaning — typically the dominant cost</td></tr>
+        <tr><td>P5 Real-time</td><td>Failure handling and interruption logic</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== P1 RAG ===== -->
+<div class="panel c1">
+  <div class="phead">1 &nbsp;· &nbsp;PRODUCTION RAG <span class="sub">retrieval as an engineered system</span></div>
+  <div class="pbody">
+    <div class="h3">Reference architecture</div>
+    <div class="code"><span class="c"># serving path — each stage independently measurable</span>
+query → rewrite → <span class="k">[dense ANN]</span> ∪ <span class="k">[BM25]</span> → <span class="v">RRF fuse</span>
+      → <span class="m">cross-encoder rerank</span> → parent expansion
+      → prompt assembly → LLM → citation validator</div>
+    <div class="callout g"><b>Why two retrievers then a reranker.</b> Dense and sparse retrieval fail in
+      complementary ways — embeddings blur exact tokens like error codes and SKUs; lexical search misses
+      paraphrase. Fusing them raises recall. The reranker then converts that recall into precision, because a
+      cross-encoder scores query and passage <i>jointly</i> and is far more accurate than the bi-encoder used
+      for indexing. <span class="tag2 fact">MECHANISM</span></div>
+
+    <div class="h3">Fusion — RRF</div>
+    <div class="code">score(d) = Σᵢ 1 / (<span class="k">k</span> + rankᵢ(d))    <span class="c"># k = 60 is the</span>
+<span class="c"># conventional default (Cormack et al., 2009)</span></div>
+    <div style="font-size:12.8px;color:#475569;margin-top:4px">Rank-based, so it needs no score normalisation
+      between retrievers whose scales are unbounded and query-dependent.</div>
+
+    <div class="h3">Configuration to tune, not copy <span class="tag2 heur">STARTING POINTS</span></div>
+    <table>
+      <thead><tr><th style="width:34%">Knob</th><th>What it trades</th></tr></thead>
+      <tbody>
+        <tr><td>Chunk size / overlap</td><td>Retrieval precision vs context sufficiency</td></tr>
+        <tr><td>Candidates before rerank</td><td>Recall ceiling vs rerank latency and cost</td></tr>
+        <tr><td>Final k after rerank</td><td>Evidence coverage vs prompt cost and dilution</td></tr>
+        <tr><td>Fusion weighting</td><td>Lexical vs semantic emphasis for your query mix</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Optimal values are properties of your corpus and query distribution.</b> Short
+      factual lookups and long analytical questions want different settings. Sweep them against measured
+      recall — any number quoted without that measurement is someone else's answer to a different problem.</div>
+
+    <div class="h3">Citation enforcement — make refusal a code path</div>
+    <ul>
+      <li>Require the model to emit claim → source-chunk references in a parseable form</li>
+      <li><b>Validate after generation:</b> every claim must map to a retrieved chunk</li>
+      <li>On failure, <b>refuse or degrade explicitly</b> rather than returning an ungrounded answer</li>
+    </ul>
+    <div class="callout p"><b>This is the difference between a demo and a trustworthy system.</b> Anything can
+      generate a plausible answer. A system that reliably declines when evidence is absent is doing engineering
+      the plausible one is not.</div>
+
+    <div class="ac"><b>Acceptance criteria — phase 3 is done when:</b> a golden set exists with verified
+      question → source-chunk mappings; retrieval recall and faithfulness are measured and recorded as
+      baselines; CI runs the eval on every pull request and fails below threshold; and you can demonstrate the
+      gate blocking a deliberately seeded regression.</div>
+  </div>
+</div>
+
+<!-- ===== P2 LOCAL ===== -->
+<div class="panel c2">
+  <div class="phead">2 &nbsp;· &nbsp;LOCAL INFERENCE <span class="sub">the performance model</span></div>
+  <div class="pbody">
+    <div class="h3">Memory model — derive it before you download <span class="tag2 fact">ARITHMETIC</span></div>
+    <div class="code"><span class="c"># weights</span>
+bytes ≈ params × bytes_per_param
+  fp16 → 2   int8 → 1   4-bit → ~0.5 (+ scale overhead)
+
+<span class="c"># worked example, 7B parameters</span>
+  fp16 : 7e9 × 2   ≈ <span class="v">14 GB</span>
+  4-bit: 7e9 × 0.5 ≈ <span class="v">3.5 GB</span> + overhead
+
+<span class="c"># KV cache grows with context length</span>
+per_token ≈ 2 × layers × kv_heads × head_dim × bytes</div>
+    <div class="callout g"><b>This is why quantization is the enabling trick for local work.</b> The weight
+      arithmetic is deterministic — you can decide what fits on your hardware before pulling a single model.
+      The KV cache is the term people forget: it scales with context length and can dominate at long
+      contexts.</div>
+
+    <div class="h3">Two latencies, two different bottlenecks <span class="tag2 fact">MECHANISM</span></div>
+    <table>
+      <thead><tr><th style="width:32%">Metric</th><th>What governs it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Time to first token</b><br>(prefill)</td><td>Processes the whole prompt in parallel — <b>compute-bound</b>, scales with prompt length</td></tr>
+        <tr><td><b>Inter-token latency</b><br>(decode)</td><td>One token at a time, re-reading weights — <b>memory-bandwidth-bound</b>, roughly flat per token</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Reporting a single "latency" number hides this.</b> A long prompt with a short
+      answer and a short prompt with a long answer are bottlenecked by different hardware resources. Measure
+      TTFT and inter-token latency separately, or your benchmark cannot be reasoned about.</div>
+
+    <div class="h3">Benchmark methodology — what makes it credible</div>
+    <ul>
+      <li><b>Warm-up runs discarded</b> — first-call load and cache effects distort everything</li>
+      <li><b>Fixed prompt set and decode length</b> across all models</li>
+      <li><b>Report median and p95</b>, not the mean — and state the run count</li>
+      <li><b>Control thermal throttling</b> on laptops; sustained runs differ from bursts</li>
+      <li><b>Record the hardware</b> — chip, RAM, and whether GPU/Metal acceleration was active</li>
+      <li>Separate <b>quality</b> from <b>speed</b>: same prompts, graded independently</li>
+    </ul>
+    <div class="callout r"><b>An uncontrolled benchmark is worse than none.</b> It invites a reviewer to ask one
+      question you cannot answer, and the whole project's credibility goes with it. Publish the method next to
+      the numbers.</div>
+
+    <div class="ac"><b>Acceptance criteria:</b> three models benchmarked on identical, documented hardware;
+      TTFT and inter-token latency reported separately with median and p95; memory footprint recorded; output
+      quality graded on a fixed prompt set; and a quantization comparison showing the quality-versus-speed
+      trade with numbers on both axes.</div>
+  </div>
+</div>
+
+<!-- ===== P3 OBSERVABILITY ===== -->
+<div class="panel c3">
+  <div class="phead">3 &nbsp;· &nbsp;OBSERVABILITY <span class="sub">designing what to measure</span></div>
+  <div class="pbody">
+    <div class="h3">Span model — one trace per request</div>
+    <div class="code">request
+├─ rewrite            <span class="c">tokens, latency</span>
+├─ retrieve.dense     <span class="c">k, ids, scores, ms</span>
+├─ retrieve.lexical   <span class="c">k, ids, scores, ms</span>
+├─ fuse               <span class="c">merged order</span>
+├─ rerank             <span class="c">in→out ids, ms</span>
+├─ generate           <span class="c">model, in/out tokens, ms</span>
+└─ validate.citations <span class="c">pass/fail, reason</span></div>
+    <div class="callout g"><b>Record chunk IDs at every stage, not just the final set.</b> The diagnostic
+      question is almost always "was it retrieved and then lost, or never retrieved at all?" — and only
+      stage-by-stage IDs answer it. This single decision determines whether the system is debuggable.</div>
+
+    <div class="h3">Conventions and cardinality</div>
+    <ul>
+      <li>OpenTelemetry publishes <b>GenAI semantic conventions</b> (the <span class="mono">gen_ai.*</span> attribute namespace). Following them means your traces work with standard tooling instead of a bespoke schema <span class="tag2 heur">EVOLVING SPEC</span></li>
+      <li><b>Keep high-cardinality values out of metric labels.</b> Query text and chunk IDs belong on spans; metrics should carry bounded dimensions like model, tenant tier, and status</li>
+      <li><b>Tail sampling</b> where volume demands it — sample successes, retain all errors and slow outliers, since those are what you investigate</li>
+    </ul>
+
+    <div class="h3">The metric set worth defending</div>
+    <table>
+      <thead><tr><th style="width:34%">Metric</th><th>Why this one</th></tr></thead>
+      <tbody>
+        <tr><td><b>Latency p50 / p95</b></td><td>Averages conceal the tail users actually complain about</td></tr>
+        <tr><td><b>Cost per request</b></td><td>Tokens × price, attributable by feature and tenant</td></tr>
+        <tr><td><b>Citation coverage</b></td><td>Share of answers grounded in retrieved evidence</td></tr>
+        <tr><td><b>Refusal rate</b></td><td>Rising = retrieval degrading; falling to zero = enforcement broken</td></tr>
+        <tr><td><b>Retrieval score distribution</b></td><td>Leading indicator — drifts before quality visibly drops</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>Refusal rate is the underrated one.</b> Most teams never track it, yet it moves
+      in both directions for different reasons — and a refusal rate of zero usually means the enforcement path
+      is silently broken rather than that the system is perfect.</div>
+
+    <div class="ac"><b>Acceptance criteria:</b> any past request can be replayed from its trace; a dashboard
+      shows p50/p95, cost, coverage and refusal over time; CI blocks a merge when eval metrics regress; and
+      prompts and retrieval config are versioned alongside code so a behaviour change is attributable to a
+      commit.</div>
+  </div>
+</div>
+
+<!-- ===== P4 FINE-TUNING ===== -->
+<div class="panel c4">
+  <div class="phead">4 &nbsp;· &nbsp;FINE-TUNING <span class="sub">mechanics and proof</span></div>
+  <div class="pbody">
+    <div class="h3">What LoRA actually does <span class="tag2 fact">Hu et al., 2021</span></div>
+    <div class="code"><span class="c"># base weights frozen; learn a low-rank update</span>
+W' = W + <span class="v">ΔW</span>,   <span class="v">ΔW = B·A</span>
+     B ∈ ℝ^(d×r),  A ∈ ℝ^(r×k),  <span class="k">r ≪ min(d,k)</span>
+
+<span class="c"># trainable params per adapted matrix</span>
+  full : d × k
+  LoRA : r × (d + k)      <span class="c">← orders of magnitude fewer</span></div>
+    <div class="callout g"><b>That rank decomposition is the whole idea.</b> Because the base weights stay
+      frozen and only a thin factorised update is learned, memory drops enough to train meaningfully on a
+      single accessible GPU. <b>QLoRA</b> (Dettmers et al., 2023) extends this by holding the base model in
+      4-bit while training the adapters at higher precision.</div>
+
+    <div class="h3">Why DPO rather than RLHF <span class="tag2 fact">Rafailov et al., 2023</span></div>
+    <ul>
+      <li>Classic RLHF trains a <b>separate reward model</b>, then optimises the policy against it with reinforcement learning — multiple models, an unstable loop</li>
+      <li><b>DPO optimises directly on preference pairs</b>, removing the separate reward model and the RL stage</li>
+      <li>Practical consequence: markedly simpler to run and reproduce, which is why it is tractable as a portfolio project at all</li>
+    </ul>
+
+    <div class="h3">The evaluation that makes the claim credible</div>
+    <table>
+      <thead><tr><th style="width:36%">Requirement</th><th>Why it is non-negotiable</th></tr></thead>
+      <tbody>
+        <tr><td><b>Prompted baseline first</b></td><td>"Improvement" is meaningless without the best the base model does with a well-engineered prompt</td></tr>
+        <tr><td><b>Held-out split, deduplicated</b></td><td>Near-duplicates across train and test inflate results silently</td></tr>
+        <tr><td><b>Task metrics, not loss</b></td><td>JSON validity, exact match, refusal correctness — loss curves are not results</td></tr>
+        <tr><td><b>General-capability check</b></td><td>Detects regression on everything you did not train for</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Catastrophic forgetting is the failure mode to name.</b> A model tuned hard on one
+      narrow task can degrade elsewhere. Holding out a small general evaluation and reporting it — even if it
+      moved slightly the wrong way — demonstrates more maturity than a single flattering number.</div>
+
+    <div class="callout"><b>Data quality dominates data quantity.</b> Inconsistent or badly formatted training
+      examples teach the model to be inconsistent and badly formatted. Budget most of the project for dataset
+      construction and cleaning; that is where the result is actually determined.</div>
+
+    <div class="ac"><b>Acceptance criteria:</b> a documented prompted baseline; SFT results on a deduplicated
+      held-out split; DPO showing incremental gain over that SFT baseline; task metrics reported before and
+      after; and an honest account of a failed run and what changed.</div>
+  </div>
+</div>
+
+<!-- ===== P5 REAL TIME ===== -->
+<div class="panel c5">
+  <div class="phead">5 &nbsp;· &nbsp;REAL-TIME VOICE <span class="sub">latency as an architecture</span></div>
+  <div class="pbody">
+    <div class="h3">The budget — measure every term separately</div>
+    <div class="code">total ≈ capture + <span class="k">endpointing</span> + ASR
+      + LLM <span class="v">TTFT</span> + TTS <span class="v">TTFB</span> + playout
+      + transport &amp; queueing overhead</div>
+    <div class="callout"><b>Endpointing is the hidden dominant term.</b> Before any model runs, the system must
+      decide the user has stopped speaking. Wait too long and the assistant feels sluggish; too little and it
+      interrupts. Teams optimise the model and never instrument this, then cannot explain where the time
+      went.</div>
+
+    <div class="h3">Architectural moves that cut perceived latency</div>
+    <ul>
+      <li><b>Stream every stage.</b> Use partial ASR transcripts, stream LLM tokens, and begin TTS on the first complete sentence rather than the full response — this overlaps stages instead of serialising them</li>
+      <li><b>Optimise TTFT over total generation.</b> The user hears the first syllable; what follows streams behind it</li>
+      <li><b>Support barge-in.</b> Interruption must cancel in-flight TTS and LLM work — without it the system feels unnatural regardless of raw speed</li>
+      <li><b>Prefer WebRTC over plain WebSockets for audio transport</b> where network conditions vary — it is built for real-time media with jitter and loss handling <span class="tag2 fact">DESIGN INTENT</span></li>
+    </ul>
+    <div class="callout p"><b>Why the target is roughly conversational.</b> Research on turn-taking in natural
+      conversation finds inter-speaker gaps typically on the order of a couple of hundred milliseconds
+      (Stivers et al., 2009). You will not hit that with a full ASR-LLM-TTS stack — but it explains why
+      overlapping the stages matters far more than shaving any single one.</div>
+
+    <div class="h3">Degradation — design the failure paths</div>
+    <table>
+      <thead><tr><th style="width:34%">Failure</th><th>Designed response</th></tr></thead>
+      <tbody>
+        <tr><td>ASR unavailable</td><td>Fall back to text input; say so explicitly</td></tr>
+        <tr><td>LLM timeout</td><td>Emit a holding response, or a smaller local model</td></tr>
+        <tr><td>TTS unavailable</td><td>Return text; never hang silently</td></tr>
+        <tr><td>Any stage slow</td><td>Hard timeout with a partial result — bounded, never indefinite</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Replay mode is the highest-value debugging investment.</b> Recorded audio fed back
+      through the pipeline makes real-time failures reproducible. Without it you are debugging something that
+      only happens live and never twice the same way.</div>
+
+    <div class="ac"><b>Acceptance criteria:</b> a per-request latency breakdown whose terms sum to measured
+      total; stages overlapped rather than serialised; every external dependency has a timeout and a defined
+      fallback; barge-in cancels in-flight work; and replay reproduces a captured failure.</div>
+  </div>
+</div>
+
+<!-- ===== EVALUATION ===== -->
+<div class="panel c6">
+  <div class="phead">EVALUATION AS THE SPINE <span class="sub">the discipline all five share</span></div>
+  <div class="pbody">
+    <div class="callout p" style="margin-top:0"><b>The single strongest signal across the portfolio.</b> Any
+      competent engineer can assemble these pipelines from documentation. What separates candidates is whether
+      they can <i>prove</i> the system works and detect when it stops — that is the scarce skill, and it is
+      demonstrated identically in all five projects.</div>
+
+    <div class="h3">The pattern, applied five times</div>
+    <table>
+      <thead><tr><th style="width:26%">Project</th><th>Baseline</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>P1 RAG</td><td>Naive top-k retrieval</td><td>Recall + faithfulness in CI</td></tr>
+        <tr><td>P2 Local</td><td>Largest model, unquantized</td><td>Quality floor at target throughput</td></tr>
+        <tr><td>P3 Obs</td><td>Current metric values</td><td>Merge blocked on regression</td></tr>
+        <tr><td>P4 Tune</td><td>Best prompted base model</td><td>Held-out task metrics</td></tr>
+        <tr><td>P5 RT</td><td>Serialised, unoptimised pipeline</td><td>p95 within budget</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Every row has a baseline.</b> A number with nothing to compare against is
+      decoration. "Faithfulness 0.87" says nothing; "0.71 → 0.87 after adding reranking, on the same 150-item
+      set" is an engineering result.</div>
+
+    <div class="h3">Offline and online are different questions</div>
+    <ul>
+      <li><b>Offline</b> — fixed dataset, reproducible, gates merges. Answers "did this change break something?"</li>
+      <li><b>Online</b> — live traffic, user signals, drift. Answers "is it working for real users now?"</li>
+      <li>Offline evaluation cannot detect a shift in what users ask; online cannot block a bad deploy. Both, or neither is sufficient</li>
+    </ul>
+
+    <div class="h3">On LLM-as-judge</div>
+    <div style="font-size:13.4px;line-height:1.45">
+      Automated grading makes continuous evaluation affordable, and is often the only practical option at scale.
+      But a judge is a model with its own biases — including documented tendencies toward longer or
+      self-similar answers. <b>Calibrate it against human labels on a sample</b> and report that agreement rate.
+      Doing so is itself a strong signal: it shows you treat your measuring instrument as something requiring
+      validation.
+    </div>
+    <div class="callout"><b>Failed queries are the roadmap.</b> Every production failure you diagnose should end
+      as a new golden-set case. That is how the harness compounds in value rather than decaying.</div>
+  </div>
+</div>
+
+<!-- ===== REPO ===== -->
+<div class="panel c0">
+  <div class="phead">REPOSITORY STANDARDS <span class="sub">what a reviewer opens first</span></div>
+  <div class="pbody">
+    <div class="code">project/
+├─ README.md          <span class="c">results + numbers, not features</span>
+├─ ARCHITECTURE.md    <span class="c">diagram + data flow</span>
+├─ DECISIONS.md       <span class="c">ADRs: choice, alternatives, why</span>
+├─ eval/
+│  ├─ golden_set.jsonl
+│  ├─ run_eval.py
+│  └─ results/        <span class="c">dated, committed</span>
+├─ configs/           <span class="c">prompts + retrieval params</span>
+├─ src/
+└─ .github/workflows/ <span class="c">eval gate on PR</span></div>
+
+    <div class="h3">The README is the interview</div>
+    <ul>
+      <li>Open with <b>the problem and the measured outcome</b>, not a feature list</li>
+      <li>A results table with <b>baseline → current</b> on every metric</li>
+      <li><b>Architecture diagram</b> — one image beats three paragraphs</li>
+      <li>An explicit <b>limitations</b> section: what it does badly and why</li>
+      <li>How to reproduce the evaluation in one command</li>
+    </ul>
+
+    <div class="h3">Architecture decision records</div>
+    <div style="font-size:13.4px;line-height:1.45">
+      One short entry per significant choice: the decision, the alternatives considered, and why. Choosing
+      Weaviate over Chroma is unremarkable; <b>documenting why, and what you would have chosen at ten times the
+      scale, is what a senior reviewer is looking for.</b> ADRs are cheap to write and are the clearest
+      available evidence of engineering judgment.
+    </div>
+    <div class="callout g"><b>Commit the evaluation results.</b> Dated result files in version control show the
+      quality trajectory over time — and prove the harness was actually run rather than merely written.</div>
+  </div>
+</div>
+
+<!-- ===== ANTI-PATTERNS ===== -->
+<div class="panel c5">
+  <div class="phead">WHAT FAILS REVIEW <span class="sub">observed anti-patterns</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:38%">Anti-pattern</th><th>What the reviewer concludes</th></tr></thead>
+      <tbody>
+        <tr><td><b>No numbers anywhere</b></td><td>Never measured it; cannot tell if it works</td></tr>
+        <tr><td><b>Metrics with no baseline</b></td><td>Does not understand what evidence is</td></tr>
+        <tr><td><b>Prompts buried in source</b></td><td>Has not treated prompts as configuration</td></tr>
+        <tr><td><b>Five disconnected repos</b></td><td>Followed five tutorials</td></tr>
+        <tr><td><b>Only the happy path</b></td><td>Has not operated anything real</td></tr>
+        <tr><td><b>Latest model, no rationale</b></td><td>Selects by fashion, not by requirement</td></tr>
+        <tr><td><b>Eval set built from outputs</b></td><td>Circular — grades the system against itself</td></tr>
+        <tr><td><b>"Works on my machine" benchmarks</b></td><td>No methodology; numbers unusable</td></tr>
+        <tr><td><b>Fine-tuned with no baseline</b></td><td>Cannot show tuning helped at all</td></tr>
+        <tr><td><b>No limitations section</b></td><td>Either has not looked, or is hiding it</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The most common single defect:</b> a polished front end over a pipeline with no
+      evaluation. It reads as someone who optimised for the demo rather than the system — precisely the
+      opposite of the signal intended.</div>
+    <div class="callout g"><b>The inverse is disproportionately powerful.</b> A plain interface over a
+      rigorously measured, well-instrumented pipeline reads as an engineer who knows where the difficulty
+      actually lives.</div>
+    <div class="h3">Questions to be ready for</div>
+    <ul>
+      <li>Why this chunk size — what did you try and measure?</li>
+      <li>How do you know retrieval is the bottleneck and not the model?</li>
+      <li>What does this cost per thousand requests?</li>
+      <li>What breaks first at ten times the traffic?</li>
+      <li>What would you do differently starting again?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== CHECKLIST ===== -->
+<div class="panel c0 span3">
+  <div class="phead">PORTFOLIO ACCEPTANCE CRITERIA
+    <span class="sub">confirm before you put any of this in front of a hiring manager</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div><b>☐ Every project reports a baseline</b> and a current number on the same metric</div>
+      <div><b>☐ Golden set is hand-verified</b> — not generated by the system it evaluates</div>
+      <div><b>☐ Retrieval measured separately</b> from generation quality</div>
+      <div><b>☐ CI gate demonstrably blocks</b> a seeded regression</div>
+      <div><b>☐ Chunking parameters justified</b> by a measured sweep</div>
+      <div><b>☐ Reranking impact quantified</b> before and after on one set</div>
+      <div><b>☐ Refusal path exists and is tested</b> — the system can decline</div>
+      <div><b>☐ TTFT and inter-token latency reported separately</b></div>
+      <div><b>☐ Benchmark methodology published</b> alongside the numbers</div>
+      <div><b>☐ Hardware documented</b> — chip, memory, acceleration</div>
+      <div><b>☐ Quantization trade shown</b> on both quality and speed axes</div>
+      <div><b>☐ Chunk IDs logged at every pipeline stage</b></div>
+      <div><b>☐ p50 and p95 tracked</b>, never averages alone</div>
+      <div><b>☐ Cost per request quantified</b> in currency</div>
+      <div><b>☐ High-cardinality data kept off metric labels</b></div>
+      <div><b>☐ Fine-tuning beats a documented prompted baseline</b></div>
+      <div><b>☐ Held-out split deduplicated</b> against training data</div>
+      <div><b>☐ General-capability regression checked</b> after tuning</div>
+      <div><b>☐ Latency budget terms sum to measured total</b></div>
+      <div><b>☐ Every external dependency has a timeout and fallback</b></div>
+      <div><b>☐ Barge-in cancels in-flight work</b></div>
+      <div><b>☐ Replay reproduces a captured failure</b></div>
+      <div><b>☐ Prompts and configs under version control</b></div>
+      <div><b>☐ ADRs record the significant choices</b></div>
+      <div><b>☐ Limitations section is honest and specific</b></div>
+      <div><b>☐ Evaluation reproducible in one command</b></div>
+    </div>
+    <div class="callout p" style="margin-top:9px"><b>The through-line, stated once.</b> These five projects are
+      not five demonstrations of five frameworks. They are one demonstration, repeated five times, of a single
+      engineering habit: <b>establish a baseline, change one thing, measure the delta, and gate on it.</b> That
+      habit is what production AI work consists of, it is what is scarce in the candidate pool, and it is the
+      only thing here that will still be true when every tool named in these projects has been replaced.</div>
+  </div>
+</div>
+
+</div>
