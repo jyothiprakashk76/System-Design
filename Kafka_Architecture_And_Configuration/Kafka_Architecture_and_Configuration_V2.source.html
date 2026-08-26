@@ -1,0 +1,930 @@
+<meta charset="utf-8">
+<title>Kafka Architecture &amp; Configuration — by Jyothi Prakash Kalmanje</title>
+<style>
+  @page { size: 3400px 5760px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5760px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5760px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 785px 706px 645px 505px 525px 545px 670px 665px 346px;
+    gap:22px; }
+  .span2{grid-column:1/span 2} .span3{grid-column:1/span 3}
+
+  .title{grid-column:1/span 3;background:#12172f;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:37px;letter-spacing:.9px;font-weight:700}
+  .title h1 span.by{font-weight:400;color:#96a2d2;font-size:24px}
+  .title .tag{font-size:16px;color:#96a2d2;font-weight:500;text-align:right;line-height:1.34}
+  .title .v{display:inline-block;background:#b45309;padding:3px 12px;border-radius:5px;
+            font-size:15px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 16px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:10px 13px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155}
+
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 6px;font-size:11.9px;border:1px solid #bfc7de}
+  td{padding:3px 6px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .k{font-family:Menlo,Consolas,monospace;font-size:11.9px;color:#1e3a8a;font-weight:700}
+  .val{font-family:Menlo,Consolas,monospace;font-size:11.7px}
+  .def{background:#dcfce7;color:#166534;font-family:Menlo,Consolas,monospace;font-size:11.3px;
+       padding:0 4px;border-radius:3px;font-weight:700}
+  .chg{background:#fef3c7;color:#92400e;font-size:10.1px;font-weight:700;padding:0 4px;border-radius:3px}
+  .h3{font-size:13.8px;font-weight:700;color:#1e3a8a;margin:8px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:16px;font-size:12.7px;line-height:1.42} li{margin-bottom:2px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.5px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .p{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 9px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .chk{columns:3;column-gap:20px;font-size:12.6px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .mx{font-size:11.6px}
+  .mx th{font-size:11.2px;padding:4px 5px}
+  .mx td{padding:2.5px 5px;font-family:Menlo,Consolas,monospace;font-size:11px}
+  .mx td.lbl{font-family:"Helvetica Neue",Helvetica,Arial;font-weight:700;color:#1f2a63;font-size:11.6px}
+  .A{background:#eef3fd} .B{background:#f0fbf8} .C{background:#fdeef2}
+  .D{background:#f4f2fe} .E{background:#fdf5e8} .F{background:#eef2f9}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>APACHE KAFKA — ARCHITECTURE &amp; CONFIGURATION <span class="by">by Jyothi Prakash Kalmanje</span><span class="v">V2</span></h1>
+  <div class="tag">How it works, and how to configure it for each workload<br>
+    <span style="font-size:13.6px;color:#6f7cae">Defaults for Kafka 3.x. &nbsp;<span class="def">green</span> = default &nbsp;<span class="chg">3.0</span> = default changed in 3.0.<br>
+    KRaft is the production control plane from 3.3; ZooKeeper deprecated from 3.5, removed in 4.0. Verify against your broker version.</span></div>
+</div>
+
+<!-- ============ CLUSTER ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;CLUSTER ARCHITECTURE
+    <span class="sub">brokers, the controller quorum, partitions and the internal topics that make it work</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 710" width="3320" height="710">
+    <defs>
+      <marker id="bl" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="gr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#0f766e"/></marker>
+      <marker id="pu" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- producers -->
+    <rect x="8" y="60" width="290" height="150" rx="9" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="24" y="84" font-size="15" font-weight="700" fill="#1e3a8a">PRODUCERS</text>
+    <text x="24" y="106" font-size="12.2" fill="#2f3a5c">Batch by partition, compress</text>
+    <text x="24" y="126" font-size="12.2" fill="#2f3a5c">the batch, send to the</text>
+    <text x="24" y="146" font-size="12.2" fill="#2f3a5c"><tspan font-weight="700">partition leader only</tspan></text>
+    <text x="24" y="172" font-size="12" fill="#6b7391">key → hash → partition</text>
+    <text x="24" y="192" font-size="12" fill="#6b7391">no key → sticky batching</text>
+
+    <!-- brokers -->
+    <rect x="330" y="24" width="1500" height="400" rx="10" fill="#f7f9fd" stroke="#1f2a63" stroke-width="2.5"/>
+    <text x="348" y="48" font-size="15.5" font-weight="700" fill="#1f2a63">BROKER CLUSTER — each partition has one leader and N−1 followers</text>
+
+    <g font-size="11.8">
+      <!-- broker 1 -->
+      <rect x="348" y="62" width="470" height="170" rx="8" fill="#fff" stroke="#93a3c8" stroke-width="2"/>
+      <text x="364" y="84" font-size="13.5" font-weight="700" fill="#1f2a63">Broker 1 · rack=az-a</text>
+      <rect x="364" y="94" width="200" height="40" rx="4" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="464" y="110" text-anchor="middle" font-weight="700" fill="#1e3a8a">orders-0</text>
+      <text x="464" y="126" text-anchor="middle" fill="#1e3a8a">LEADER</text>
+      <rect x="576" y="94" width="226" height="40" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="689" y="110" text-anchor="middle" font-weight="700" fill="#475569">orders-1</text>
+      <text x="689" y="126" text-anchor="middle" fill="#475569">follower (in ISR)</text>
+      <rect x="364" y="142" width="438" height="34" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="374" y="164" fill="#475569">orders-2 follower · __consumer_offsets-17 LEADER</text>
+      <text x="364" y="196" fill="#6b7391">Serves reads and writes for the partitions it leads.</text>
+      <text x="364" y="214" fill="#6b7391">Followers replicate by <tspan font-weight="700">fetching</tspan> — replication is pull-based.</text>
+
+      <!-- broker 2 -->
+      <rect x="830" y="62" width="470" height="170" rx="8" fill="#fff" stroke="#93a3c8" stroke-width="2"/>
+      <text x="846" y="84" font-size="13.5" font-weight="700" fill="#1f2a63">Broker 2 · rack=az-b</text>
+      <rect x="846" y="94" width="200" height="40" rx="4" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="946" y="110" text-anchor="middle" font-weight="700" fill="#1e3a8a">orders-1</text>
+      <text x="946" y="126" text-anchor="middle" fill="#1e3a8a">LEADER</text>
+      <rect x="1058" y="94" width="226" height="40" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="1171" y="110" text-anchor="middle" font-weight="700" fill="#475569">orders-0</text>
+      <text x="1171" y="126" text-anchor="middle" fill="#475569">follower (in ISR)</text>
+      <rect x="846" y="142" width="438" height="34" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="856" y="164" fill="#475569">orders-2 follower · __transaction_state-4 LEADER</text>
+      <text x="846" y="196" fill="#6b7391">Leadership is spread so no broker becomes a hotspot.</text>
+      <text x="846" y="214" fill="#6b7391"><tspan font-family="Menlo,monospace">auto.leader.rebalance.enable</tspan> restores preferred leaders.</text>
+
+      <!-- broker 3 -->
+      <rect x="1312" y="62" width="500" height="170" rx="8" fill="#fff" stroke="#93a3c8" stroke-width="2"/>
+      <text x="1328" y="84" font-size="13.5" font-weight="700" fill="#1f2a63">Broker 3 · rack=az-c</text>
+      <rect x="1328" y="94" width="200" height="40" rx="4" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="1428" y="110" text-anchor="middle" font-weight="700" fill="#1e3a8a">orders-2</text>
+      <text x="1428" y="126" text-anchor="middle" fill="#1e3a8a">LEADER</text>
+      <rect x="1540" y="94" width="256" height="40" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="1668" y="110" text-anchor="middle" font-weight="700" fill="#475569">orders-0 · orders-1</text>
+      <text x="1668" y="126" text-anchor="middle" fill="#475569">followers (in ISR)</text>
+      <rect x="1328" y="142" width="468" height="34" rx="4" fill="#fef3c7" stroke="#d97706"/>
+      <text x="1338" y="164" fill="#92400e"><tspan font-weight="700">broker.rack</tspan> drives rack-aware replica placement across AZs</text>
+      <text x="1328" y="196" fill="#6b7391">RF=3 with one replica per rack survives the loss of an entire AZ</text>
+      <text x="1328" y="214" fill="#6b7391">while still satisfying min.insync.replicas=2.</text>
+    </g>
+
+    <!-- internal topics -->
+    <rect x="348" y="244" width="1464" height="164" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="364" y="268" font-size="14.5" font-weight="700" fill="#0f766e">INTERNAL TOPICS — Kafka stores its own state in Kafka</text>
+    <g font-size="12">
+      <rect x="364" y="280" width="470" height="52" rx="5" fill="#fff" stroke="#0f766e"/>
+      <text x="376" y="300" font-family="Menlo,monospace" font-weight="700" fill="#0f766e">__consumer_offsets</text>
+      <text x="376" y="320" fill="#134e4a">compacted · 50 partitions by default · holds committed offsets</text>
+
+      <rect x="846" y="280" width="470" height="52" rx="5" fill="#fff" stroke="#0f766e"/>
+      <text x="858" y="300" font-family="Menlo,monospace" font-weight="700" fill="#0f766e">__transaction_state</text>
+      <text x="858" y="320" fill="#134e4a">compacted · 50 partitions by default · transaction metadata</text>
+
+      <rect x="1328" y="280" width="470" height="52" rx="5" fill="#fff" stroke="#0f766e"/>
+      <text x="1340" y="300" font-family="Menlo,monospace" font-weight="700" fill="#0f766e">__cluster_metadata</text>
+      <text x="1340" y="320" fill="#134e4a">KRaft only · the replicated metadata log</text>
+
+      <text x="364" y="356" fill="#134e4a"><tspan font-weight="700">The group coordinator for a group is the broker leading the __consumer_offsets partition that hash(group.id) maps to.</tspan></text>
+      <text x="364" y="376" fill="#134e4a">The transaction coordinator is chosen the same way from __transaction_state using transactional.id.</text>
+      <text x="364" y="396" fill="#134e4a">These topics are ordinary Kafka topics — replication factor and min.insync.replicas apply to them too, and defaults are often too low in dev configs.</text>
+    </g>
+
+    <!-- consumers -->
+    <rect x="1862" y="60" width="290" height="150" rx="9" fill="#f4f2fe" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1878" y="84" font-size="15" font-weight="700" fill="#7c2d92">CONSUMERS</text>
+    <text x="1878" y="106" font-size="12.2" fill="#3b2a52">Fetch from the leader in</text>
+    <text x="1878" y="126" font-size="12.2" fill="#3b2a52">batches; track their own</text>
+    <text x="1878" y="146" font-size="12.2" fill="#3b2a52">offsets, committed back</text>
+    <text x="1878" y="166" font-size="12.2" fill="#3b2a52">to __consumer_offsets</text>
+    <text x="1878" y="192" font-size="12" fill="#6b7391">KIP-392 optionally allows</text>
+    <text x="1878" y="208" font-size="12" fill="#6b7391">fetching from a near follower</text>
+
+    <line x1="298" y1="130" x2="324" y2="130" stroke="#1e3a8a" stroke-width="3" marker-end="url(#bl)"/>
+    <line x1="1836" y1="130" x2="1856" y2="130" stroke="#7c2d92" stroke-width="3" marker-end="url(#pu)"/>
+
+    <!-- KRaft -->
+    <rect x="2184" y="24" width="1128" height="200" rx="10" fill="#fdf5e8" stroke="#b45309" stroke-width="2.5"/>
+    <text x="2202" y="48" font-size="15.5" font-weight="700" fill="#b45309">CONTROL PLANE — KRaft controller quorum</text>
+    <g font-size="12.2" fill="#3b2a1a">
+      <rect x="2202" y="62" width="340" height="46" rx="5" fill="#fff" stroke="#b45309"/>
+      <text x="2372" y="82" text-anchor="middle" font-weight="700" fill="#b45309">Controller 1 — ACTIVE</text>
+      <text x="2372" y="99" text-anchor="middle" font-size="11.5">writes the metadata log</text>
+      <rect x="2556" y="62" width="240" height="46" rx="5" fill="#fff" stroke="#c9a06a"/>
+      <text x="2676" y="82" text-anchor="middle" font-weight="700" fill="#8a6220">Controller 2</text>
+      <text x="2676" y="99" text-anchor="middle" font-size="11.5">standby, replicating</text>
+      <rect x="2810" y="62" width="240" height="46" rx="5" fill="#fff" stroke="#c9a06a"/>
+      <text x="2930" y="82" text-anchor="middle" font-weight="700" fill="#8a6220">Controller 3</text>
+      <text x="2930" y="99" text-anchor="middle" font-size="11.5">standby, replicating</text>
+
+      <text x="2202" y="132">Controllers form a <tspan font-weight="700">Raft quorum</tspan>. Run an odd number — 3 tolerates one failure, 5 tolerates two.</text>
+      <text x="2202" y="152">Cluster metadata (topics, partitions, ISR, configs, ACLs) lives in the replicated <tspan font-family="Menlo,monospace">__cluster_metadata</tspan> log.</text>
+      <text x="2202" y="172">Brokers replay that log to build their view — metadata propagation becomes log replication rather than RPC fan-out.</text>
+      <text x="2202" y="196" font-weight="700" fill="#b45309">ActiveControllerCount must sum to exactly 1 across the cluster. Anything else is a split-brain symptom.</text>
+    </g>
+
+    <rect x="2184" y="238" width="1128" height="170" rx="10" fill="#f9fafc" stroke="#c7cbdd" stroke-width="2.5"/>
+    <text x="2202" y="262" font-size="15" font-weight="700" fill="#1f2a63">WHAT THE CONTROLLER OWNS</text>
+    <g font-size="12.2" fill="#2f3a5c">
+      <text x="2202" y="286">▸ Broker registration, liveness and fencing</text>
+      <text x="2202" y="308">▸ Partition leader election, and ISR membership changes</text>
+      <text x="2202" y="330">▸ Topic create / delete, partition reassignment</text>
+      <text x="2202" y="352">▸ Propagating configuration and ACL changes</text>
+      <text x="2202" y="380" font-weight="700" fill="#b91c1c">The controller is not on the data path. Producers and consumers talk to partition leaders directly.</text>
+    </g>
+
+    <!-- ecosystem -->
+    <rect x="8" y="440" width="1822" height="120" rx="9" fill="#eef2f9" stroke="#334155" stroke-width="2.5"/>
+    <text x="26" y="464" font-size="15" font-weight="700" fill="#334155">WHAT IS AND IS NOT PART OF APACHE KAFKA</text>
+    <g font-size="12.4" fill="#2f3a5c">
+      <text x="26" y="488"><tspan font-weight="700" fill="#047857">In Apache Kafka:</tspan> the broker and clients, <tspan font-weight="700">Kafka Connect</tspan> (source/sink integration), <tspan font-weight="700">Kafka Streams</tspan> (a client library, not a cluster), MirrorMaker 2.</text>
+      <text x="26" y="512"><tspan font-weight="700" fill="#b45309">Not in Apache Kafka:</tspan> Schema Registry, ksqlDB, Control Center, and the REST Proxy are Confluent products with their own licences.</text>
+      <text x="26" y="538" font-weight="700" fill="#334155">Kafka Streams runs inside your application process — there is no separate cluster to operate, but its state stores and internal topics are yours to manage.</text>
+    </g>
+
+    <rect x="1862" y="440" width="1450" height="120" rx="9" fill="#f5f0fd" stroke="#b39ae8" stroke-width="2.5"/>
+    <text x="1880" y="464" font-size="15" font-weight="700" fill="#6b21a8">THE DESIGN CHOICE THAT EXPLAINS THE PERFORMANCE</text>
+    <text x="1880" y="488" font-size="12.4" fill="#3b2a52">Kafka writes to an <tspan font-weight="700">append-only log</tspan> and leans on the <tspan font-weight="700">OS page cache</tspan> rather than caching in the JVM heap.</text>
+    <text x="1880" y="512" font-size="12.4" fill="#3b2a52">Consumers reading recent data are served from page cache, so throughput comes from sequential I/O, not from RAM sized in the broker.</text>
+    <text x="1880" y="538" font-size="12.4" font-weight="700" fill="#6b21a8">This is why brokers run a modest heap and leave most system memory to the OS — a large Kafka heap is usually a misconfiguration.</text>
+
+    <rect x="8" y="576" width="3304" height="126" rx="9" fill="#fff7ea" stroke="#e9b669" stroke-width="2.5"/>
+    <text x="26" y="600" font-size="15" font-weight="700" fill="#a35c00">THE FIVE INVARIANTS EVERYTHING ELSE FOLLOWS FROM</text>
+    <g font-size="12.6" fill="#2f3a5c">
+      <text x="26" y="624">1 · <tspan font-weight="700">Ordering exists within a partition only.</tspan> Never across partitions, never across topics.</text>
+      <text x="26" y="646">2 · <tspan font-weight="700">All writes and reads for a partition go through its leader</tspan> — followers replicate by fetching; they do not serve writes.</text>
+      <text x="26" y="668">3 · <tspan font-weight="700">The log is immutable and append-only.</tspan> Compaction and retention delete whole records or segments; nothing is edited in place.</text>
+      <text x="1700" y="624">4 · <tspan font-weight="700">Consumers own their position.</tspan> The broker tracks no per-consumer cursor — offsets are committed data.</text>
+      <text x="1700" y="646">5 · <tspan font-weight="700">Consumers read only up to the high watermark</tspan> — data not yet on all in-sync replicas is invisible to them.</text>
+      <text x="1700" y="672" font-weight="700" fill="#a35c00">Almost every Kafka surprise in production traces back to one of these five being assumed away.</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ THE LOG ============ -->
+<div class="panel c1 span2">
+  <div class="phead">2 &nbsp;· &nbsp;THE LOG — STORAGE MODEL
+    <span class="sub">topic → partition → segment → record batch</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 2196 600" width="2196" height="600">
+    <text x="8" y="24" font-size="14.5" font-weight="700" fill="#1e3a8a">A partition is a sequence of segment files. Only the active segment is written to.</text>
+
+    <rect x="8" y="38" width="2180" height="122" rx="8" fill="#f7f9fd" stroke="#93a3c8" stroke-width="2"/>
+    <g font-size="11.8">
+      <rect x="24" y="54" width="330" height="46" rx="4" fill="#e2e8f0" stroke="#94a3b8"/>
+      <text x="189" y="74" text-anchor="middle" font-weight="700" fill="#475569">segment 00000000000000000000</text>
+      <text x="189" y="92" text-anchor="middle" fill="#64748b">closed · eligible for deletion</text>
+
+      <rect x="366" y="54" width="330" height="46" rx="4" fill="#e2e8f0" stroke="#94a3b8"/>
+      <text x="531" y="74" text-anchor="middle" font-weight="700" fill="#475569">segment 00000000000004829301</text>
+      <text x="531" y="92" text-anchor="middle" fill="#64748b">closed · eligible for compaction</text>
+
+      <rect x="708" y="54" width="330" height="46" rx="4" fill="#e2e8f0" stroke="#94a3b8"/>
+      <text x="873" y="74" text-anchor="middle" font-weight="700" fill="#475569">segment 00000000000009471882</text>
+      <text x="873" y="92" text-anchor="middle" fill="#64748b">closed</text>
+
+      <rect x="1050" y="54" width="360" height="46" rx="4" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="1230" y="74" text-anchor="middle" font-weight="700" fill="#1e3a8a">ACTIVE SEGMENT</text>
+      <text x="1230" y="92" text-anchor="middle" fill="#1e3a8a">being appended · never deleted or compacted</text>
+
+      <text x="1430" y="72" font-size="12.4" fill="#2f3a5c">Each segment on disk is a set of files:</text>
+      <text x="1430" y="92" font-size="12" font-family="Menlo,monospace" fill="#1e3a8a">.log  ·  .index  ·  .timeindex</text>
+      <text x="1430" y="112" font-size="11.6" fill="#6b7391">offset index and timestamp index are <tspan font-weight="700">sparse</tspan></text>
+      <text x="1430" y="130" font-size="11.6" fill="#6b7391">— they bound the scan, they do not map every record</text>
+      <text x="24" y="128" font-size="12.4" fill="#b91c1c" font-weight="700">Retention and compaction only ever act on closed segments. A low-traffic topic with a large segment size can hold data far past retention.ms.</text>
+      <text x="24" y="148" font-size="12.4" fill="#2f3a5c">Roll the active segment sooner with <tspan font-family="Menlo,monospace" font-weight="700">segment.ms</tspan> when prompt expiry matters — regulatory deletion, for instance.</text>
+    </g>
+
+    <text x="8" y="188" font-size="14.5" font-weight="700" fill="#1e3a8a">Offsets and the three markers that govern visibility</text>
+    <rect x="8" y="200" width="2180" height="176" rx="8" fill="#fff" stroke="#93a3c8" stroke-width="2"/>
+    <g font-size="11.8">
+      <rect x="28" y="222" width="1560" height="44" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <g fill="#475569" font-family="Menlo,monospace" font-size="12">
+        <text x="48"  y="250">100</text><text x="148" y="250">101</text><text x="248" y="250">102</text>
+        <text x="348" y="250">103</text><text x="448" y="250">104</text><text x="548" y="250">105</text>
+        <text x="648" y="250">106</text><text x="748" y="250">107</text><text x="848" y="250">108</text>
+        <text x="948" y="250">109</text><text x="1048" y="250">110</text><text x="1148" y="250">111</text>
+        <text x="1248" y="250">112</text><text x="1348" y="250">113</text><text x="1448" y="250">114</text>
+      </g>
+      <line x1="1140" y1="216" x2="1140" y2="272" stroke="#047857" stroke-width="3"/>
+      <text x="1140" y="292" font-size="12.4" font-weight="700" fill="#047857" text-anchor="middle">HIGH WATERMARK</text>
+      <text x="1140" y="308" font-size="11.4" fill="#065f46" text-anchor="middle">replicated to all ISR — consumers may read up to here</text>
+
+      <line x1="1540" y1="216" x2="1540" y2="272" stroke="#1e3a8a" stroke-width="3"/>
+      <text x="1540" y="292" font-size="12.4" font-weight="700" fill="#1e3a8a" text-anchor="middle">LOG END OFFSET</text>
+      <text x="1540" y="308" font-size="11.4" fill="#1e3a8a" text-anchor="middle">last record the leader has written</text>
+
+      <text x="1640" y="238" font-size="12.4" font-weight="700" fill="#b45309">LAST STABLE OFFSET</text>
+      <text x="1640" y="258" font-size="11.8" fill="#78350f">With <tspan font-family="Menlo,monospace">isolation.level=read_committed</tspan>,</text>
+      <text x="1640" y="276" font-size="11.8" fill="#78350f">consumers read only up to the LSO — the offset</text>
+      <text x="1640" y="294" font-size="11.8" fill="#78350f">of the first still-open transaction.</text>
+      <text x="1640" y="316" font-size="11.8" font-weight="700" fill="#b45309">A long transaction stalls read_committed consumers.</text>
+
+      <text x="28" y="340" font-size="12.4" fill="#2f3a5c"><tspan font-weight="700">Records between HW and LEO exist on the leader but are invisible to consumers</tspan> — they are not yet safe, because the leader could fail before followers catch up.</text>
+      <text x="28" y="362" font-size="12.4" fill="#2f3a5c">The offset is a position in a partition, permanently. It is never reused, and it is not a global sequence — offset 104 in partition 0 has no relation to offset 104 in partition 1.</text>
+    </g>
+
+    <text x="8" y="404" font-size="14.5" font-weight="700" fill="#1e3a8a">Retention vs compaction — two different jobs</text>
+    <rect x="8" y="416" width="1080" height="176" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+    <text x="26" y="440" font-size="13.4" font-weight="700" fill="#0f766e">cleanup.policy=delete — a time-bounded buffer</text>
+    <text x="26" y="462" font-size="12.2" fill="#134e4a">Whole segments are removed once every record in them is older than</text>
+    <text x="26" y="482" font-size="12.2" fill="#134e4a"><tspan font-family="Menlo,monospace">retention.ms</tspan>, or the partition exceeds <tspan font-family="Menlo,monospace">retention.bytes</tspan>.</text>
+    <text x="26" y="506" font-size="12.2" fill="#134e4a">Whichever limit is reached first triggers deletion.</text>
+    <text x="26" y="530" font-size="12.2" font-weight="700" fill="#0f766e">Use for: event streams, logs, metrics — anything where old data stops mattering.</text>
+    <text x="26" y="556" font-size="12.2" fill="#134e4a">Consumers that fall behind retention lose data permanently and will</text>
+    <text x="26" y="576" font-size="12.2" fill="#134e4a">reset according to <tspan font-family="Menlo,monospace">auto.offset.reset</tspan>.</text>
+
+    <rect x="1108" y="416" width="1080" height="176" rx="8" fill="#fdf5e8" stroke="#b45309" stroke-width="2"/>
+    <text x="1126" y="440" font-size="13.4" font-weight="700" fill="#b45309">cleanup.policy=compact — a keyed snapshot</text>
+    <text x="1126" y="462" font-size="12.2" fill="#78350f">Retains at least the <tspan font-weight="700">latest value for every key</tspan>, forever. Older values</text>
+    <text x="1126" y="482" font-size="12.2" fill="#78350f">for the same key are removed by the log cleaner.</text>
+    <text x="1126" y="506" font-size="12.2" fill="#78350f">A record with a <tspan font-weight="700">null value is a tombstone</tspan> — it marks the key deleted</text>
+    <text x="1126" y="526" font-size="12.2" fill="#78350f">and is itself removed after <tspan font-family="Menlo,monospace">delete.retention.ms</tspan>.</text>
+    <text x="1126" y="550" font-size="12.2" font-weight="700" fill="#b45309">Use for: changelogs, CDC, current-state tables, configuration.</text>
+    <text x="1126" y="576" font-size="12.2" fill="#b91c1c" font-weight="700">A consumer offline longer than delete.retention.ms can miss a deletion entirely and keep stale state.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ REPLICATION ============ -->
+<div class="panel c2">
+  <div class="phead">3 &nbsp;· &nbsp;REPLICATION &amp; ISR <span class="sub">how durability is actually achieved</span></div>
+  <div class="pbody">
+    <div class="h3">The mechanism</div>
+    <ul>
+      <li>Each partition has one <b>leader</b> and N−1 <b>followers</b>, where N = replication factor</li>
+      <li><b>Replication is pull-based</b> — followers issue fetch requests to the leader exactly as consumers do. The leader does not push</li>
+      <li>A follower is <b>in-sync</b> if it has fetched up to the leader within <span class="val">replica.lag.time.max.ms</span> <span class="def">30000</span></li>
+      <li>The <b>ISR</b> is the set of in-sync replicas, including the leader. It shrinks and grows dynamically</li>
+      <li>The <b>high watermark</b> advances to the lowest log end offset across the ISR — that is what makes a record readable</li>
+    </ul>
+
+    <div class="callout g"><b>This is why acks=all and min.insync.replicas are one mechanism, not two settings.</b>
+      <span class="val">acks=all</span> waits for the ISR; <span class="val">min.insync.replicas</span> defines how
+      small the ISR may become before writes are rejected. Without the second, the first can be satisfied by a
+      single-member ISR.</div>
+
+    <div class="h3">Leader election</div>
+    <table>
+      <thead><tr><th style="width:40%">Situation</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td>Leader fails, ISR non-empty</td><td>Controller promotes an ISR member. No data loss</td></tr>
+        <tr><td>Leader fails, ISR empty,<br><span class="val">unclean=false</span> <span class="def">default</span></td><td>Partition goes <b>offline</b> until an ISR member returns. Consistency over availability</td></tr>
+        <tr><td>Leader fails, ISR empty,<br><span class="val">unclean=true</span></td><td>An out-of-sync replica is promoted. <b>Committed records are silently lost</b></td></tr>
+        <tr><td>Broker returns</td><td><span class="val">auto.leader.rebalance.enable</span> <span class="def">true</span> restores preferred leaders to rebalance load</td></tr>
+      </tbody>
+    </table>
+
+    <div class="h3">Leader epoch</div>
+    <div class="callout"><b>Every leadership change increments a monotonic epoch number</b> (KIP-101). Followers use
+      it to determine exactly where their log diverged from the new leader and truncate correctly. It exists
+      because truncating on the high watermark alone could produce divergent logs across replicas during rapid
+      leadership changes.</div>
+
+    <div class="h3">What to watch</div>
+    <table>
+      <thead><tr><th style="width:52%">Metric</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="k">UnderReplicatedPartitions</td><td>ISR smaller than RF — durability degraded now</td></tr>
+        <tr><td class="k">UnderMinIsrPartitions</td><td>ISR below min.insync.replicas — writes rejected</td></tr>
+        <tr><td class="k">OfflinePartitionsCount</td><td>No leader — data unavailable</td></tr>
+        <tr><td class="k">IsrShrinksPerSec</td><td>Frequent shrink/expand means an overloaded or lagging broker</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>UnderReplicatedPartitions is the single most important broker alert.</b> A sustained
+      non-zero value means you are running with less redundancy than you designed for — and you will find out
+      how much less during the next failure.</div>
+  </div>
+</div>
+
+<!-- ============ WRITE / READ PATH ============ -->
+<div class="panel c3 span2">
+  <div class="phead">4 &nbsp;· &nbsp;WRITE PATH &amp; READ PATH
+    <span class="sub">what actually happens on send() and poll()</span></div>
+  <div class="pbody">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%">
+      <div>
+        <div class="h3">Write — producer to acknowledged</div>
+        <div class="code"><span class="c">1</span> send() appends to an in-memory batch, per partition
+   <span class="c">— returns immediately with a Future</span>
+<span class="c">2</span> batch closes on <span class="p">batch.size</span> or <span class="p">linger.ms</span>, whichever first
+<span class="c">3</span> compression applied <span class="v">to the whole batch</span>
+<span class="c">4</span> sent to the <span class="v">partition leader</span> only
+<span class="c">5</span> leader appends to its log → OS page cache
+   <span class="c">— not fsync'd per record by default</span>
+<span class="c">6</span> followers <span class="v">fetch</span> and append
+<span class="c">7</span> high watermark advances
+<span class="c">8</span> ack returned per <span class="p">acks</span> setting</div>
+        <div class="callout"><b>Kafka does not fsync every record.</b> Durability comes from
+          <b>replication across brokers</b>, not from flushing to disk on each write. This is deliberate — it is
+          why <span class="val">acks</span> and replication factor matter far more than any flush setting, and
+          why <span class="val">log.flush.interval.messages</span> is best left alone.</div>
+        <div class="callout g"><b>Compression is per batch, not per record.</b> So <span class="val">batch.size</span>
+          and <span class="val">linger.ms</span> directly determine the compression ratio you achieve. Fuller
+          batches compress better and cost fewer requests.</div>
+
+        <div class="h3">Idempotent producer internals</div>
+        <ul>
+          <li>Producer is assigned a <b>producer ID</b> and an <b>epoch</b></li>
+          <li>Each record batch carries a <b>sequence number per partition</b></li>
+          <li>The broker rejects a duplicate or out-of-order sequence, so a retried batch is written once</li>
+          <li>This is why <span class="val">max.in.flight ≤ 5</span> is required — the broker tracks a bounded sequence window</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="h3">Read — poll to record</div>
+        <div class="code"><span class="c">1</span> consumer sends a fetch to the <span class="v">partition leader</span>
+   <span class="c">— or a near replica if KIP-392 is configured</span>
+<span class="c">2</span> broker waits for <span class="p">fetch.min.bytes</span>
+   or until <span class="p">fetch.max.wait.ms</span> elapses
+<span class="c">3</span> data is served <span class="v">from the OS page cache</span>
+   when it is recent — sequential, no disk seek
+<span class="c">4</span> batches are returned <span class="v">still compressed</span>
+   <span class="c">— the consumer decompresses</span>
+<span class="c">5</span> consumer reads up to the <span class="v">high watermark</span>
+   <span class="c">— or the LSO under read_committed</span>
+<span class="c">6</span> offsets committed to __consumer_offsets</div>
+
+        <div class="callout p"><b>Zero-copy, and when you lose it.</b> For plaintext connections Kafka can
+          transfer bytes from the page cache to the socket without copying them through the JVM. <b>Enabling
+          TLS removes that optimisation</b>, because the data must be encrypted in user space. TLS is still the
+          right choice in production — but budget for the CPU cost rather than being surprised by it.</div>
+
+        <div class="callout g"><b>The consumer, not the broker, holds the cursor.</b> Nothing in the broker
+          tracks where a given consumer is. That is why replay is trivial — seek to an offset or timestamp and
+          read again — and why an accidental offset reset silently reprocesses or skips data.</div>
+
+        <div class="h3">Fetch sizing</div>
+        <table>
+          <thead><tr><th style="width:48%">Parameter</th><th>Raise it to</th></tr></thead>
+          <tbody>
+            <tr><td class="k">fetch.min.bytes</td><td>Batch more per request, cut broker load, add latency</td></tr>
+            <tr><td class="k">fetch.max.wait.ms</td><td>Bound the latency cost of the above</td></tr>
+            <tr><td class="k">max.partition.fetch.bytes</td><td>Improve throughput per partition</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONSUMER GROUPS ============ -->
+<div class="panel c5">
+  <div class="phead">5 &nbsp;· &nbsp;CONSUMER GROUPS <span class="sub">scaling and coordination</span></div>
+  <div class="pbody">
+    <div class="h3">The assignment rule</div>
+    <ul>
+      <li>Each partition is consumed by <b>exactly one consumer within a group</b></li>
+      <li>A consumer may hold many partitions; a partition is never split across consumers in the same group</li>
+      <li><b>Partition count caps parallelism.</b> Consumers beyond the partition count sit idle</li>
+      <li>Different groups consume the same topic independently, each with its own offsets</li>
+    </ul>
+
+    <div class="h3">Who does what during a rebalance</div>
+    <table>
+      <thead><tr><th style="width:34%">Role</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><b>Group coordinator</b><br><span style="font-size:11.4px;color:#6b7391">a broker</span></td><td>Tracks membership and liveness, and stores committed offsets</td></tr>
+        <tr><td><b>Group leader</b><br><span style="font-size:11.4px;color:#6b7391">one of the consumers</span></td><td><b>Computes the partition assignment</b> and returns it via the coordinator</td></tr>
+      </tbody>
+    </table>
+    <div class="callout p"><b>Assignment is computed client-side.</b> The broker coordinates membership but does
+      not decide who gets which partition — the elected consumer does, using the configured assignor. That is
+      why the assignment strategy is a <i>client</i> setting and why all members of a group must agree on it.</div>
+
+    <div class="h3">Offset storage</div>
+    <div class="callout g"><b>Committed offsets are records in <span class="mono">__consumer_offsets</span></b>,
+      a compacted internal topic keyed by (group, topic, partition). Compaction keeps the latest commit per key,
+      so the topic stays bounded no matter how long the group runs.</div>
+
+    <div class="h3">Delivery semantics follow from commit order</div>
+    <table>
+      <thead><tr><th style="width:40%">Order</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Commit <b>before</b> processing</td><td><b>At-most-once</b> — crash loses the record</td></tr>
+        <tr><td>Commit <b>after</b> processing</td><td><b>At-least-once</b> — crash reprocesses it</td></tr>
+        <tr><td>Commit <b>inside a transaction</b></td><td><b>Exactly-once</b> within Kafka</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Auto-commit gives you neither reliably.</b> It commits on a timer, independent of
+      whether your processing finished — so a crash can lose records the group believes were consumed. Disable
+      it wherever loss is unacceptable and commit explicitly after the work succeeds.</div>
+  </div>
+</div>
+
+<!-- ============ DURABILITY MODEL ============ -->
+<div class="panel c0 span3">
+  <div class="phead">6 &nbsp;· &nbsp;THE DURABILITY MODEL
+    <span class="sub">three settings decide whether you can lose data — and they only work together</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 430" width="3320" height="430">
+    <rect x="8" y="8" width="1080" height="242" rx="9" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="32" font-size="15" font-weight="700" fill="#1e3a8a">acks — how many replicas must confirm</text>
+    <g font-size="12.2">
+      <rect x="26" y="44" width="1044" height="42" rx="4" fill="#fff" stroke="#c7cbdd"/>
+      <text x="38" y="62" font-family="Menlo,monospace" font-weight="700" fill="#b91c1c">acks=0</text>
+      <text x="120" y="62" fill="#2f3a5c">fire and forget — silent loss on any failure. Metrics only</text>
+      <text x="38" y="79" fill="#7f1d1d" font-size="11.6">The producer does not even wait for a network-level response.</text>
+
+      <rect x="26" y="92" width="1044" height="42" rx="4" fill="#fff" stroke="#c7cbdd"/>
+      <text x="38" y="110" font-family="Menlo,monospace" font-weight="700" fill="#a35c00">acks=1</text>
+      <text x="120" y="110" fill="#2f3a5c">leader confirms — loses data if the leader fails before replication</text>
+      <text x="38" y="127" fill="#78350f" font-size="11.6">Acceptable for telemetry where a dropped sample costs nothing.</text>
+
+      <rect x="26" y="140" width="1044" height="56" rx="4" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+      <text x="38" y="158" font-family="Menlo,monospace" font-weight="700" fill="#047857">acks=all (-1)</text>
+      <text x="164" y="158" fill="#2f3a5c">all <tspan font-style="italic">in-sync</tspan> replicas confirm</text>
+      <text x="330" y="158" font-size="10.4" font-weight="700" fill="#92400e">DEFAULT SINCE 3.0</text>
+      <text x="38" y="176" fill="#065f46" font-size="11.8">No loss while min.insync.replicas remain. Costs one replication round trip.</text>
+    </g>
+    <text x="26" y="220" font-size="12.4" font-weight="700" fill="#b91c1c">acks=all alone is not enough — "all in-sync replicas" can mean one replica.</text>
+    <text x="26" y="240" font-size="12.2" fill="#2f3a5c">It is a floor on <tspan font-style="italic">who confirms</tspan>, not on <tspan font-style="italic">how many exist</tspan>. The floor is set by min.insync.replicas.</text>
+
+    <rect x="1108" y="8" width="1080" height="242" rx="9" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1126" y="32" font-size="15" font-weight="700" fill="#0f766e">min.insync.replicas — the ISR floor</text>
+    <g font-size="12.2">
+      <rect x="1126" y="44" width="1044" height="30" rx="4" fill="#fef2f2" stroke="#e8a3a3"/>
+      <text x="1138" y="64" font-family="Menlo,monospace" font-weight="700" fill="#b91c1c">=1</text>
+      <text x="1200" y="64" fill="#7f1d1d">acks=all silently degrades to acks=1 whenever followers lag</text>
+      <rect x="1126" y="80" width="1044" height="30" rx="4" fill="#ecfdf5" stroke="#6ee7b7"/>
+      <text x="1138" y="100" font-family="Menlo,monospace" font-weight="700" fill="#047857">=2</text>
+      <text x="1200" y="100" fill="#065f46">With RF=3: survives one broker loss and remains writable</text>
+      <rect x="1126" y="116" width="1044" height="30" rx="4" fill="#fff7ea" stroke="#e9b669"/>
+      <text x="1138" y="136" font-family="Menlo,monospace" font-weight="700" fill="#a35c00">=3</text>
+      <text x="1200" y="136" fill="#78350f">With RF=3: any single broker loss stops all writes</text>
+    </g>
+    <text x="1126" y="172" font-size="13" font-weight="700" fill="#0f766e">Set min.insync.replicas = RF − 1</text>
+    <text x="1126" y="194" font-size="12.2" fill="#134e4a">That tolerates one failure while staying writable. Setting it equal to RF trades all</text>
+    <text x="1126" y="214" font-size="12.2" fill="#134e4a">availability for no additional durability.</text>
+    <text x="1126" y="238" font-size="12.2" font-weight="700" fill="#b91c1c">A rejected write is NotEnoughReplicasException — the producer sees it and can retry.</text>
+
+    <rect x="2208" y="8" width="1104" height="242" rx="9" fill="#f9fafc" stroke="#c7cbdd" stroke-width="2.5"/>
+    <text x="2226" y="32" font-size="15" font-weight="700" fill="#1f2a63">What each combination gives you</text>
+    <g font-size="12">
+      <rect x="2226" y="44" width="1068" height="24" rx="3" fill="#e0e5f5"/>
+      <text x="2236" y="61" font-weight="700" fill="#1f2a63">RF · min.isr · acks</text>
+      <text x="2540" y="61" font-weight="700" fill="#1f2a63">Broker losses tolerated</text>
+      <text x="2900" y="61" font-weight="700" fill="#1f2a63">Verdict</text>
+      <text x="2236" y="86" font-family="Menlo,monospace" fill="#b91c1c">1 · 1 · 1</text>
+      <text x="2540" y="86" fill="#2f3a5c">none</text><text x="2900" y="86" fill="#b91c1c">Dev only</text>
+      <text x="2236" y="110" font-family="Menlo,monospace" fill="#a35c00">3 · 1 · all</text>
+      <text x="2540" y="110" fill="#2f3a5c">2 (writes) — but data at risk</text><text x="2900" y="110" fill="#a35c00">False safety</text>
+      <text x="2236" y="134" font-family="Menlo,monospace" fill="#047857">3 · 2 · all</text>
+      <text x="2540" y="134" fill="#2f3a5c">1</text><text x="2900" y="134" font-weight="700" fill="#047857">Production standard</text>
+      <text x="2236" y="158" font-family="Menlo,monospace" fill="#a35c00">3 · 3 · all</text>
+      <text x="2540" y="158" fill="#2f3a5c">0 — writes stop</text><text x="2900" y="158" fill="#a35c00">Over-tight</text>
+      <text x="2236" y="182" font-family="Menlo,monospace" fill="#047857">5 · 3 · all</text>
+      <text x="2540" y="182" fill="#2f3a5c">2</text><text x="2900" y="182" fill="#047857">Critical / multi-AZ</text>
+    </g>
+    <rect x="2226" y="196" width="1068" height="44" rx="5" fill="#ecfdf5" stroke="#6ee7b7"/>
+    <text x="2238" y="214" font-size="12" fill="#065f46"><tspan font-family="Menlo,monospace" font-weight="700">broker.rack</tspan> spreads replicas across AZs. Separately,</text>
+    <text x="2238" y="232" font-size="12" fill="#065f46"><tspan font-family="Menlo,monospace" font-weight="700">replica.selector.class</tspan> (KIP-392) lets consumers fetch from a near replica to cut cross-AZ egress.</text>
+
+    <rect x="8" y="264" width="1640" height="158" rx="9" fill="#fff7ea" stroke="#e9b669" stroke-width="2.5"/>
+    <text x="26" y="288" font-size="14.5" font-weight="700" fill="#a35c00">IDEMPOTENCE &amp; ORDERING</text>
+    <text x="26" y="312" font-size="12.4" fill="#2f3a5c"><tspan class="k">enable.idempotence=true</tspan> is default from 3.0 and requires acks=all, retries&gt;0, and max.in.flight ≤ 5 — the client enforces this.</text>
+    <text x="26" y="334" font-size="12.4" fill="#2f3a5c">It removes duplicates caused by <tspan font-weight="700">producer retries</tspan> only. It does not make a multi-step pipeline exactly-once; that needs transactions.</text>
+    <text x="26" y="358" font-size="12.4" fill="#2f3a5c">Ordering is guaranteed <tspan font-weight="700">within a partition</tspan>. Same key ⇒ same partition ⇒ ordered. With idempotence off and max.in.flight&gt;1, a retry can reorder.</text>
+    <text x="26" y="382" font-size="12.4" font-weight="700" fill="#b91c1c">Adding partitions later changes the key→partition mapping and breaks ordering for existing keys. Partition count cannot be reduced. Size it up front.</text>
+    <text x="26" y="406" font-size="12.4" fill="#2f3a5c">Choose the partition key to match the ordering requirement — and check its cardinality, or one key becomes a hot partition.</text>
+
+    <rect x="1668" y="264" width="1644" height="158" rx="9" fill="#f9fafc" stroke="#c7cbdd" stroke-width="2.5"/>
+    <text x="1686" y="288" font-size="14.5" font-weight="700" fill="#1f2a63">TIMEOUT HIERARCHY — set these consistently or the client behaves unpredictably</text>
+    <text x="1686" y="312" font-size="12.4" fill="#2f3a5c"><tspan class="k">delivery.timeout.ms</tspan> <tspan class="def">120000</tspan> — total budget from send() to success or failure. Must be ≥ request.timeout.ms + linger.ms.</text>
+    <text x="1686" y="336" font-size="12.4" fill="#2f3a5c"><tspan class="k">request.timeout.ms</tspan> <tspan class="def">30000</tspan> — wait for one broker response before retrying.</text>
+    <text x="1686" y="360" font-size="12.4" fill="#2f3a5c"><tspan class="k">max.block.ms</tspan> <tspan class="def">60000</tspan> — how long send() blocks when the buffer is full or metadata is missing.</text>
+    <text x="1686" y="386" font-size="12.4" font-weight="700" fill="#b91c1c">retries defaults to Integer.MAX_VALUE, so the retry count bounds nothing. delivery.timeout.ms is the real deadline — tune that.</text>
+    <text x="1686" y="410" font-size="12.4" fill="#2f3a5c">On the consumer side the equivalent trap is max.poll.interval.ms — see panel 10.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ PRODUCER ============ -->
+<div class="panel c1">
+  <div class="phead">7 &nbsp;· &nbsp;PRODUCER CONFIG <span class="sub">client-side</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:33%">Parameter</th><th style="width:28%">Values</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="k">acks</td><td class="val">0 · 1 · <span class="def">all</span> <span class="chg">3.0</span></td><td>Durability vs latency</td></tr>
+        <tr><td class="k">enable.idempotence</td><td class="val"><span class="def">true</span> <span class="chg">3.0</span> · false</td><td>De-duplicates producer retries</td></tr>
+        <tr><td class="k">compression.type</td><td class="val"><span class="def">none</span> · gzip · snappy<br>· lz4 · zstd</td><td>Applied per batch — interacts with batch.size</td></tr>
+        <tr><td class="k">batch.size</td><td class="val"><span class="def">16384</span> bytes</td><td>Max bytes per partition batch</td></tr>
+        <tr><td class="k">linger.ms</td><td class="val"><span class="def">0</span> · 5–100 typical</td><td>Wait to fill a batch. <b>Biggest throughput lever</b></td></tr>
+        <tr><td class="k">buffer.memory</td><td class="val"><span class="def">33554432</span> (32 MB)</td><td>Client send buffer; exhaustion blocks up to max.block.ms</td></tr>
+        <tr><td class="k">max.in.flight.requests<br>.per.connection</td><td class="val"><span class="def">5</span> · 1</td><td>&gt;5 rejected with idempotence enabled</td></tr>
+        <tr><td class="k">retries</td><td class="val"><span class="def">2147483647</span></td><td>Effectively infinite; bounded by delivery.timeout.ms</td></tr>
+        <tr><td class="k">delivery.timeout.ms</td><td class="val"><span class="def">120000</span></td><td>The real end-to-end send deadline</td></tr>
+        <tr><td class="k">max.request.size</td><td class="val"><span class="def">1048576</span> (1 MB)</td><td>Must align with topic max.message.bytes</td></tr>
+        <tr><td class="k">transactional.id</td><td class="val">null · unique string</td><td>Enables transactions; implies idempotence</td></tr>
+        <tr><td class="k">partitioner.class</td><td class="val"><span class="def">null</span></td><td>Built-in partitioning; sticky batching for null keys</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>linger.ms=0 does not minimise latency under load.</b> It produces many small requests,
+      which increases queueing and broker work. A small linger often <i>reduces</i> end-to-end latency at high
+      throughput while improving compression. <span class="chg">TUNE</span></div>
+    <div class="callout g"><b>Compression choice.</b> <span class="val">lz4</span> and <span class="val">snappy</span>
+      favour speed; <span class="val">zstd</span> gives the best ratio at higher CPU. Set it on the producer;
+      the topic-level default <span class="val">producer</span> means "keep whatever the producer sent" and
+      avoids a broker-side recompression cost.</div>
+  </div>
+</div>
+
+<!-- ============ CONSUMER ============ -->
+<div class="panel c2">
+  <div class="phead">8 &nbsp;· &nbsp;CONSUMER CONFIG <span class="sub">client-side</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:34%">Parameter</th><th style="width:27%">Values</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="k">enable.auto.commit</td><td class="val"><span class="def">true</span> · false</td><td>Commits on a timer, not on completion</td></tr>
+        <tr><td class="k">auto.commit.interval.ms</td><td class="val"><span class="def">5000</span></td><td>How often the timer fires</td></tr>
+        <tr><td class="k">auto.offset.reset</td><td class="val">earliest · <span class="def">latest</span> · none</td><td>Only used with no committed offset. <b>latest skips backlog</b></td></tr>
+        <tr><td class="k">isolation.level</td><td class="val"><span class="def">read_uncommitted</span><br>· read_committed</td><td>read_committed reads only to the LSO</td></tr>
+        <tr><td class="k">max.poll.records</td><td class="val"><span class="def">500</span></td><td>Main control on processing time per loop</td></tr>
+        <tr><td class="k">max.poll.interval.ms</td><td class="val"><span class="def">300000</span> (5 min)</td><td>Exceed it and the consumer leaves the group</td></tr>
+        <tr><td class="k">session.timeout.ms</td><td class="val"><span class="def">45000</span> <span class="chg">3.0</span></td><td>Heartbeat liveness window</td></tr>
+        <tr><td class="k">heartbeat.interval.ms</td><td class="val"><span class="def">3000</span></td><td>Keep near one third of session.timeout.ms</td></tr>
+        <tr><td class="k">fetch.min.bytes</td><td class="val"><span class="def">1</span></td><td>Raise to batch fetches, cut broker load</td></tr>
+        <tr><td class="k">fetch.max.wait.ms</td><td class="val"><span class="def">500</span></td><td>Latency bound on fetch.min.bytes</td></tr>
+        <tr><td class="k">max.partition.fetch.bytes</td><td class="val"><span class="def">1048576</span></td><td><b>Soft limit</b> — an oversized first batch is still returned, so the consumer cannot stall (KIP-74)</td></tr>
+        <tr><td class="k">partition.assignment<br>.strategy</td><td class="val"><span class="def">[Range,<br>CooperativeSticky]</span> <span class="chg">3.0</span><br>· RoundRobin · Sticky</td><td>Cooperative avoids stop-the-world rebalances</td></tr>
+        <tr><td class="k">group.instance.id</td><td class="val">null · unique string</td><td>Static membership — no rebalance on brief restart</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The default that causes the most data-integrity bugs.</b> Auto-commit advances
+      offsets on a timer regardless of whether processing finished. A crash between the commit and completion
+      loses those records permanently — Kafka believes they were consumed.</div>
+  </div>
+</div>
+
+<!-- ============ TOPIC / BROKER ============ -->
+<div class="panel c4">
+  <div class="phead">9 &nbsp;· &nbsp;TOPIC &amp; BROKER CONFIG <span class="sub">server-side</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:33%">Parameter</th><th style="width:27%">Values</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="k">cleanup.policy</td><td class="val"><span class="def">delete</span> · compact<br>· compact,delete</td><td>Time/size deletion vs latest-per-key</td></tr>
+        <tr><td class="k">retention.ms</td><td class="val"><span class="def">604800000</span> (7d)<br>· -1 = never</td><td>Ignored under pure compaction</td></tr>
+        <tr><td class="k">retention.bytes</td><td class="val"><span class="def">-1</span></td><td>Per-partition cap; first limit hit wins</td></tr>
+        <tr><td class="k">segment.bytes</td><td class="val"><span class="def">1073741824</span> (1 GB)</td><td>Deletion and compaction act on closed segments only</td></tr>
+        <tr><td class="k">segment.ms</td><td class="val"><span class="def">604800000</span> (7d)</td><td>Force a roll by time — lower for prompt expiry</td></tr>
+        <tr><td class="k">min.insync.replicas</td><td class="val"><span class="def">1</span> · <b>2 in production</b></td><td>Only meaningful with acks=all</td></tr>
+        <tr><td class="k">unclean.leader.election<br>.enable</td><td class="val"><span class="def">false</span> · true</td><td>true permits data loss to regain availability</td></tr>
+        <tr><td class="k">max.message.bytes</td><td class="val"><span class="def">1048588</span></td><td>Exceeded ⇒ broker rejects with RecordTooLargeException</td></tr>
+        <tr><td class="k">min.cleanable.dirty.ratio</td><td class="val"><span class="def">0.5</span></td><td>How dirty before the cleaner runs</td></tr>
+        <tr><td class="k">delete.retention.ms</td><td class="val"><span class="def">86400000</span> (24h)</td><td>Tombstone lifetime — consumers must read within it</td></tr>
+        <tr><td class="k">num.partitions</td><td class="val"><span class="def">1</span></td><td>Default for auto-created topics — set explicitly</td></tr>
+        <tr><td class="k">replica.lag.time.max.ms</td><td class="val"><span class="def">30000</span></td><td>Lag before a follower leaves the ISR</td></tr>
+        <tr><td class="k">message.timestamp.type</td><td class="val"><span class="def">CreateTime</span><br>· LogAppendTime</td><td>Producer clock vs broker clock</td></tr>
+        <tr><td class="k">auto.create.topics.enable</td><td class="val"><span class="def">true</span> · <b>false in prod</b></td><td>true turns typos into permanent topics</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Internal topics need production settings too.</b>
+      <span class="val">offsets.topic.replication.factor</span> and
+      <span class="val">transaction.state.log.replication.factor</span> default to 3, but single-broker dev
+      setups often lower them — and that value persists if the topic was created before the cluster grew.</div>
+  </div>
+</div>
+
+<!-- ============ PROFILE MATRIX ============ -->
+<div class="panel c4 span3">
+  <div class="phead">10 &nbsp;· &nbsp;CONFIGURATION PROFILES BY USE CASE
+    <span class="sub">the same parameters set six ways — start from the closest column, then load-test</span></div>
+  <div class="pbody" style="padding:9px 12px">
+    <table class="mx">
+      <thead>
+        <tr>
+          <th style="width:15%">Parameter</th>
+          <th class="A" style="width:14.1%">A · FINANCIAL<br><span style="font-weight:400">orders, payments — no loss</span></th>
+          <th class="B" style="width:14.1%">B · HIGH THROUGHPUT<br><span style="font-weight:400">logs, metrics, IoT telemetry</span></th>
+          <th class="C" style="width:14.1%">C · LOW LATENCY<br><span style="font-weight:400">alerts, real-time decisioning</span></th>
+          <th class="D" style="width:14.1%">D · EXACTLY-ONCE<br><span style="font-weight:400">stream processing pipelines</span></th>
+          <th class="E" style="width:14.1%">E · COMPACTED STATE<br><span style="font-weight:400">CDC, changelog, config</span></th>
+          <th class="F" style="width:14.1%">F · EVENT STORE<br><span style="font-weight:400">replay, audit, sourcing</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="lbl">acks</td><td class="A">all</td><td class="B">1</td><td class="C">1</td><td class="D">all</td><td class="E">all</td><td class="F">all</td></tr>
+        <tr><td class="lbl">enable.idempotence</td><td class="A">true</td><td class="B">true</td><td class="C">true</td><td class="D">true <i>(implied)</i></td><td class="E">true</td><td class="F">true</td></tr>
+        <tr><td class="lbl">compression.type</td><td class="A">lz4</td><td class="B">zstd</td><td class="C">none / lz4</td><td class="D">lz4</td><td class="E">zstd</td><td class="F">zstd</td></tr>
+        <tr><td class="lbl">batch.size</td><td class="A">32768</td><td class="B">262144+</td><td class="C">16384</td><td class="D">32768</td><td class="E">65536</td><td class="F">131072</td></tr>
+        <tr><td class="lbl">linger.ms</td><td class="A">5–10</td><td class="B">50–100</td><td class="C">0–2</td><td class="D">5–10</td><td class="E">20–50</td><td class="F">50–100</td></tr>
+        <tr><td class="lbl">transactional.id</td><td class="A">optional</td><td class="B">—</td><td class="C">—</td><td class="D"><b>required</b></td><td class="E">optional</td><td class="F">—</td></tr>
+        <tr><td class="lbl">replication.factor</td><td class="A"><b>3</b></td><td class="B">2–3</td><td class="C">3</td><td class="D"><b>3</b></td><td class="E"><b>3</b></td><td class="F"><b>3</b></td></tr>
+        <tr><td class="lbl">min.insync.replicas</td><td class="A"><b>2</b></td><td class="B">1</td><td class="C">2</td><td class="D"><b>2</b></td><td class="E"><b>2</b></td><td class="F"><b>2</b></td></tr>
+        <tr><td class="lbl">unclean.leader.election</td><td class="A">false</td><td class="B">true <i>(tolerable)</i></td><td class="C">false</td><td class="D">false</td><td class="E">false</td><td class="F">false</td></tr>
+        <tr><td class="lbl">cleanup.policy</td><td class="A">delete</td><td class="B">delete</td><td class="C">delete</td><td class="D">delete</td><td class="E"><b>compact</b></td><td class="F">delete <i>(long)</i></td></tr>
+        <tr><td class="lbl">retention.ms</td><td class="A">7–30 d</td><td class="B">1–7 d</td><td class="C">hours–1 d</td><td class="D">7 d</td><td class="E">n/a <i>(compact)</i></td><td class="F">-1 <i>or years</i></td></tr>
+        <tr><td class="lbl">segment.ms / bytes</td><td class="A">default</td><td class="B">large</td><td class="C">small</td><td class="D">default</td><td class="E">small <i>(compaction)</i></td><td class="F">large</td></tr>
+        <tr><td class="lbl">enable.auto.commit</td><td class="A"><b>false</b></td><td class="B">true</td><td class="C">true</td><td class="D"><b>false</b> <i>(EOS)</i></td><td class="E"><b>false</b></td><td class="F"><b>false</b></td></tr>
+        <tr><td class="lbl">isolation.level</td><td class="A">read_committed</td><td class="B">read_uncommitted</td><td class="C">read_uncommitted</td><td class="D"><b>read_committed</b></td><td class="E">read_committed</td><td class="F">read_committed</td></tr>
+        <tr><td class="lbl">auto.offset.reset</td><td class="A">earliest</td><td class="B">latest</td><td class="C">latest</td><td class="D">earliest</td><td class="E">earliest</td><td class="F">earliest</td></tr>
+        <tr><td class="lbl">max.poll.records</td><td class="A">100–500</td><td class="B">500–2000</td><td class="C">1–50</td><td class="D">100–500</td><td class="E">500</td><td class="F">500–2000</td></tr>
+        <tr><td class="lbl">processing.guarantee<br><span style="font-weight:400;font-size:10.4px">Kafka Streams</span></td><td class="A">at_least_once</td><td class="B">at_least_once</td><td class="C">at_least_once</td><td class="D"><b>exactly_once_v2</b></td><td class="E">exactly_once_v2</td><td class="F">at_least_once</td></tr>
+        <tr><td class="lbl">Partition key</td><td class="A">entity id <i>(ordering)</i></td><td class="B">null <i>(spread)</i></td><td class="C">entity id</td><td class="D">join key</td><td class="E"><b>primary key</b></td><td class="F">aggregate id</td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:8px">
+      <div class="callout g" style="margin-top:0"><b>Read the columns, not the cells.</b> Column A works only
+        because acks, min.insync.replicas, RF, unclean election and manual commit are all aligned. Change one in
+        isolation and the guarantee disappears without any error.</div>
+      <div class="callout" style="margin-top:0"><b>Starting points, not answers.</b> Batch, linger and poll
+        values depend on message size, throughput and hardware. Take the nearest column, load-test with
+        <i>your</i> payloads, then change one variable at a time. <span class="chg">TUNE</span></div>
+      <div class="callout p" style="margin-top:0"><b>Column B accepts loss deliberately.</b> acks=1, min.isr=1
+        and unclean election are right for telemetry where a missing sample costs nothing. Write that reasoning
+        down — otherwise it gets copied into a workload where it is wrong.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LIVENESS ============ -->
+<div class="panel c5">
+  <div class="phead">11 &nbsp;· &nbsp;GROUP LIVENESS <span class="sub">where consumers actually break</span></div>
+  <div class="pbody">
+    <div class="h3">Two independent liveness checks</div>
+    <table>
+      <thead><tr><th style="width:38%">Mechanism</th><th>Fails when</th></tr></thead>
+      <tbody>
+        <tr><td class="k">session.timeout.ms<br><span style="font-weight:400;color:#6b7391">background heartbeat thread</span></td><td>Process dies or the network partitions — <b>heartbeats stop</b></td></tr>
+        <tr><td class="k">max.poll.interval.ms<br><span style="font-weight:400;color:#6b7391">the poll loop</span></td><td>Process alive but <b>stuck processing</b>; poll() not called again in time</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The classic production failure.</b> Processing slows, one poll cycle exceeds
+      <span class="val">max.poll.interval.ms</span>, the consumer is evicted, the group rebalances, partitions
+      move to another instance that is also slow, and it repeats. The group spends its time rebalancing instead
+      of consuming while lag grows — and no component reports an error.</div>
+
+    <div class="h3">The fix, in order of preference</div>
+    <ul>
+      <li><b>Reduce <span class="val">max.poll.records</span></b> so each loop finishes well inside the interval</li>
+      <li><b>Move slow work off the poll thread</b> to a bounded worker pool, with pause/resume for backpressure</li>
+      <li><b>Raise <span class="val">max.poll.interval.ms</span></b> only once you know the real processing-time distribution — it delays detection of genuinely stuck consumers</li>
+      <li><b>Adopt <span class="val">CooperativeStickyAssignor</span></b> so rebalances stop being stop-the-world</li>
+      <li><b>Set <span class="val">group.instance.id</span></b> so restarts inside the session window skip rebalancing</li>
+    </ul>
+
+    <div class="h3">Eager vs cooperative</div>
+    <table>
+      <thead><tr><th style="width:32%">Protocol</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b>Eager</b><br><span style="font-size:11.4px;color:#6b7391">Range, RoundRobin</span></td><td>Every consumer revokes <i>all</i> partitions, then reassigns — the whole group stops</td></tr>
+        <tr><td><b>Cooperative</b><br><span style="font-size:11.4px;color:#6b7391">CooperativeSticky</span></td><td>Only partitions that must move are revoked; the rest keep consuming</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Migrating between protocols needs a documented two-step rolling upgrade</b> — the
+      group must not contain members using incompatible protocols simultaneously. Check the procedure for your
+      client version rather than switching in place.</div>
+  </div>
+</div>
+
+<!-- ============ EOS ============ -->
+<div class="panel c6">
+  <div class="phead">12 &nbsp;· &nbsp;EXACTLY-ONCE <span class="sub">scope and cost</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:34%">Level</th><th>Guarantee</th></tr></thead>
+      <tbody>
+        <tr><td><b>At-most-once</b></td><td>Commit before processing. Loss on crash, never duplicates</td></tr>
+        <tr><td><b>At-least-once</b><br><span style="font-size:11.4px;color:#6b7391">the common default</span></td><td>Commit after processing. Duplicates on crash, never loss</td></tr>
+        <tr><td><b>Idempotent producer</b></td><td>Removes duplicates from <i>producer retries</i> only</td></tr>
+        <tr><td><b>Transactional</b></td><td>Atomic across consume → process → produce, including offsets</td></tr>
+      </tbody>
+    </table>
+
+    <div class="h3">What a transaction spans</div>
+    <div class="code"><span class="c">// the atomic unit: output records AND the offsets</span>
+producer.initTransactions()
+producer.beginTransaction()
+  producer.send(outputRecord)          <span class="c">// 1..n topics</span>
+  producer.sendOffsetsToTransaction(    <span class="c">// consumed pos.</span>
+      offsets, consumerGroupMetadata)
+producer.commitTransaction()
+<span class="c">// consumers must set isolation.level=read_committed</span></div>
+    <div class="callout p"><b>Committing offsets inside the transaction is the whole mechanism.</b> Output and
+      consumption progress succeed or fail together, closing the gap that makes at-least-once produce
+      duplicates. The coordinator writes commit or abort markers into the affected partitions.</div>
+
+    <div class="h3">The boundary that gets misunderstood</div>
+    <div class="callout r"><b>Exactly-once applies within Kafka.</b> It covers Kafka topics in, processing, and
+      Kafka topics out — atomically. It does <b>not</b> extend to an external database, a payment API, or an
+      email send. Those need idempotency keys on your side.</div>
+
+    <div class="h3">Costs</div>
+    <ul>
+      <li>Extra coordination round trips — throughput falls relative to at-least-once</li>
+      <li>Consumers see records only at commit boundaries, so <b>latency rises with transaction size</b></li>
+      <li>An open transaction holds the LSO back, stalling <span class="val">read_committed</span> consumers</li>
+      <li>Kafka Streams under <span class="val">exactly_once_v2</span> commits far more frequently by default, trading throughput for shorter latency</li>
+    </ul>
+    <div class="callout"><b>Ask whether you need it.</b> Many pipelines are simpler and cheaper with
+      at-least-once plus a consumer made idempotent on a business key.</div>
+  </div>
+</div>
+
+<!-- ============ ANTI-PATTERNS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">13 &nbsp;· &nbsp;MISCONFIGURATIONS THAT REACH PRODUCTION
+    <span class="sub">each individually reasonable — wrong only in combination, and Kafka does not warn you</span></div>
+  <div class="pbody">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%">
+      <table>
+        <thead><tr><th style="width:38%">Configuration</th><th>What actually happens</th></tr></thead>
+        <tbody>
+          <tr><td><b>acks=all with min.isr=1</b></td><td>Reads as maximum durability; degrades to acks=1 whenever followers lag. Loss with no error</td></tr>
+          <tr><td><b>min.isr = RF</b></td><td>Any single broker restart stops all writes to the topic</td></tr>
+          <tr><td><b>Auto-commit with slow processing</b></td><td>Offsets advance past records never processed. Silent loss</td></tr>
+          <tr><td><b>auto.offset.reset=latest on a new consumer</b></td><td>Skips the entire existing backlog on first start — and looks like it worked</td></tr>
+          <tr><td><b>Adding partitions to a keyed topic</b></td><td>Key→partition mapping changes; ordering breaks for existing keys</td></tr>
+          <tr><td><b>Partition count sized to today</b></td><td>Cannot be reduced; growing it later breaks keyed ordering</td></tr>
+          <tr><td><b>producer max.request.size &gt; topic max.message.bytes</b></td><td>Broker rejects with RecordTooLargeException — surfaces at the producer, long after the topic was set up</td></tr>
+          <tr><td><b>Tuning retries instead of delivery.timeout.ms</b></td><td>retries is effectively infinite by default; the timeout is the real deadline</td></tr>
+        </tbody>
+      </table>
+      <div>
+        <table>
+          <thead><tr><th style="width:38%">Configuration</th><th>What actually happens</th></tr></thead>
+          <tbody>
+            <tr><td><b>Compaction without tombstone awareness</b></td><td>Consumers offline beyond delete.retention.ms miss deletions and keep stale state</td></tr>
+            <tr><td><b>Large segments on a low-volume topic</b></td><td>Data retained far past retention.ms; regulatory deletion silently misses</td></tr>
+            <tr><td><b>Internal topics left at dev settings</b></td><td>__consumer_offsets at RF=1 — a broker loss loses committed offsets</td></tr>
+            <tr><td><b>One giant consumer group</b></td><td>Every deployment triggers a full rebalance under an eager assignor</td></tr>
+            <tr><td><b>Consumers &gt; partitions</b></td><td>Surplus consumers idle; partition count caps parallelism</td></tr>
+            <tr><td><b>linger.ms=0 chasing latency</b></td><td>Tiny requests, more round trips, worse compression — often higher latency at load</td></tr>
+            <tr><td><b>Large JVM heap on brokers</b></td><td>Starves the page cache Kafka actually depends on</td></tr>
+            <tr><td><b>PLAINTEXT "for now"</b></td><td>Unknown clients accumulate; retrofitting auth becomes a migration</td></tr>
+          </tbody>
+        </table>
+        <div class="callout g"><b>The two irreversible decisions.</b> <b>Partition count</b> — increasable but
+          never decreasable, and increasing it breaks keyed ordering. <b>Partition key</b> — determines ordering
+          and downstream skew; changing it means reprocessing. Everything else on this sheet can be changed
+          later. These two deserve a design review.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECURITY / SIZING ============ -->
+<div class="panel c1">
+  <div class="phead">14 &nbsp;· &nbsp;SECURITY, QUOTAS &amp; SIZING <span class="sub">access and capacity</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:36%">Parameter</th><th>Values</th></tr></thead>
+      <tbody>
+        <tr><td class="k">security.protocol</td><td class="val"><span class="def">PLAINTEXT</span> · SSL · SASL_PLAINTEXT · <b>SASL_SSL</b></td></tr>
+        <tr><td class="k">sasl.mechanism</td><td class="val">PLAIN · SCRAM-SHA-256 · <b>SCRAM-SHA-512</b> · GSSAPI · OAUTHBEARER</td></tr>
+        <tr><td class="k">ssl.endpoint.identification<br>.algorithm</td><td class="val"><span class="def">https</span> — empty disables hostname verification. <b>Do not.</b></td></tr>
+        <tr><td class="k">ssl.client.auth</td><td class="val"><span class="def">none</span> · requested · required (mTLS)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>PLAINTEXT is the default: no encryption, no authentication.</b> Any client that can
+      reach the port can read and write every topic. Note also that <b>TLS disables the zero-copy path</b>, so
+      budget CPU for it — but do enable it.</div>
+    <div class="h3">ACLs and quotas</div>
+    <ul>
+      <li>Producers need <b>Write</b> on the topic; transactional producers also need Write on the <b>TransactionalId</b></li>
+      <li>Consumers need <b>Read</b> on the topic <b>and</b> on the consumer group</li>
+      <li><span class="k">producer_byte_rate</span> / <span class="k">consumer_byte_rate</span> / <span class="k">request_percentage</span> <b>throttle rather than reject</b> — a misbehaving client slows down instead of taking the cluster with it</li>
+    </ul>
+
+    <div class="h3">Sizing</div>
+    <div class="code"><span class="c"># partitions: satisfy both bounds</span>
+partitions ≥ throughput / per_partition_rate
+partitions ≥ peak_consumer_instances
+
+<span class="c"># storage</span>
+bytes ≈ rate × avg_size × retention_s × RF
+              ÷ compression_ratio
+<span class="c"># measure per-partition rates on YOUR hardware</span></div>
+    <div class="callout"><b>More partitions is not free.</b> Each costs file handles, memory on brokers and
+      clients, and controller work. Over-partitioning raises latency and lengthens recovery after a broker
+      failure. <span class="chg">TUNE</span></div>
+    <div class="callout g"><b>Alert on lag <i>trend</i>, not a fixed threshold.</b> Steady lag under load is
+      normal; monotonically growing lag means consumption is losing to production and will not recover on its
+      own.</div>
+  </div>
+</div>
+
+<!-- ============ CHECKLIST ============ -->
+<div class="panel c0 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRE-PRODUCTION CHECKLIST
+    <span class="sub">confirm before a topic carries traffic you cannot afford to lose</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div><b>☐ Durability triple coherent</b> — RF, min.insync.replicas and acks match the stated guarantee</div>
+      <div><b>☐ min.insync.replicas = RF − 1</b> unless a different trade is documented</div>
+      <div><b>☐ unclean.leader.election.enable=false</b> on every topic that matters</div>
+      <div><b>☐ Replicas spread by broker.rack</b> across racks or AZs</div>
+      <div><b>☐ Internal topics at production RF</b> — __consumer_offsets and __transaction_state</div>
+      <div><b>☐ Controller quorum is an odd number</b> (KRaft), 3 or 5</div>
+      <div><b>☐ Partition count sized with headroom</b> — it cannot be reduced</div>
+      <div><b>☐ Partition key chosen for ordering and skew</b>, and reviewed</div>
+      <div><b>☐ Key cardinality checked</b> — no hot partition under real traffic</div>
+      <div><b>☐ enable.idempotence=true</b> confirmed, not assumed from the version</div>
+      <div><b>☐ delivery.timeout.ms tuned</b>, not the retry count</div>
+      <div><b>☐ Message size limits aligned</b> producer ↔ topic</div>
+      <div><b>☐ Auto-commit disabled</b> wherever loss is unacceptable</div>
+      <div><b>☐ Offsets committed after processing succeeds</b></div>
+      <div><b>☐ auto.offset.reset deliberate</b> — latest silently skips backlog</div>
+      <div><b>☐ max.poll.records fits real processing time</b></div>
+      <div><b>☐ CooperativeStickyAssignor adopted</b> for large groups</div>
+      <div><b>☐ group.instance.id set</b> for stateful consumers</div>
+      <div><b>☐ Retention verified by observation</b>, not just configuration</div>
+      <div><b>☐ segment.ms lowered</b> where prompt expiry is required</div>
+      <div><b>☐ Tombstone retention exceeds</b> the longest expected consumer outage</div>
+      <div><b>☐ isolation.level=read_committed</b> wherever transactions are used</div>
+      <div><b>☐ Exactly-once boundary understood</b> — external side effects not covered</div>
+      <div><b>☐ SASL_SSL and ACLs in place</b> before the first production client</div>
+      <div><b>☐ Hostname verification left enabled</b></div>
+      <div><b>☐ auto.create.topics.enable=false</b> on production brokers</div>
+      <div><b>☐ Broker heap modest</b>, page cache left to the OS</div>
+      <div><b>☐ Quotas set</b> on shared clusters</div>
+      <div><b>☐ URP, UnderMinIsr, offline partitions and lag alerted</b></div>
+      <div><b>☐ ActiveControllerCount alerted</b> — must equal 1 cluster-wide</div>
+      <div><b>☐ Disk headroom monitored</b> — a full disk takes the broker down</div>
+      <div><b>☐ Broker failure rehearsed</b> — kill one and watch the guarantee hold</div>
+    </div>
+    <div class="callout p" style="margin-top:9px"><b>The test that validates the whole sheet.</b> Take one broker
+      out under production-like load. Writes should continue, no data should be lost, consumer lag should
+      recover, and no alert should be a surprise. <b>Configuration never tested against a real failure is a
+      hypothesis</b> — and the failure is the wrong moment to find out which setting you got wrong.</div>
+  </div>
+</div>
+
+</div>
