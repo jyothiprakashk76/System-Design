@@ -1,0 +1,780 @@
+<meta charset="utf-8">
+<title>DevOps — Learning Roadmap</title>
+<style>
+  @page { size: 3400px 3720px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:3720px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; padding:26px; }
+
+  .title{background:#101a33;border-radius:12px;color:#fff;height:112px;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px;margin-bottom:22px}
+  .title h1{font-size:37px;letter-spacing:.9px;font-weight:700}
+  .title .sub{font-size:15.5px;color:#93a4d6;font-weight:600;text-align:right;line-height:1.45}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .map{background:#fff;border:2px solid #c7cbdd;border-radius:12px;margin-bottom:22px;overflow:hidden}
+  .maphead{background:#1f2a63;color:#fff;padding:10px 17px;font-size:22px;font-weight:700;
+           display:flex;justify-content:space-between;align-items:baseline}
+  .maphead .s{font-size:14px;font-weight:500;opacity:.82}
+
+  .cols{columns:4;column-gap:20px}
+  .card{break-inside:avoid;background:#fff;border:2px solid #c7cbdd;border-radius:10px;
+        overflow:hidden;margin-bottom:20px;display:inline-block;width:100%}
+  .ch{color:#fff;padding:7px 12px;font-size:15.5px;font-weight:700;letter-spacing:.2px;line-height:1.25}
+  .ch .n{display:inline-block;background:rgba(255,255,255,.24);border-radius:4px;
+         padding:0 7px;margin-right:7px;font-size:14px}
+  .cb{padding:9px 12px}
+  .cb ul{margin:0 0 0 15px;font-size:12.5px;line-height:1.42}
+  .cb li{margin-bottom:2.5px}
+  .cb .g{font-size:11.7px;font-weight:700;color:#1e3a8a;margin:7px 0 3px;letter-spacing:.2px;
+         text-transform:uppercase}
+  .cb .g:first-child{margin-top:0}
+  .cb p{font-size:12.4px;line-height:1.42;margin-bottom:4px}
+  .tools{background:#f7f8fd;border:1.3px solid #d0d6e8;border-radius:5px;padding:6px 8px;
+         font-size:11.7px;line-height:1.4;margin-top:7px;color:#42507a}
+  .tools b{color:#1f2a63;display:block;margin-bottom:2px;font-size:11.4px;letter-spacing:.2px}
+  .note{background:#fff7ea;border:1.4px solid #e9b669;border-radius:5px;padding:6px 8px;
+        font-size:11.8px;line-height:1.4;margin-top:7px}
+  .note b{color:#a35c00}
+  .note.g{background:#ecfdf5;border-color:#6ee7b7} .note.g b{color:#047857}
+  .note.r{background:#fef2f2;border-color:#e8a3a3} .note.r b{color:#b91c1c}
+  .note.p{background:#f5f0fd;border-color:#b39ae8} .note.p b{color:#6b21a8}
+
+  .a .ch{background:#1e3a8a} .b .ch{background:#b45309} .c .ch{background:#0f766e}
+  .d .ch{background:#be123c} .e .ch{background:#7c2d92}
+  .x .ch{background:#334155} .y .ch{background:#155e75}
+  .mono{font-family:Menlo,Consolas,monospace;font-size:11.6px}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>DEVOPS — LEARNING ROADMAP<span class="v">V1</span></h1>
+  <div class="sub">20 branches in five themes, from basics to advanced, with the tools for each<br>
+    <span style="font-size:13.6px;color:#6d80b6;font-weight:500">foundations · build &amp; deliver · infrastructure · run &amp; operate · secure &amp; scale</span></div>
+</div>
+
+<!-- ================= THE MAP ================= -->
+<div class="map">
+  <div class="maphead">THE MAP
+    <span class="s">work down a theme in order; themes B and C are best learned together, because a pipeline with nothing to deploy onto teaches you half the job</span></div>
+  <svg viewBox="0 0 3320 600" width="3320" height="600">
+    <defs>
+      <marker id="d" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#94a3b8"/></marker>
+    </defs>
+
+    <rect x="1400" y="18" width="520" height="96" rx="12" fill="#101a33"/>
+    <text x="1660" y="56" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">DEVOPS</text>
+    <text x="1660" y="84" font-size="16" fill="#93a4d6" text-anchor="middle">Learning Roadmap · 20 branches</text>
+    <text x="1660" y="103" font-size="13" fill="#6d80b6" text-anchor="middle">every branch below is expanded in a card on this sheet</text>
+
+    <g stroke="#94a3b8" stroke-width="2.2" fill="none">
+      <path d="M1660,114 L1660,140 L340,140 L340,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L1002,140 L1002,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L1664,140 L1664,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L2326,140 L2326,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L2988,140 L2988,168" marker-end="url(#d)"/>
+    </g>
+
+    <!-- A -->
+    <rect x="20" y="168" width="640" height="46" rx="8" fill="#1e3a8a"/>
+    <text x="340" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">A · FOUNDATIONS</text>
+    <g font-size="14.5">
+      <rect x="20" y="224" width="640" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="42" y="251" font-weight="700" fill="#1e3a8a">1</text><text x="72" y="251" fill="#1f2a63">DevOps fundamentals &amp; culture</text>
+      <rect x="20" y="272" width="640" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="42" y="299" font-weight="700" fill="#1e3a8a">2</text><text x="72" y="299" fill="#1f2a63">Linux, networking &amp; scripting</text>
+      <rect x="20" y="320" width="640" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="42" y="347" font-weight="700" fill="#1e3a8a">3</text><text x="72" y="347" fill="#1f2a63">Version control &amp; collaboration</text>
+      <rect x="20" y="368" width="640" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="42" y="395" font-weight="700" fill="#1e3a8a">4</text><text x="72" y="395" fill="#1f2a63">Cloud platform fundamentals</text>
+    </g>
+
+    <!-- B -->
+    <rect x="682" y="168" width="640" height="46" rx="8" fill="#b45309"/>
+    <text x="1002" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">B · BUILD &amp; DELIVER</text>
+    <g font-size="14.5">
+      <rect x="682" y="224" width="640" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="704" y="251" font-weight="700" fill="#b45309">5</text><text x="734" y="251" fill="#7a3d06">Build &amp; continuous integration</text>
+      <rect x="682" y="272" width="640" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="704" y="299" font-weight="700" fill="#b45309">6</text><text x="734" y="299" fill="#7a3d06">Testing in the pipeline</text>
+      <rect x="682" y="320" width="640" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="704" y="347" font-weight="700" fill="#b45309">7</text><text x="734" y="347" fill="#7a3d06">Artifacts, registries &amp; supply chain</text>
+      <rect x="682" y="368" width="640" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="704" y="395" font-weight="700" fill="#b45309">8</text><text x="734" y="395" fill="#7a3d06">Continuous delivery &amp; GitOps</text>
+    </g>
+
+    <!-- C -->
+    <rect x="1344" y="168" width="640" height="46" rx="8" fill="#0f766e"/>
+    <text x="1664" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">C · INFRASTRUCTURE</text>
+    <g font-size="14.5">
+      <rect x="1344" y="224" width="640" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1366" y="251" font-weight="700" fill="#0f766e">9</text><text x="1396" y="251" fill="#2f4f47">Infrastructure as Code</text>
+      <rect x="1344" y="272" width="640" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1366" y="299" font-weight="700" fill="#0f766e">10</text><text x="1404" y="299" fill="#2f4f47">Configuration management</text>
+      <rect x="1344" y="320" width="640" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1366" y="347" font-weight="700" fill="#0f766e">11</text><text x="1404" y="347" fill="#2f4f47">Containers, images &amp; VMs</text>
+      <rect x="1344" y="368" width="640" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1366" y="395" font-weight="700" fill="#0f766e">12</text><text x="1404" y="395" fill="#2f4f47">Kubernetes &amp; orchestration</text>
+    </g>
+
+    <!-- D -->
+    <rect x="2006" y="168" width="640" height="46" rx="8" fill="#be123c"/>
+    <text x="2326" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">D · RUN &amp; OPERATE</text>
+    <g font-size="14.5">
+      <rect x="2006" y="224" width="640" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2028" y="251" font-weight="700" fill="#be123c">13</text><text x="2066" y="251" fill="#7f2b2b">Deployment &amp; release strategies</text>
+      <rect x="2006" y="272" width="640" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2028" y="299" font-weight="700" fill="#be123c">14</text><text x="2066" y="299" fill="#7f2b2b">Monitoring &amp; observability</text>
+      <rect x="2006" y="320" width="640" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2028" y="347" font-weight="700" fill="#be123c">15</text><text x="2066" y="347" fill="#7f2b2b">Reliability, SRE &amp; incident response</text>
+      <rect x="2006" y="368" width="640" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2028" y="395" font-weight="700" fill="#be123c">16</text><text x="2066" y="395" fill="#7f2b2b">Capacity, performance &amp; FinOps</text>
+    </g>
+
+    <!-- E -->
+    <rect x="2668" y="168" width="640" height="46" rx="8" fill="#7c2d92"/>
+    <text x="2988" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">E · SECURE &amp; SCALE</text>
+    <g font-size="14.5">
+      <rect x="2668" y="224" width="640" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2690" y="251" font-weight="700" fill="#7c2d92">17</text><text x="2728" y="251" fill="#4b3a5e">DevSecOps &amp; compliance</text>
+      <rect x="2668" y="272" width="640" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2690" y="299" font-weight="700" fill="#7c2d92">18</text><text x="2728" y="299" fill="#4b3a5e">Networking &amp; platform services</text>
+      <rect x="2668" y="320" width="640" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2690" y="347" font-weight="700" fill="#7c2d92">19</text><text x="2728" y="347" fill="#4b3a5e">Platform engineering &amp; DX</text>
+      <rect x="2668" y="368" width="640" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2690" y="395" font-weight="700" fill="#7c2d92">20</text><text x="2728" y="395" fill="#4b3a5e">Database &amp; data operations</text>
+    </g>
+
+    <!-- bottom strips -->
+    <rect x="20" y="428" width="1602" height="152" rx="9" fill="#f7f8fd" stroke="#c7cbdd" stroke-width="2"/>
+    <text x="38" y="452" font-size="15.5" font-weight="700" fill="#1f2a63">HOW TO USE THIS ROADMAP</text>
+    <g font-size="13.4" fill="#42507a">
+      <text x="38" y="477">1 · Theme A first, and do not rush it. Almost every DevOps problem that looks hard is a Linux, networking or Git problem underneath.</text>
+      <text x="38" y="499">2 · Take B and C together — build a pipeline and something for it to deploy onto, in the same project.</text>
+      <text x="38" y="521">3 · Automate one manual thing per week. The skill is noticing the toil, not knowing the tool.</text>
+      <text x="38" y="543">4 · Then D, which is where the job actually happens: keeping a running system healthy and knowing when it is not.</text>
+      <text x="38" y="568" font-weight="700" fill="#be123c">5 · Learn one cloud deeply rather than three shallowly. The concepts transfer; the console screenshots do not.</text>
+    </g>
+
+    <rect x="1658" y="428" width="1650" height="152" rx="9" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1676" y="452" font-size="15.5" font-weight="700" fill="#b91c1c">THE PART THE TOOL LIST CANNOT TEACH YOU</text>
+    <g font-size="13.4" fill="#7f2b2b">
+      <text x="1676" y="477">DevOps is an operating model before it is a toolchain. Every tool here exists to shorten the loop between a change being written and that</text>
+      <text x="1676" y="499">change being safely in production — and to make the result visible enough that you can tell whether it worked.</text>
+      <text x="1676" y="524" font-weight="700">If a tool does not shorten that loop or widen that visibility, it is overhead you have chosen to carry.</text>
+      <text x="1676" y="546">Teams routinely adopt Kubernetes, service meshes and GitOps while still deploying monthly by hand, and conclude DevOps did not work.</text>
+      <text x="1676" y="570">Measure the loop — deployment frequency, lead time, change failure rate, time to restore — before and after. Those four are the scoreboard.</text>
+    </g>
+  </svg>
+</div>
+
+<!-- ================= CARDS ================= -->
+<div class="cols">
+
+<div class="card a"><div class="ch"><span class="n">1</span>DEVOPS FUNDAMENTALS &amp; CULTURE</div><div class="cb">
+  <div class="g">What it is</div>
+  <ul>
+    <li>Shared ownership of build, deploy and run — not a team name or a job title</li>
+    <li>The lifecycle: plan → code → build → test → release → deploy → operate → monitor → back to plan</li>
+    <li>CALMS — culture, automation, lean, measurement, sharing</li>
+    <li>Agile and Scrum basics; lean principles and flow</li>
+    <li>Blameless culture — you cannot get honest incident data from people who expect punishment</li>
+  </ul>
+  <div class="g">The four DORA metrics</div>
+  <ul>
+    <li><b>Deployment frequency</b> — how often you release to production</li>
+    <li><b>Lead time for changes</b> — commit to running in production</li>
+    <li><b>Change failure rate</b> — share of deployments causing a degradation</li>
+    <li><b>Time to restore service</b> — how quickly you recover</li>
+    <li>First two measure throughput, last two stability. Good teams improve both together — they are not a trade-off</li>
+  </ul>
+  <div class="g">Also learn</div>
+  <ul>
+    <li>SLI, SLO, SLA and error budgets</li>
+    <li>Toil, and why eliminating it is the actual job</li>
+    <li>Continuous improvement (Kaizen), value stream mapping</li>
+  </ul>
+  <div class="note"><b>Name the four DORA metrics, not just the acronym.</b> They are the only widely-validated
+    way to say whether a DevOps change helped, and they are what an interviewer means when they ask how you would measure success.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">2</span>LINUX, NETWORKING &amp; SCRIPTING</div><div class="cb">
+  <div class="g">Linux — non-negotiable</div>
+  <ul>
+    <li>Filesystem layout, permissions, ownership, ACLs</li>
+    <li>Processes, signals, systemd units, journald</li>
+    <li>Package managers, users and groups, sudo</li>
+    <li>Disk, inodes, mounts, LVM; memory, swap, OOM killer</li>
+    <li>Diagnostics: <span class="mono">top htop ps lsof strace dmesg df du</span></li>
+  </ul>
+  <div class="g">Networking</div>
+  <ul>
+    <li>TCP/IP, subnets and CIDR, routing, NAT</li>
+    <li>DNS records and resolution order; TTL and why deploys wait on it</li>
+    <li>HTTP, TLS certificates, chains, expiry</li>
+    <li>Firewalls, security groups, ports</li>
+    <li>Tools: <span class="mono">dig curl ss netstat tcpdump traceroute nc</span></li>
+  </ul>
+  <div class="g">Scripting</div>
+  <ul>
+    <li>Bash — pipes, redirection, exit codes, <span class="mono">set -euo pipefail</span>, traps</li>
+    <li>Python for anything past ~50 lines of Bash</li>
+    <li>Text processing: <span class="mono">grep sed awk jq yq</span></li>
+    <li>Cron and systemd timers</li>
+    <li>Windows and PowerShell for hybrid estates</li>
+  </ul>
+  <div class="note r"><b>This branch is the one people skip and then hit a wall on.</b> Nearly every hard
+    production problem — a hung pod, a TLS failure, a full disk, a DNS cache — resolves to Linux or networking, and no
+    amount of tooling substitutes for it.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">3</span>VERSION CONTROL &amp; COLLABORATION</div><div class="cb">
+  <div class="g">Git</div>
+  <ul>
+    <li>Clone, commit, push, pull, fetch; the staging area</li>
+    <li>Merge vs rebase vs cherry-pick, and when each is honest</li>
+    <li>Conflict resolution, <span class="mono">reflog</span>, <span class="mono">bisect</span>, <span class="mono">stash</span>, tags</li>
+    <li>Submodules and monorepo vs polyrepo trade-offs</li>
+  </ul>
+  <div class="g">Branching strategies</div>
+  <ul>
+    <li><b>Trunk-based</b> — short-lived branches, feature flags. The strategy that correlates with high DORA performance</li>
+    <li><b>GitHub flow</b> — simple, branch per change</li>
+    <li><b>Git flow</b> — release branches; heavier, suits scheduled releases and versioned products</li>
+  </ul>
+  <div class="g">Collaboration &amp; hygiene</div>
+  <ul>
+    <li>Pull requests, review culture, CODEOWNERS</li>
+    <li>Branch protection, required checks, signed commits</li>
+    <li>Conventional commits and semantic versioning</li>
+    <li>Pre-commit hooks — lint and secret-scan before it ever reaches CI</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Git · GitHub · GitLab · Bitbucket · Gitea · pre-commit · commitlint</div>
+  <div class="note g"><b>Long-lived branches are a delivery problem, not a Git problem.</b> Merge pain is a
+    symptom of batch size; the fix is smaller changes behind flags, not a cleverer branching model.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">4</span>CLOUD PLATFORM FUNDAMENTALS</div><div class="cb">
+  <p>Learn one provider properly. The service names differ; the concepts are the same everywhere.</p>
+  <div class="g">The core primitives</div>
+  <ul>
+    <li><b>Identity</b> — IAM users, roles, policies, least privilege, assume-role, OIDC federation from CI</li>
+    <li><b>Networking</b> — VPC, subnets, route tables, NAT and internet gateways, security groups, peering, private endpoints</li>
+    <li><b>Compute</b> — VMs, autoscaling groups, managed containers, serverless functions</li>
+    <li><b>Storage</b> — object, block, file; storage classes and lifecycle rules</li>
+    <li><b>Databases</b> — managed relational, NoSQL, cache; backups and read replicas</li>
+    <li><b>Regions and availability zones</b> — what fails together</li>
+    <li>Managed load balancers, DNS, CDN, certificates</li>
+    <li>Tagging, accounts and landing zones, quotas and limits</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>AWS · Azure · GCP · CLI for one of them · cloud-nuke / Infracost for keeping labs cheap</div>
+  <div class="note r"><b>Missing from most DevOps roadmaps, and it should not be.</b> IAM, VPC design and
+    autoscaling underpin branches 9 through 18. Learning Kubernetes before cloud networking means debugging both at once.</div>
+  <div class="note"><b>Use short-lived credentials from CI.</b> OIDC federation between your CI provider and the
+    cloud removes long-lived access keys entirely — the single highest-value cloud security change most teams can make.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">5</span>BUILD &amp; CONTINUOUS INTEGRATION</div><div class="cb">
+  <div class="g">CI principles</div>
+  <ul>
+    <li>Everyone merges to trunk at least daily</li>
+    <li>Every commit triggers an automated build and test</li>
+    <li>A broken build is the team's first priority — stop the line</li>
+    <li>Build once, promote the same artifact through environments</li>
+    <li>Fast feedback: minutes, not hours. Parallelise and cache</li>
+  </ul>
+  <div class="g">Pipeline mechanics</div>
+  <ul>
+    <li>Pipeline as code, versioned beside the application</li>
+    <li>Stages, jobs, matrix builds, fan-out and fan-in</li>
+    <li>Caching dependencies and layers; ephemeral runners</li>
+    <li>Reproducible and hermetic builds</li>
+    <li>Secrets injection — never in the repo, never in logs</li>
+    <li>Self-hosted vs managed runners, and runner isolation</li>
+  </ul>
+  <div class="g">Quality gates</div>
+  <ul>
+    <li>Linting and formatting, static analysis</li>
+    <li>Coverage thresholds that block, not just report</li>
+    <li>Build metadata: commit SHA, build number, provenance</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>GitHub Actions · GitLab CI · Jenkins · CircleCI · Buildkite · Tekton · Argo Workflows · Gradle / Maven / npm · BuildKit</div>
+  <div class="note"><b>Build once, deploy many.</b> Rebuilding per environment means the thing you tested is
+    not the thing you shipped. Promote an immutable artifact and inject configuration at deploy time.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">6</span>TESTING IN THE PIPELINE</div><div class="cb">
+  <p>Continuous delivery is only as safe as the tests that gate it. This is the branch that decides whether automation is an accelerator or a faster way to ship defects.</p>
+  <div class="g">The pyramid</div>
+  <ul>
+    <li><b>Unit</b> — many, fast, isolated. Run on every commit</li>
+    <li><b>Integration</b> — real dependencies via containers</li>
+    <li><b>Contract</b> — consumer-driven, so services can deploy independently without an end-to-end suite</li>
+    <li><b>End-to-end</b> — few, high value, slowest and flakiest</li>
+    <li><b>Smoke</b> — post-deploy, in the real environment</li>
+  </ul>
+  <div class="g">Beyond correctness</div>
+  <ul>
+    <li>Performance and load testing with a pass/fail threshold</li>
+    <li>Security tests — SAST, DAST, dependency and secret scanning</li>
+    <li>Infrastructure tests and policy checks</li>
+    <li>Chaos experiments as scheduled tests</li>
+  </ul>
+  <div class="g">Practices</div>
+  <ul>
+    <li>Test data management and seeding</li>
+    <li>Ephemeral environments per pull request</li>
+    <li>Quarantine flaky tests immediately — a suite people ignore is worse than no suite</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>JUnit · pytest · Testcontainers · Pact · Playwright / Cypress · k6 · JMeter · Gatling</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">7</span>ARTIFACTS, REGISTRIES &amp; SUPPLY CHAIN</div><div class="cb">
+  <div class="g">Artifact management</div>
+  <ul>
+    <li>Immutable, versioned artifacts; never overwrite a tag</li>
+    <li>Semantic versioning and release metadata</li>
+    <li>Container registries, Helm chart repositories, package registries</li>
+    <li>Retention and cleanup — registries grow without bound</li>
+    <li>Promotion between repositories rather than rebuilds</li>
+  </ul>
+  <div class="g">Software supply chain</div>
+  <ul>
+    <li><b>SBOM</b> — a bill of materials per build (SPDX, CycloneDX)</li>
+    <li><b>Artifact signing and verification</b> — Sigstore / cosign</li>
+    <li><b>Provenance and attestation</b> — what built this, from which source, on which runner</li>
+    <li><b>SLSA</b> as the maturity framework for build integrity</li>
+    <li>Dependency pinning and lockfiles; base image hygiene</li>
+    <li>Verify signatures at admission, not just at build</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Nexus · JFrog Artifactory · GHCR / ECR / ACR · Harbor · cosign · Syft · Grype · Dependabot / Renovate</div>
+  <div class="note r"><b>Underweighted in most roadmaps, and now a compliance requirement in many sectors.</b>
+    &ldquo;Which of our running images contain this CVE?&rdquo; is unanswerable without SBOMs and a registry you can query.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">8</span>CONTINUOUS DELIVERY &amp; GITOPS</div><div class="cb">
+  <div class="g">Delivery vs deployment</div>
+  <ul>
+    <li><b>Continuous delivery</b> — every change is <i>releasable</i>; the final push may be a decision</li>
+    <li><b>Continuous deployment</b> — every passing change goes to production automatically</li>
+    <li>Progressive delivery — release to a subset first, expand on evidence</li>
+  </ul>
+  <div class="g">Pipeline stages</div>
+  <ul>
+    <li>Commit → build → test → scan → package → sign → deploy → verify → notify</li>
+    <li>Environment promotion with the same artifact</li>
+    <li>Automated rollback triggered by health signals, not a human noticing</li>
+    <li>Approvals and change records where regulation requires them</li>
+  </ul>
+  <div class="g">GitOps</div>
+  <ul>
+    <li>Git is the single source of truth for desired state</li>
+    <li>An agent in the cluster continuously reconciles actual to desired</li>
+    <li>Drift is detected and corrected automatically</li>
+    <li>Rollback is a Git revert; the audit trail is the commit history</li>
+    <li>Pull-based, so CI needs no cluster credentials</li>
+    <li>Separate application and config repositories</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Argo CD · Flux · Spinnaker · Argo Rollouts · Jenkins · GitLab CD</div>
+  <div class="note g"><b>GitOps is a model, not a product.</b> Its value is the reconciliation loop and the
+    audit trail — deploying with <span class="mono">kubectl apply</span> from CI is not GitOps just because the manifests live in Git.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">9</span>INFRASTRUCTURE AS CODE</div><div class="cb">
+  <div class="g">Core ideas</div>
+  <ul>
+    <li>Declare the desired state; let the tool compute the change</li>
+    <li>Idempotent — applying twice changes nothing the second time</li>
+    <li>Version-controlled and peer-reviewed like application code</li>
+    <li>Immutable infrastructure: replace rather than patch in place</li>
+    <li>Plan → review → apply, always in that order</li>
+  </ul>
+  <div class="g">Practical concerns</div>
+  <ul>
+    <li><b>State</b> — remote backend, locking, encryption. Never local, never in Git</li>
+    <li>Modules and reusability; a private module registry</li>
+    <li>Workspaces and environment separation</li>
+    <li><b>Drift detection</b> — someone always changes something in the console</li>
+    <li>Secrets handling — never in state, never in plan output</li>
+    <li>Importing existing resources; blast-radius control by splitting state</li>
+  </ul>
+  <div class="g">Testing &amp; policy</div>
+  <ul>
+    <li>Static analysis and policy as code before apply</li>
+    <li>Integration tests that create and destroy real resources</li>
+    <li>Cost estimation on the pull request</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Terraform · OpenTofu · Pulumi · CloudFormation · Bicep / ARM · Crossplane · Terragrunt · Terratest · Checkov · tflint · OPA / Conftest · Infracost</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">10</span>CONFIGURATION MANAGEMENT</div><div class="cb">
+  <p>Provisioning creates the machine; configuration management decides what is on it and keeps it that way. Related to branch 9, but a different problem.</p>
+  <div class="g">Concepts</div>
+  <ul>
+    <li>Desired-state enforcement and convergence</li>
+    <li>Agent-based (Puppet, Chef) vs agentless (Ansible over SSH)</li>
+    <li>Push vs pull models</li>
+    <li>Inventory, roles, playbooks, idempotent modules</li>
+    <li>Templating configuration per environment</li>
+    <li>Secrets at config time — vault lookups, not committed files</li>
+  </ul>
+  <div class="g">Where it still matters</div>
+  <ul>
+    <li>VM estates and hybrid or on-premises environments</li>
+    <li>Golden image building — bake with Packer, then boot immutable</li>
+    <li>Compliance baselines and hardening (CIS benchmarks)</li>
+    <li>Patch management across a fleet</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Ansible · Chef · Puppet · SaltStack · Packer · AWS SSM · cloud-init</div>
+  <div class="note"><b>Ansible is configuration management, not infrastructure provisioning.</b> Listing it
+    beside Terraform obscures the distinction: Terraform decides which resources exist, Ansible decides what state they
+    are in. Many teams use both, for different jobs.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">11</span>CONTAINERS, IMAGES &amp; VMs</div><div class="cb">
+  <div class="g">Virtual machines</div>
+  <ul>
+    <li>Hypervisors — VMware, KVM, Hyper-V; type 1 vs type 2</li>
+    <li>Cloud instance families and sizing; on-prem vs cloud</li>
+    <li>Images, templates, snapshots and cloning</li>
+    <li>When a VM is still the right answer: licensing, kernel modules, stateful legacy</li>
+  </ul>
+  <div class="g">Container fundamentals</div>
+  <ul>
+    <li>Namespaces and cgroups — a container is a process, not a small VM</li>
+    <li>Images, layers, tags and digests; the OCI standard</li>
+    <li>Volumes, bind mounts, networking modes</li>
+    <li>Container runtimes: containerd, CRI-O, Docker Engine</li>
+  </ul>
+  <div class="g">Image quality</div>
+  <ul>
+    <li>Multi-stage builds; minimal or distroless base images</li>
+    <li>Layer order for cache efficiency; <span class="mono">.dockerignore</span></li>
+    <li><b>Run as non-root</b>, read-only filesystem, drop capabilities</li>
+    <li>Pin base images by digest; rebuild regularly for patches</li>
+    <li>One process per container; handle <span class="mono">SIGTERM</span> for graceful shutdown</li>
+    <li>Scan every image, and again in the registry over time</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Docker · Podman · BuildKit · Buildah · Docker Compose · Harbor · Trivy · Dive</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">12</span>KUBERNETES &amp; ORCHESTRATION</div><div class="cb">
+  <div class="g">Workloads &amp; config</div>
+  <ul>
+    <li>Pods, ReplicaSets, Deployments, StatefulSets, DaemonSets</li>
+    <li>Jobs and CronJobs; init and sidecar containers</li>
+    <li>ConfigMaps and Secrets; Namespaces, labels and selectors</li>
+    <li><b>Requests and limits</b>, QoS classes — the most common source of both waste and eviction</li>
+    <li>Liveness, readiness and startup probes</li>
+    <li>PodDisruptionBudgets, affinity, taints and tolerations</li>
+  </ul>
+  <div class="g">Networking &amp; storage</div>
+  <ul>
+    <li>Services, Ingress and the Gateway API; CNI plugins</li>
+    <li>NetworkPolicies — default-deny is the goal</li>
+    <li>PersistentVolumes, PVCs, StorageClasses, CSI drivers</li>
+  </ul>
+  <div class="g">Scaling &amp; extension</div>
+  <ul>
+    <li>HPA, VPA, Cluster Autoscaler, Karpenter</li>
+    <li>CRDs and operators; the reconciliation pattern</li>
+    <li>Helm and Kustomize for packaging and overlays</li>
+    <li><b>RBAC</b>, service accounts, Pod Security Standards</li>
+    <li>Admission control and policy (OPA Gatekeeper, Kyverno)</li>
+    <li>Cluster upgrades, node pools, etcd backup and restore</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>kubectl · Helm · Kustomize · k9s · Lens · kubectx / kubens · kind / minikube · EKS / AKS / GKE · Karpenter · Kyverno</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">13</span>DEPLOYMENT &amp; RELEASE STRATEGIES</div><div class="cb">
+  <div class="g">Strategies</div>
+  <ul>
+    <li><b>Recreate</b> — stop then start. Downtime, simplest, fine for batch</li>
+    <li><b>Rolling</b> — replace instances gradually. The default</li>
+    <li><b>Blue/green</b> — two environments, switch traffic, instant rollback. Doubles cost during the switch</li>
+    <li><b>Canary</b> — small traffic share first, expand on metrics</li>
+    <li><b>A/B testing</b> — routing by cohort, for product decisions rather than safety</li>
+    <li><b>Shadow / dark launch</b> — mirror real traffic to the new version, discard responses</li>
+  </ul>
+  <div class="g">Decoupling deploy from release</div>
+  <ul>
+    <li>Feature flags — ship code dark, release by configuration</li>
+    <li>Flag lifecycle and cleanup; stale flags become permanent complexity</li>
+    <li>Kill switches for risky paths</li>
+  </ul>
+  <div class="g">Making it safe</div>
+  <ul>
+    <li>Automated rollback on SLO breach, not on someone noticing</li>
+    <li>Backward-compatible changes so old and new run side by side</li>
+    <li>Health checks and readiness gates before traffic shifts</li>
+    <li>Post-deploy smoke tests and bake time</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Argo Rollouts · Flagger · LaunchDarkly · Unleash · Spinnaker · service mesh traffic splitting</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">14</span>MONITORING &amp; OBSERVABILITY</div><div class="cb">
+  <div class="g">The difference</div>
+  <ul>
+    <li><b>Monitoring</b> — watching known failure modes you predicted</li>
+    <li><b>Observability</b> — being able to answer questions you did not predict, from the telemetry you already emit</li>
+  </ul>
+  <div class="g">The three signals</div>
+  <ul>
+    <li><b>Metrics</b> — cheap, aggregatable. Watch label cardinality</li>
+    <li><b>Logs</b> — structured JSON, correlated, sampled at volume</li>
+    <li><b>Traces</b> — one request across services, with context propagated through async hops</li>
+    <li><b>OpenTelemetry</b> covers all three, not just tracing — the vendor-neutral instrumentation standard</li>
+    <li>Continuous profiling as a fourth signal</li>
+  </ul>
+  <div class="g">Knowing what to watch</div>
+  <ul>
+    <li><b>RED</b> — rate, errors, duration, for services</li>
+    <li><b>USE</b> — utilisation, saturation, errors, for resources</li>
+    <li>Four golden signals: latency, traffic, errors, saturation</li>
+    <li>Dashboards per audience; correlation IDs end to end</li>
+    <li>Alert on symptoms and SLO burn rate, not on CPU</li>
+    <li>Every alert needs a runbook, or it should not page</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Prometheus · Grafana · Loki · ELK / OpenSearch · Jaeger · Tempo · OpenTelemetry · Alertmanager · Datadog · Zabbix</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">15</span>RELIABILITY, SRE &amp; INCIDENT RESPONSE</div><div class="cb">
+  <div class="g">Designing for failure</div>
+  <ul>
+    <li>High availability, redundancy, multi-AZ and multi-region</li>
+    <li>Health checks and probes; graceful shutdown and draining</li>
+    <li>Timeouts, retries with jitter, circuit breakers, bulkheads</li>
+    <li>Graceful degradation and load shedding</li>
+    <li>Single points of failure — find them deliberately</li>
+  </ul>
+  <div class="g">Continuity</div>
+  <ul>
+    <li><b>RTO</b> — how long you may be down. <b>RPO</b> — how much data you may lose</li>
+    <li>Backups, and <b>restores that are actually rehearsed</b></li>
+    <li>DR patterns: backup-restore, pilot light, warm standby, active-active</li>
+    <li>Failover drills on a schedule</li>
+  </ul>
+  <div class="g">Operating</div>
+  <ul>
+    <li>SLIs and SLOs; error budgets that gate releases</li>
+    <li>On-call rotation, escalation, handover</li>
+    <li>Incident command: roles, comms, severity levels</li>
+    <li><b>Blameless postmortems</b> with tracked actions</li>
+    <li>Runbooks kept current, and chaos engineering to test them</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>LitmusChaos · Chaos Mesh · Gremlin · Velero · PagerDuty / Opsgenie · Statuspage · incident.io</div>
+  <div class="note r"><b>A backup you have never restored is a hypothesis.</b> Restore time is a number you
+    measure, not one you assume — and it is usually far worse than expected the first time.</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">16</span>CAPACITY, PERFORMANCE &amp; FINOPS</div><div class="cb">
+  <div class="g">Understand the workload first</div>
+  <ul>
+    <li>Traffic shape: peak vs average, daily and weekly cycles, seasonal events</li>
+    <li>Baselines per service — CPU, memory, disk, network, connections</li>
+    <li>Growth trend and the headroom you keep</li>
+    <li>Load and soak testing to find the actual limit</li>
+  </ul>
+  <div class="g">Scaling</div>
+  <ul>
+    <li>Vertical vs horizontal; stateless services scale trivially</li>
+    <li>Autoscaling on the right signal — queue depth or latency, rarely CPU alone</li>
+    <li>Right-sizing requests and limits; scale-to-zero where it fits</li>
+    <li>Warm-up and cold-start behaviour</li>
+  </ul>
+  <div class="g">Cost</div>
+  <ul>
+    <li>Tagging and cost allocation — per team, service and environment</li>
+    <li>Reserved capacity, savings plans, spot instances</li>
+    <li>The usual waste: idle non-production, over-provisioned requests, orphaned volumes and IPs, cross-AZ and egress traffic, log retention</li>
+    <li>Cost anomaly alerting; cost visible on the pull request</li>
+    <li>Unit cost — cost per request or per tenant, tracked as an engineering metric</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>k6 · JMeter · Infracost · Kubecost / OpenCost · cloud cost explorers and pricing calculators · Goldilocks · VPA</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">17</span>DEVSECOPS &amp; COMPLIANCE</div><div class="cb">
+  <div class="g">Shift left, but not only left</div>
+  <ul>
+    <li>Security is everyone's job and belongs at every stage, not a gate at the end</li>
+    <li>Threat modelling during design</li>
+    <li>Fail the build on high-severity findings — a report nobody blocks on is ignored</li>
+  </ul>
+  <div class="g">Scanning across the pipeline</div>
+  <ul>
+    <li><b>SAST</b> — source code · <b>DAST</b> — running application</li>
+    <li><b>SCA</b> — dependencies and licences</li>
+    <li><b>Secret scanning</b> — pre-commit and in history</li>
+    <li><b>Container and IaC scanning</b> — images and misconfiguration</li>
+    <li><b>Runtime security</b> — anomalous behaviour in production</li>
+  </ul>
+  <div class="g">Identity &amp; secrets</div>
+  <ul>
+    <li>Least privilege everywhere; no long-lived cloud keys — federate CI with OIDC</li>
+    <li>Central secrets store, dynamic credentials, automated rotation</li>
+    <li>Kubernetes: External Secrets, sealed secrets, workload identity</li>
+    <li>mTLS between services; network policy default-deny</li>
+  </ul>
+  <div class="g">Compliance</div>
+  <ul>
+    <li>ISO 27001, SOC 2, PCI-DSS, GDPR and local data-protection law</li>
+    <li>Audit logging, change records, evidence generation</li>
+    <li>Policy as code so controls are enforced, not documented</li>
+    <li>Separation of duties without blocking delivery</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Trivy · Snyk · SonarQube · OWASP ZAP · Semgrep · Checkov · tfsec · HashiCorp Vault · External Secrets · Falco · OPA · Kyverno · gitleaks</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">18</span>NETWORKING &amp; PLATFORM SERVICES</div><div class="cb">
+  <div class="g">Getting traffic in</div>
+  <ul>
+    <li>Load balancers — L4 vs L7, health checks, draining</li>
+    <li>Ingress controllers and the Gateway API</li>
+    <li>DNS management, records, failover routing, TTL strategy</li>
+    <li>TLS certificate issuance and automated renewal</li>
+    <li>CDN and edge caching; WAF and DDoS protection</li>
+    <li>API gateways — rate limiting, quotas, authentication, versioning</li>
+  </ul>
+  <div class="g">Traffic between services</div>
+  <ul>
+    <li><b>Service mesh</b> — mTLS, retries, circuit breaking, traffic splitting, telemetry without touching application code</li>
+    <li>Service discovery and health-aware routing</li>
+    <li>Sidecar vs sidecarless (eBPF) meshes</li>
+    <li>East-west vs north-south — gateways and meshes solve different halves</li>
+  </ul>
+  <div class="g">Async plumbing</div>
+  <ul>
+    <li>Message queues and event streams as platform services</li>
+    <li>Dead letter queues, consumer lag, retention and replay</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>NGINX · Envoy · Traefik · HAProxy · Istio · Linkerd · Cilium · cert-manager · Route 53 / Cloud DNS · CloudFront / Cloudflare · Kong · Apigee · Kafka · RabbitMQ</div>
+  <div class="note"><b>A service mesh is a large commitment.</b> Adopt it when you actually need mTLS
+    everywhere, uniform retries and traffic splitting across many services — not because the diagram looks better with one.</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">19</span>PLATFORM ENGINEERING &amp; DX</div><div class="cb">
+  <p>The direction the industry has moved: rather than every team assembling the toolchain themselves, a platform team offers paved paths as a product.</p>
+  <div class="g">Core ideas</div>
+  <ul>
+    <li><b>Internal developer platform</b> — self-service infrastructure with sensible defaults</li>
+    <li><b>Golden paths</b> — the supported way to build, ship and run a service</li>
+    <li>Templates and scaffolding so a new service starts with CI, observability, alerts and security already wired in</li>
+    <li>Treat the platform as a product: users, feedback, adoption metrics, a roadmap</li>
+    <li>Paved path, not a mandate — teams may leave it, and then own what they took on</li>
+  </ul>
+  <div class="g">What good looks like</div>
+  <ul>
+    <li>Service catalogue and ownership metadata</li>
+    <li>Self-service environments, including ephemeral ones per pull request</li>
+    <li>Standardised pipelines and reusable workflow templates</li>
+    <li>Documentation as code; architecture decision records</li>
+    <li>Developer experience measured — time to first deploy, onboarding time, build wait time</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Backstage · Port · Crossplane · Humanitec · Cortex · reusable CI workflow libraries</div>
+  <div class="note g"><b>The measure is time from empty repository to production.</b> If a new service takes
+    weeks of copy-paste, the platform is a wiki page rather than a platform.</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">20</span>DATABASE &amp; DATA OPERATIONS</div><div class="cb">
+  <p>The part of the pipeline that cannot be rolled back by redeploying the previous image — and therefore the part that most often turns a routine release into an incident.</p>
+  <div class="g">Schema migrations</div>
+  <ul>
+    <li>Versioned, reviewed migrations in the repository</li>
+    <li>Run automatically in the pipeline, never by hand in production</li>
+    <li><b>Expand → migrate → contract</b>: add the new shape, backfill, switch reads, stop writing the old, only then drop it</li>
+    <li>Backward-compatible so old and new application versions run together during a rolling deploy</li>
+    <li>Never drop a column in the same release that stops writing to it</li>
+    <li>Large backfills run online, batched and throttled</li>
+    <li>Test the migration against production-sized data, and time it</li>
+  </ul>
+  <div class="g">Operating data stores</div>
+  <ul>
+    <li>Backup strategy, retention, and restore rehearsals</li>
+    <li>Point-in-time recovery; replica lag monitoring</li>
+    <li>Connection pooling and limits</li>
+    <li>Slow query monitoring and index review</li>
+    <li>Data masking and seeding for non-production environments</li>
+    <li>Retention and erasure obligations</li>
+  </ul>
+  <div class="tools"><b>TOOLS</b>Flyway · Liquibase · Alembic · Atlas · pgbouncer · Debezium · Velero · pgBackRest</div>
+</div></div>
+
+<div class="card x"><div class="ch">THE TOOLCHAIN, STAGE BY STAGE</div><div class="cb">
+  <p>One representative choice per stage. The stages matter; the specific products are interchangeable.</p>
+  <ul>
+    <li><b>Plan</b> — Jira, Linear, ADRs</li>
+    <li><b>Code</b> — Git, GitHub/GitLab, pre-commit</li>
+    <li><b>Build</b> — GitHub Actions, GitLab CI, Jenkins</li>
+    <li><b>Test</b> — JUnit, pytest, Testcontainers, Pact, k6</li>
+    <li><b>Scan</b> — Trivy, Snyk, SonarQube, Checkov, gitleaks</li>
+    <li><b>Package</b> — Docker/BuildKit, Helm, Artifactory, cosign</li>
+    <li><b>Provision</b> — Terraform/OpenTofu, Ansible, Crossplane</li>
+    <li><b>Deploy</b> — Argo CD, Flux, Argo Rollouts, Kubernetes</li>
+    <li><b>Operate</b> — Kubernetes, service mesh, autoscaling</li>
+    <li><b>Observe</b> — Prometheus, Grafana, Loki, OpenTelemetry</li>
+    <li><b>Respond</b> — Alertmanager, PagerDuty, runbooks, postmortems</li>
+    <li><b>Optimise</b> — Kubecost, Infracost, right-sizing</li>
+  </ul>
+  <div class="note"><b>Security and observability are not stages.</b> They appear at every stage above.
+    Drawing them as one box each is the most common way a toolchain diagram misleads.</div>
+</div></div>
+
+<div class="card x"><div class="ch">MINDSET &amp; PRINCIPLES</div><div class="cb">
+  <ul>
+    <li><b>Automate anything you do twice</b> — and write down why the third time</li>
+    <li><b>Everything as code</b> — infrastructure, pipelines, policy, dashboards, alerts, docs</li>
+    <li><b>Immutable over mutable</b> — replace, do not patch in place</li>
+    <li><b>Small changes, frequently</b> — batch size is the strongest predictor of failure rate</li>
+    <li><b>If it is not monitored, it is not in production</b></li>
+    <li><b>Fail fast, recover faster</b> — time to restore beats time between failures</li>
+    <li><b>Blameless by default</b> — systems fail, people reveal how</li>
+    <li><b>Security is everyone's responsibility</b></li>
+    <li><b>Document for the person on call at 3am</b>, who is often you</li>
+    <li><b>Measure before and after</b> — otherwise it is a preference, not an improvement</li>
+    <li><b>Collaborate</b> — DevOps is a communication fix wearing a technical costume</li>
+  </ul>
+  <div class="note r"><b>Beware resume-driven architecture.</b> Kubernetes, a mesh and GitOps on a system
+    deploying monthly by hand adds operational burden without touching the constraint. Fix the loop first, then scale the tooling to it.</div>
+</div></div>
+
+<div class="card y"><div class="ch">PRACTICE PROJECTS, IN ORDER</div><div class="cb">
+  <ul>
+    <li><b>1</b> · Containerise an app and run it with Compose — multi-stage build, non-root, health check</li>
+    <li><b>2</b> · Add CI: build, test, lint, scan, publish a tagged image on every commit</li>
+    <li><b>3</b> · Provision cloud infrastructure with Terraform — remote state, modules, a plan reviewed in a PR</li>
+    <li><b>4</b> · Deploy to managed Kubernetes with Helm — requests and limits, probes, an Ingress with TLS</li>
+    <li><b>5</b> · Convert to GitOps with Argo CD; prove drift is corrected by changing something by hand</li>
+    <li><b>6</b> · Add observability — Prometheus, Grafana, structured logs, one trace end to end</li>
+    <li><b>7</b> · Define an SLO and alert on burn rate; write the runbook for it</li>
+    <li><b>8</b> · Implement blue/green or canary with automated rollback on an SLO breach</li>
+    <li><b>9</b> · Add a database with Flyway migrations, and do a zero-downtime column rename</li>
+    <li><b>10</b> · Harden the pipeline — SAST, SCA, image and IaC scanning, SBOM, signed images, OIDC to the cloud</li>
+    <li><b>11</b> · Break it deliberately: kill nodes, exhaust disk, expire a certificate. Fix the gaps you find</li>
+    <li><b>12</b> · Right-size everything and cut the bill; measure before and after</li>
+  </ul>
+  <div class="note g"><b>Do them as one growing system, not twelve separate demos.</b> The learning is in the
+    accumulated friction — the fourth change to the same pipeline teaches more than a fourth tutorial.</div>
+</div></div>
+
+<div class="card x"><div class="ch">CAREER PATHS &amp; WHAT THEY EMPHASISE</div><div class="cb">
+  <ul>
+    <li><b>DevOps engineer</b> — pipelines, IaC, cloud, containers. Branches 1–13</li>
+    <li><b>Site reliability engineer</b> — SLOs, error budgets, incident response, capacity, deep systems and coding. Emphasises 14–16</li>
+    <li><b>Platform engineer</b> — the internal platform as a product; paved paths and developer experience. Emphasises 9–12 and 19</li>
+    <li><b>Cloud / infrastructure engineer</b> — cloud architecture, networking, cost, migration. Emphasises 4, 9, 16, 18</li>
+    <li><b>DevSecOps engineer</b> — supply chain, scanning, policy as code, compliance. Emphasises 7 and 17</li>
+    <li><b>Release / delivery engineer</b> — build systems, artifacts, release process at scale. Emphasises 5–8</li>
+    <li><b>MLOps / data platform engineer</b> — the same disciplines applied to models and pipelines; adds data versioning, feature stores and model registries</li>
+  </ul>
+  <div class="note p"><b>The branches overlap far more than the titles suggest.</b> Every path needs
+    theme A, and the difference between them is mostly which of D and E you go deepest on — which is why moving between
+    these roles is common and does not require starting over.</div>
+</div></div>
+
+</div>
+</div>
