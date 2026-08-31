@@ -13,15 +13,16 @@ Every poster ships in three forms:
 
 ---
 
-## Roadmaps
+## Roadmaps & Guides
 
-Two learning roadmaps sharing a layout: a map of numbered branches grouped into themes, then an
-expanded card per branch.
+Two learning roadmaps sharing a layout — a map of numbered branches grouped into themes, then an
+expanded card per branch — and an end-to-end operations guide.
 
 | | Poster | Covers |
 |---|---|---|
 | 🗺️ | **[System Design — Learning Roadmap](System_Design_Roadmap_Mindmap/)** | 20 branches in six themes. Fundamentals and estimation, networking and protocols, API design, data stores, storage engines, caching, distributed fundamentals, consensus and coordination, scaling, partitioning, load balancing and gateways, resilience patterns, architectural styles, distributed transactions, messaging and event streaming, IAM, observability, algorithms for system design, delivery and cost. Plus a framework for approaching design problems and practice problems grouped by pattern. |
 | 🔧 | **[DevOps — Learning Roadmap](DevOps_Roadmap_Mindmap/)** | 20 branches in five themes, with tools for each. Linux and networking, version control, cloud fundamentals, CI, testing, artifacts and supply chain, CD and GitOps, IaC, configuration management, containers, Kubernetes, deployment strategies, observability, SRE and incident response, capacity and FinOps, DevSecOps, platform services, platform engineering, database operations. Plus twelve practice projects in order and career paths. |
+| 🚀 | **[Deployment Architecture & Operations Guide](Deployment_Architecture_And_Operations/)** | A reference deployment architecture drawn as trust and network boundaries, the pipeline stage by stage, environments and promotion, deployment strategies, database and data migrations, zero-downtime mechanics, rollback and recovery, configuration and secrets, what to decide per system, resource estimation, HA/DR/backup, vulnerability and patch management, and a before/during/after checklist. |
 
 ## Architecture & Distributed Systems
 

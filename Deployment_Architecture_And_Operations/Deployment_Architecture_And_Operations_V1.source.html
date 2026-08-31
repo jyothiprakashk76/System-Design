@@ -1,0 +1,958 @@
+<meta charset="utf-8">
+<title>Deployment Architecture &amp; End-to-End Operations Guide</title>
+<style>
+  @page { size: 3400px 5293px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5293px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5263px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 822px 764px 716px 565px 812px 815px 445px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:35px;letter-spacing:.8px;font-weight:700}
+  .title .sub{font-size:15.5px;color:#93a4d6;font-weight:600;text-align:right;line-height:1.45}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:22px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:14px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.4px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.8px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.4px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.4px;line-height:1.45} li{margin-bottom:2.5px}
+  ol{margin-left:20px;font-size:13.3px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.7px;line-height:1.47;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:13px;
+           line-height:1.44;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13.2px;line-height:1.46}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>DEPLOYMENT ARCHITECTURE &amp; END-TO-END OPERATIONS GUIDE<span class="v">V1</span></h1>
+  <div class="sub">Design, deploy, operate and evolve any scalable system<br>
+    <span style="font-size:13.6px;color:#6d80b6;font-weight:500">architecture · pipeline · migrations · zero-downtime · rollback · HA/DR · vulnerabilities · checklist</span></div>
+</div>
+
+<!-- ============ 1. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;REFERENCE DEPLOYMENT ARCHITECTURE
+    <span class="sub">drawn as trust and network boundaries, because that is what actually constrains a deployment — not the box names</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 748" width="3320" height="748">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#be123c"/></marker>
+      <marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- ===== BAND A : REQUEST PATH ===== -->
+    <rect x="8" y="6" width="3304" height="292" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#1e3a8a">REQUEST PATH — each dashed boundary is a different blast radius, a different set of credentials, and a different thing that can be deployed independently</text>
+
+    <!-- untrusted -->
+    <rect x="26" y="44" width="228" height="238" rx="9" fill="#fff" stroke="#94a3b8" stroke-width="2.2" stroke-dasharray="8 5"/>
+    <text x="140" y="66" font-size="12.6" font-weight="700" fill="#475569" text-anchor="middle">CLIENTS — UNTRUSTED</text>
+    <g font-size="11" text-anchor="middle">
+      <rect x="40" y="78" width="200" height="34" rx="5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
+      <text x="140" y="99" font-size="11.8" fill="#334155">Web · SPA</text>
+      <rect x="40" y="118" width="200" height="34" rx="5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
+      <text x="140" y="139" font-size="11.8" fill="#334155">Mobile apps</text>
+      <rect x="40" y="158" width="200" height="34" rx="5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
+      <text x="140" y="179" font-size="11.8" fill="#334155">API consumers · partners</text>
+      <rect x="40" y="198" width="200" height="34" rx="5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
+      <text x="140" y="219" font-size="11.8" fill="#334155">Devices · IoT</text>
+      <text x="140" y="256" font-size="10.8" fill="#be123c">These are clients, not a</text>
+      <text x="140" y="270" font-size="10.8" fill="#be123c">server-side tier you deploy</text>
+    </g>
+
+    <!-- edge -->
+    <rect x="270" y="44" width="250" height="238" rx="9" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="395" y="66" font-size="12.6" font-weight="700" fill="#be123c" text-anchor="middle">EDGE — PUBLIC</text>
+    <g font-size="11.2" text-anchor="middle">
+      <rect x="284" y="78" width="222" height="36" rx="5" fill="#fff" stroke="#be123c" stroke-width="1.5"/>
+      <text x="395" y="94" font-size="11.6" font-weight="700" fill="#be123c">DNS</text>
+      <text x="395" y="108" font-size="10.6" fill="#7f2b2b">health-based failover · low TTL</text>
+      <rect x="284" y="120" width="222" height="36" rx="5" fill="#fff" stroke="#be123c" stroke-width="1.5"/>
+      <text x="395" y="136" font-size="11.6" font-weight="700" fill="#be123c">CDN · edge cache</text>
+      <text x="395" y="150" font-size="10.6" fill="#7f2b2b">purge on deploy</text>
+      <rect x="284" y="162" width="222" height="36" rx="5" fill="#fff" stroke="#be123c" stroke-width="1.5"/>
+      <text x="395" y="178" font-size="11.6" font-weight="700" fill="#be123c">WAF · DDoS · bot</text>
+      <text x="395" y="192" font-size="10.6" fill="#7f2b2b">rules are deployable artefacts</text>
+      <rect x="284" y="204" width="222" height="42" rx="5" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="395" y="221" font-size="11.6" font-weight="700" fill="#be123c">Load balancer (L4/L7)</text>
+      <text x="395" y="236" font-size="10.6" fill="#7f2b2b">TLS termination · draining</text>
+      <text x="395" y="266" font-size="10.8" font-weight="700" fill="#b91c1c">The traffic-shifting point</text>
+      <text x="395" y="278" font-size="10.6" fill="#7f2b2b">every strategy in panel 4 uses</text>
+    </g>
+
+    <!-- public subnet / gateway -->
+    <rect x="536" y="44" width="236" height="238" rx="9" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="654" y="66" font-size="12.6" font-weight="700" fill="#b45309" text-anchor="middle">GATEWAY</text>
+    <g font-size="11" text-anchor="middle">
+      <rect x="550" y="78" width="208" height="88" rx="5" fill="#fff" stroke="#b45309" stroke-width="1.5"/>
+      <text x="654" y="96" font-size="11.6" font-weight="700" fill="#b45309">API gateway / ingress</text>
+      <text x="654" y="112" fill="#7a3d06">routing · rate limit · quota</text>
+      <text x="654" y="127" fill="#7a3d06">authN · token validation</text>
+      <text x="654" y="142" fill="#7a3d06">versioning · transformation</text>
+      <text x="654" y="158" fill="#6b7391">NGINX · Kong · Envoy · cloud LB</text>
+      <rect x="550" y="172" width="208" height="52" rx="5" fill="#fff" stroke="#b45309" stroke-width="1.5"/>
+      <text x="654" y="190" font-size="11.6" font-weight="700" fill="#b45309">Identity provider</text>
+      <text x="654" y="206" fill="#7a3d06">OIDC · OAuth 2.1 · SSO</text>
+      <text x="654" y="219" fill="#6b7391">issues the token, validates here</text>
+      <text x="654" y="248" font-size="10.8" fill="#a35c00">Public subnet — the only</text>
+      <text x="654" y="262" font-size="10.8" fill="#a35c00">tier reachable from internet</text>
+    </g>
+
+    <!-- private app -->
+    <rect x="788" y="44" width="560" height="238" rx="9" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1068" y="66" font-size="12.6" font-weight="700" fill="#0f766e" text-anchor="middle">APPLICATION TIER — PRIVATE SUBNET, NO PUBLIC IP</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="802" y="78" width="130" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="867" y="95" font-size="11.4" font-weight="700" fill="#0f766e">Auth</text><text x="867" y="112" fill="#2f4f47">stateless</text>
+      <rect x="940" y="78" width="130" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="1005" y="95" font-size="11.4" font-weight="700" fill="#0f766e">Business svc</text><text x="1005" y="112" fill="#2f4f47">stateless</text>
+      <rect x="1078" y="78" width="130" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="1143" y="95" font-size="11.4" font-weight="700" fill="#0f766e">Order svc</text><text x="1143" y="112" fill="#2f4f47">stateless</text>
+      <rect x="1216" y="78" width="118" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="1275" y="95" font-size="11.4" font-weight="700" fill="#0f766e">Notification</text><text x="1275" y="112" fill="#2f4f47">stateless</text>
+
+      <rect x="802" y="132" width="266" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="935" y="149" font-size="11.4" font-weight="700" fill="#0f766e">Async workers · consumers · schedulers</text>
+      <text x="935" y="166" fill="#be123c">deployed separately — drain in-flight work first</text>
+      <rect x="1076" y="132" width="258" height="46" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="1205" y="149" font-size="11.4" font-weight="700" fill="#0f766e">Stateful services</text>
+      <text x="1205" y="166" fill="#be123c">ordered rollout, PVCs — not the same deploy</text>
+    </g>
+    <rect x="802" y="186" width="532" height="86" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="818" y="204" font-size="11.6" font-weight="700" fill="#047857">WHAT MAKES THIS TIER DEPLOYABLE WITHOUT DOWNTIME</text>
+    <text x="818" y="222" font-size="11" fill="#2f4f47">Stateless — no session or file state on the instance, so any replica can be replaced at any time.</text>
+    <text x="818" y="238" font-size="11" fill="#2f4f47">Handles <tspan font-family="Menlo,monospace" font-size="10.4">SIGTERM</tspan>: stop accepting, finish in-flight, close connections, exit inside the grace period.</text>
+    <text x="818" y="254" font-size="11" fill="#2f4f47">Readiness probe gates traffic; liveness does not fail merely because a dependency is down.</text>
+    <text x="818" y="268" font-size="11" font-weight="700" fill="#047857">A service missing any of these cannot be rolled, whatever strategy the pipeline claims to use.</text>
+
+    <!-- data tier -->
+    <rect x="1364" y="44" width="600" height="238" rx="9" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1664" y="66" font-size="12.6" font-weight="700" fill="#7c2d92" text-anchor="middle">DATA TIER — ISOLATED SUBNET, REACHABLE ONLY FROM THE APP TIER</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="1378" y="78" width="140" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1448" y="95" font-size="11.4" font-weight="700" fill="#7c2d92">Primary DB</text>
+      <text x="1448" y="111" fill="#4b3a5e">writes · Multi-AZ</text>
+      <text x="1448" y="124" fill="#be123c">schema is the risk</text>
+      <rect x="1526" y="78" width="140" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1596" y="95" font-size="11.4" font-weight="700" fill="#7c2d92">Read replicas</text>
+      <text x="1596" y="111" fill="#4b3a5e">reads · reporting</text>
+      <text x="1596" y="124" fill="#6b7391">watch replica lag</text>
+      <rect x="1674" y="78" width="140" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1744" y="95" font-size="11.4" font-weight="700" fill="#7c2d92">Cache</text>
+      <text x="1744" y="111" fill="#4b3a5e">Redis · Memcached</text>
+      <text x="1744" y="124" fill="#6b7391">cold after restart</text>
+      <rect x="1822" y="78" width="128" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1886" y="95" font-size="11.4" font-weight="700" fill="#7c2d92">Search</text>
+      <text x="1886" y="111" fill="#4b3a5e">OpenSearch</text>
+      <text x="1886" y="124" fill="#6b7391">reindex is a migration</text>
+
+      <rect x="1378" y="138" width="140" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1448" y="155" font-size="11.4" font-weight="700" fill="#7c2d92">Object storage</text>
+      <text x="1448" y="171" fill="#4b3a5e">S3 · blobs · media</text>
+      <text x="1448" y="184" fill="#6b7391">lifecycle policies</text>
+      <rect x="1526" y="138" width="140" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1596" y="155" font-size="11.4" font-weight="700" fill="#7c2d92">Queue · stream</text>
+      <text x="1596" y="171" fill="#4b3a5e">Kafka · RabbitMQ · SQS</text>
+      <text x="1596" y="184" fill="#be123c">message schema = contract</text>
+      <rect x="1674" y="138" width="276" height="52" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+      <text x="1812" y="155" font-size="11.4" font-weight="700" fill="#7c2d92">Backup targets · cross-region replicas</text>
+      <text x="1812" y="171" fill="#4b3a5e">snapshots · PITR · offsite copy</text>
+      <text x="1812" y="184" fill="#be123c">draw them, or nobody owns them</text>
+    </g>
+    <rect x="1378" y="198" width="572" height="74" rx="6" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1394" y="216" font-size="11.6" font-weight="700" fill="#b91c1c">THE ASYMMETRY THAT GOVERNS EVERY DEPLOYMENT</text>
+    <text x="1394" y="234" font-size="11" fill="#7f2b2b">Everything to the left of this box can be rolled back by redeploying the previous image. Nothing in this box can.</text>
+    <text x="1394" y="250" font-size="11" fill="#7f2b2b">A dropped column, a rewritten row, a consumed message and a purged cache are not reversible by a pipeline.</text>
+    <text x="1394" y="266" font-size="11" font-weight="700" fill="#b91c1c">Plan the data change first; the code deployment is the easy half. See panel 5.</text>
+
+    <!-- external + ops access -->
+    <rect x="1980" y="44" width="300" height="238" rx="9" fill="#fff" stroke="#155e75" stroke-width="2.5"/>
+    <text x="2130" y="66" font-size="12.6" font-weight="700" fill="#155e75" text-anchor="middle">EXTERNAL DEPENDENCIES</text>
+    <g font-size="11" text-anchor="middle">
+      <rect x="1994" y="78" width="272" height="30" rx="5" fill="#f0fbf8" stroke="#155e75" stroke-width="1.4"/>
+      <text x="2130" y="98" fill="#155e75">Payment gateway</text>
+      <rect x="1994" y="112" width="272" height="30" rx="5" fill="#f0fbf8" stroke="#155e75" stroke-width="1.4"/>
+      <text x="2130" y="132" fill="#155e75">Email · SMS · push</text>
+      <rect x="1994" y="146" width="272" height="30" rx="5" fill="#f0fbf8" stroke="#155e75" stroke-width="1.4"/>
+      <text x="2130" y="166" fill="#155e75">Third-party APIs</text>
+      <rect x="1994" y="180" width="272" height="30" rx="5" fill="#f0fbf8" stroke="#155e75" stroke-width="1.4"/>
+      <text x="2130" y="200" fill="#155e75">Analytics · data platform</text>
+    </g>
+    <text x="2130" y="230" font-size="10.8" fill="#be123c" text-anchor="middle">Their availability is now yours.</text>
+    <text x="2130" y="245" font-size="10.8" fill="#7f2b2b" text-anchor="middle">Timeout, retry with jitter, circuit-break</text>
+    <text x="2130" y="260" font-size="10.8" fill="#7f2b2b" text-anchor="middle">and degrade — never block a deploy</text>
+    <text x="2130" y="274" font-size="10.8" fill="#7f2b2b" text-anchor="middle">or a request on their worst day.</text>
+
+    <!-- ops access -->
+    <rect x="2296" y="44" width="1002" height="238" rx="9" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="2312" y="66" font-size="13" font-weight="700" fill="#1e3a8a">WHAT A GENERIC ARCHITECTURE DIAGRAM USUALLY LEAVES OUT — and every one of these is a deployment concern</text>
+    <g font-size="11.4">
+      <text x="2312" y="90" font-weight="700" fill="#be123c">1 · Network boundaries.</text>
+      <text x="2492" y="90" fill="#42507a">Public, private and isolated subnets, security groups, egress control. Without them &ldquo;deploy the service&rdquo; has no defined reachability.</text>
+      <text x="2312" y="112" font-weight="700" fill="#be123c">2 · The load balancer.</text>
+      <text x="2478" y="112" fill="#42507a">Frequently omitted because the gateway is drawn — but the LB is where traffic is actually shifted during blue/green and canary.</text>
+      <text x="2312" y="134" font-weight="700" fill="#be123c">3 · Operator access.</text>
+      <text x="2476" y="134" fill="#42507a">Bastion or zero-trust access, break-glass credentials, audit. How a human reaches production at 3am is part of the architecture.</text>
+      <text x="2312" y="156" font-weight="700" fill="#be123c">4 · Environments.</text>
+      <text x="2452" y="156" fill="#42507a">Dev, staging and production are separate instances of this whole picture. Parity between them is what makes staging predictive.</text>
+      <text x="2312" y="178" font-weight="700" fill="#be123c">5 · Async workers.</text>
+      <text x="2452" y="178" fill="#42507a">Consumers and schedulers deploy on a different rhythm from request-serving services, and must drain in-flight work.</text>
+      <text x="2312" y="200" font-weight="700" fill="#be123c">6 · Backup and DR targets.</text>
+      <text x="2530" y="200" fill="#42507a">If they are not on the diagram, no one owns them, and the restore has never been tested.</text>
+      <text x="2312" y="222" font-weight="700" fill="#be123c">7 · Stateful workloads.</text>
+      <text x="2492" y="222" fill="#42507a">Databases, brokers and anything with a volume follow completely different deployment rules from stateless replicas.</text>
+      <text x="2312" y="244" font-weight="700" fill="#be123c">8 · The clients themselves.</text>
+      <text x="2532" y="244" fill="#42507a">Mobile apps you cannot force-update mean old API versions live in the wild for months. That is a deployment constraint.</text>
+      <text x="2312" y="270" font-weight="700" fill="#1e3a8a">Grouping browsers and mobile apps into a server-side &ldquo;presentation layer&rdquo; hides point 8 entirely — those are clients you do not deploy and cannot roll back.</text>
+    </g>
+
+    <!-- arrows -->
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M254,163 L264,163"/><path d="M520,163 L530,163"/><path d="M772,163 L782,163"/><path d="M1348,163 L1358,163"/>
+    </g>
+    <g stroke="#155e75" stroke-width="2.2" fill="none" marker-end="url(#g)" stroke-dasharray="6 4"><path d="M1964,140 L1974,140"/></g>
+
+    <!-- ===== BAND B : PLATFORM ===== -->
+    <rect x="8" y="306" width="3304" height="150" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="330" font-size="16.5" font-weight="700" fill="#7c2d92">PLATFORM &amp; CROSS-CUTTING — deployed and versioned like everything else, and usually the first thing to drift</text>
+    <g font-size="10.9">
+      <rect x="26" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="252" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">RUNTIME PLATFORM</text>
+      <text x="40" y="381" fill="#42507a">· Kubernetes across multiple AZs, or managed compute</text>
+      <text x="40" y="397" fill="#42507a">· Node pools, autoscaling, PodDisruptionBudgets</text>
+      <text x="40" y="413" fill="#42507a">· Container registry with retention and scanning</text>
+      <text x="40" y="431" fill="#be123c" font-weight="700">Cluster upgrades are deployments too — and the riskiest ones.</text>
+
+      <rect x="492" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="718" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">CONFIG &amp; SECRETS</text>
+      <text x="506" y="381" fill="#42507a">· Config externalised per environment, never baked into images</text>
+      <text x="506" y="397" fill="#42507a">· Secrets from a managed store, injected at runtime, rotated</text>
+      <text x="506" y="413" fill="#42507a">· Feature flags as a separate control plane from deployment</text>
+      <text x="506" y="431" fill="#be123c" font-weight="700">Config changes cause outages as often as code changes. Version them.</text>
+
+      <rect x="958" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1184" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">OBSERVABILITY</text>
+      <text x="972" y="381" fill="#42507a">· Logs, metrics, traces — correlated by request and release ID</text>
+      <text x="972" y="397" fill="#42507a">· Dashboards, alerting, SLOs and error budgets</text>
+      <text x="972" y="413" fill="#42507a">· Deployment markers on every dashboard</text>
+      <text x="972" y="431" fill="#be123c" font-weight="700">If you cannot see the release on the graph, you cannot judge it.</text>
+
+      <rect x="1424" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1650" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">SECURITY CONTROLS</text>
+      <text x="1438" y="381" fill="#42507a">· IAM least privilege; workload identity, no long-lived keys</text>
+      <text x="1438" y="397" fill="#42507a">· Encryption in transit and at rest; mTLS between services</text>
+      <text x="1438" y="413" fill="#42507a">· Admission policy, image signature verification, network policy</text>
+      <text x="1438" y="431" fill="#be123c" font-weight="700">Enforce at admission, not only in the pipeline.</text>
+
+      <rect x="1890" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2116" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">RESILIENCE</text>
+      <text x="1904" y="381" fill="#42507a">· Timeouts, retries with jitter, circuit breakers, bulkheads</text>
+      <text x="1904" y="397" fill="#42507a">· Graceful degradation and load shedding</text>
+      <text x="1904" y="413" fill="#42507a">· Health checks that distinguish self from dependency failure</text>
+      <text x="1904" y="431" fill="#be123c" font-weight="700">Tested by deliberately breaking things, not by assertion.</text>
+
+      <rect x="2356" y="342" width="452" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2582" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">COST &amp; CAPACITY</text>
+      <text x="2370" y="381" fill="#42507a">· Requests and limits right-sized; autoscaling on the right signal</text>
+      <text x="2370" y="397" fill="#42507a">· Surge headroom for rolling updates and blue/green duplication</text>
+      <text x="2370" y="413" fill="#42507a">· Cost per environment and per release visible</text>
+      <text x="2370" y="431" fill="#be123c" font-weight="700">Missing from most guides — a deploy that doubles spend is a failed deploy.</text>
+
+      <rect x="2822" y="342" width="476" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="3060" y="362" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">GOVERNANCE</text>
+      <text x="2836" y="381" fill="#42507a">· Change records, approvals and audit trail where regulated</text>
+      <text x="2836" y="397" fill="#42507a">· Data residency and retention obligations</text>
+      <text x="2836" y="413" fill="#42507a">· Runbooks, on-call rotation, incident process</text>
+      <text x="2836" y="431" fill="#be123c" font-weight="700">Design it in — retrofitting an audit trail is far more expensive.</text>
+    </g>
+
+    <!-- ===== BAND C : DELIVERY PATH ===== -->
+    <rect x="8" y="464" width="3304" height="278" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="26" y="488" font-size="16.5" font-weight="700" fill="#047857">DELIVERY PATH — how a change reaches the picture above. Note that it never writes to production directly.</text>
+
+    <g font-size="10.8">
+      <rect x="26" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="122" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Source</text>
+      <text x="122" y="539" fill="#2f4f47" text-anchor="middle">app code · IaC · config</text>
+      <text x="122" y="555" fill="#2f4f47" text-anchor="middle">migrations · policy</text>
+      <text x="122" y="574" fill="#6b7391" text-anchor="middle">one commit, reviewed</text>
+
+      <rect x="232" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="328" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">CI</text>
+      <text x="328" y="539" fill="#2f4f47" text-anchor="middle">build · unit · SAST</text>
+      <text x="328" y="555" fill="#2f4f47" text-anchor="middle">SCA · secret scan</text>
+      <text x="328" y="574" fill="#6b7391" text-anchor="middle">build once, here only</text>
+
+      <rect x="438" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="534" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Artifact</text>
+      <text x="534" y="539" fill="#2f4f47" text-anchor="middle">image scan · SBOM</text>
+      <text x="534" y="555" fill="#2f4f47" text-anchor="middle">sign · push to registry</text>
+      <text x="534" y="574" fill="#6b7391" text-anchor="middle">immutable digest</text>
+
+      <rect x="644" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="740" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Staging</text>
+      <text x="740" y="539" fill="#2f4f47" text-anchor="middle">migrate · deploy</text>
+      <text x="740" y="555" fill="#2f4f47" text-anchor="middle">integration · <tspan font-weight="700">DAST</tspan></text>
+      <text x="740" y="574" fill="#be123c" text-anchor="middle">DAST needs it running</text>
+
+      <rect x="850" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#b45309" stroke-width="2"/>
+      <text x="946" y="520" font-size="11.8" font-weight="700" fill="#b45309" text-anchor="middle">Gate</text>
+      <text x="946" y="539" fill="#7a3d06" text-anchor="middle">policy · approval</text>
+      <text x="946" y="555" fill="#7a3d06" text-anchor="middle">change record</text>
+      <text x="946" y="574" fill="#6b7391" text-anchor="middle">automated where possible</text>
+
+      <rect x="1056" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1152" y="520" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">Migrate</text>
+      <text x="1152" y="539" fill="#7f2b2b" text-anchor="middle">expand phase only</text>
+      <text x="1152" y="555" fill="#7f2b2b" text-anchor="middle">backward compatible</text>
+      <text x="1152" y="574" fill="#7f2b2b" text-anchor="middle">separate from code</text>
+
+      <rect x="1262" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="1358" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Progressive deploy</text>
+      <text x="1358" y="539" fill="#2f4f47" text-anchor="middle">canary → % → full</text>
+      <text x="1358" y="555" fill="#2f4f47" text-anchor="middle">automated analysis</text>
+      <text x="1358" y="574" fill="#6b7391" text-anchor="middle">same artifact as staging</text>
+
+      <rect x="1468" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="1564" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Verify</text>
+      <text x="1564" y="539" fill="#2f4f47" text-anchor="middle">smoke · synthetics</text>
+      <text x="1564" y="555" fill="#2f4f47" text-anchor="middle">SLO burn · bake time</text>
+      <text x="1564" y="574" fill="#6b7391" text-anchor="middle">auto-rollback on breach</text>
+
+      <rect x="1674" y="500" width="192" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="1770" y="520" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Contract</text>
+      <text x="1770" y="539" fill="#2f4f47" text-anchor="middle">stop writing old shape</text>
+      <text x="1770" y="555" fill="#2f4f47" text-anchor="middle">backfill · then drop</text>
+      <text x="1770" y="574" fill="#be123c" text-anchor="middle">days later, not minutes</text>
+    </g>
+    <g stroke="#047857" stroke-width="2.4" fill="none" marker-end="url(#g)">
+      <path d="M218,544 L226,544"/><path d="M424,544 L432,544"/><path d="M630,544 L638,544"/><path d="M836,544 L844,544"/>
+      <path d="M1042,544 L1050,544"/><path d="M1248,544 L1256,544"/><path d="M1454,544 L1462,544"/><path d="M1660,544 L1668,544"/>
+    </g>
+
+    <rect x="1890" y="500" width="700" height="88" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1906" y="520" font-size="12.4" font-weight="700" fill="#b91c1c">THREE PLACEMENT ERRORS THAT MAKE A PIPELINE DIAGRAM WRONG</text>
+    <text x="1906" y="539" font-size="11.2" fill="#7f2b2b"><tspan font-weight="700">DAST before deployment</tspan> — it exercises a running application over HTTP. Before an image exists there is nothing to test.</text>
+    <text x="1906" y="556" font-size="11.2" fill="#7f2b2b"><tspan font-weight="700">Scanning before build</tspan> — image scanning must follow image creation; SCA and SAST come earlier, and they are different tools.</text>
+    <text x="1906" y="574" font-size="11.2" fill="#7f2b2b"><tspan font-weight="700">No migration stage</tspan> — the single most common cause of a deployment that cannot be rolled back.</text>
+
+    <rect x="2606" y="500" width="692" height="88" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.8"/>
+    <text x="2622" y="520" font-size="12.4" font-weight="700" fill="#1d4ed8">BUILD ONCE, PROMOTE THE SAME ARTIFACT</text>
+    <text x="2622" y="539" font-size="11.2" fill="#1e3a5f">The image tested in staging must be the exact digest deployed to production. Rebuilding per environment means the</text>
+    <text x="2622" y="556" font-size="11.2" fill="#1e3a5f">artifact you validated is not the artifact you shipped, and every staging result becomes advisory.</text>
+    <text x="2622" y="574" font-size="11.2" font-weight="700" fill="#1d4ed8">Environment differences belong in configuration, injected at deploy time — never in the build.</text>
+
+    <rect x="26" y="600" width="3272" height="130" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="42" y="620" font-size="13.2" font-weight="700" fill="#047857">HOW TO USE THIS GUIDE</text>
+    <text x="42" y="642" font-size="11.8" fill="#42507a">1 · Classify the system — criticality tier, RTO/RPO, compliance scope, traffic profile. Everything downstream follows from that, and a Tier-3 internal tool should not inherit a Tier-1 deployment process.</text>
+    <text x="42" y="662" font-size="11.8" fill="#42507a">2 · Size it (panel 10), then choose the architecture above, dropping what you do not need. Most systems do not need a search cluster, a message broker and a service mesh on day one.</text>
+    <text x="42" y="682" font-size="11.8" fill="#42507a">3 · Build the pipeline (panels 2, 3) before the system gets large. Retrofitting a delivery process onto a running product is far harder than starting with one.</text>
+    <text x="42" y="702" font-size="11.8" fill="#42507a">4 · Decide the data-change process (panel 5) and the rollback plan (panel 7) <tspan font-weight="700">before</tspan> the first production deploy, not during the first incident.</text>
+    <text x="42" y="724" font-size="11.8" font-weight="700" fill="#be123c">5 · Then operate: measure deployment frequency, lead time, change failure rate and time to restore. If a change to this process does not move one of those four, it was decoration.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 2. PIPELINE ============ -->
+<div class="panel c1 span2">
+  <div class="phead">2 &nbsp;· &nbsp;THE DEPLOYMENT PIPELINE, STAGE BY STAGE
+    <span class="sub">what runs where, what it catches, and what it cannot catch at that point</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:34px">#</th><th style="width:186px">Stage</th><th>What runs, and why it belongs here</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Commit</b></td><td>Trunk-based, small changes. Pre-commit hooks catch secrets and formatting before CI ever runs. Application code, IaC, config and <b>migrations travel in the same commit</b> so they are reviewed together.</td></tr>
+        <tr><td>2</td><td><b>Build</b></td><td>Compile and package once. Stamp the commit SHA and build number into the artifact. Cache dependencies; keep it under a few minutes or people stop watching it.</td></tr>
+        <tr><td>3</td><td><b>Unit &amp; component tests</b></td><td>Fast, isolated, run on every commit. Coverage thresholds that <i>block</i>, not just report.</td></tr>
+        <tr><td>4</td><td><b>SAST</b></td><td>Static analysis of source. Catches injection patterns, unsafe deserialisation, hardcoded credentials.</td></tr>
+        <tr><td>5</td><td><b>SCA — dependency scan</b></td><td>Your own code is a minority of what ships. This is usually the highest-yield scan of all, and it is missing from most pipeline diagrams.</td></tr>
+        <tr><td>6</td><td><b>Secret scan</b></td><td>Working tree <i>and</i> history. A secret committed and then removed is still leaked.</td></tr>
+        <tr><td>7</td><td><b>Build image</b></td><td>Multi-stage, minimal base, non-root, pinned by digest.</td></tr>
+        <tr><td>8</td><td><b>Image scan</b></td><td>OS and library layers. <b>Must come after the image exists</b> — a scan before the build cannot see the base image.</td></tr>
+        <tr><td>9</td><td><b>SBOM + sign</b></td><td>Generate a bill of materials, sign the artifact, attach provenance. This is what later answers &ldquo;which running services contain this CVE?&rdquo;</td></tr>
+        <tr><td>10</td><td><b>Push to registry</b></td><td>Immutable tag or digest. Never overwrite an existing tag.</td></tr>
+        <tr><td>11</td><td><b>Migrate staging</b></td><td>Run schema changes as their own step, expand-phase only, before the new code arrives.</td></tr>
+        <tr><td>12</td><td><b>Deploy to staging</b></td><td>Same manifests and process as production. If staging deploys differently, it is not a rehearsal.</td></tr>
+        <tr><td>13</td><td><b>Integration &amp; contract tests</b></td><td>Real dependencies. Contract tests let services deploy independently without an end-to-end suite gating everyone.</td></tr>
+        <tr><td>14</td><td><b>DAST</b></td><td><b>Here — against a running application.</b> Authenticated scanning where it matters. This cannot run earlier in the pipeline.</td></tr>
+        <tr><td>15</td><td><b>Performance test</b></td><td>Against a realistic dataset, with a pass/fail threshold rather than a chart nobody opens.</td></tr>
+        <tr><td>16</td><td><b>Gate</b></td><td>Policy checks automated; human approval only where regulation or risk genuinely requires it. Record the change.</td></tr>
+        <tr><td>17</td><td><b>Migrate production</b></td><td>Expand phase, backward compatible, timed against production-sized data beforehand.</td></tr>
+        <tr><td>18</td><td><b>Progressive deploy</b></td><td>Canary or blue/green, with automated metric analysis deciding promotion. Same artifact digest as staging.</td></tr>
+        <tr><td>19</td><td><b>Verify</b></td><td>Smoke tests, synthetic transactions, SLO burn-rate check, and a bake period before full rollout.</td></tr>
+        <tr><td>20</td><td><b>Contract phase</b></td><td>Days later: stop writing the old shape, backfill, then drop it. The last step of the migration, deliberately separated.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>A gate that never blocks is a report.</b> If scans, coverage thresholds and
+      performance tests only produce warnings, they cost pipeline time and change no decisions. Decide which findings stop a
+      release, and let the rest be advisory — explicitly, rather than by everyone learning to ignore the output.</div>
+    <div class="callout g"><b>Keep the whole thing fast.</b> Commit to production-ready in well under an hour
+      keeps people watching their changes. Once a pipeline runs for half a day, developers batch work to avoid it, batch size
+      grows, and change failure rate follows — the pipeline's own slowness becomes the delivery risk.</div>
+    <div class="callout r"><b>Rollback is not a stage — it is a property of every stage after 17.</b> If any step
+      between 17 and 20 cannot be undone by redeploying the previous digest, that step needed a compensating plan written
+      before it ran.</div>
+  </div>
+</div>
+
+<!-- ============ 3. ENVIRONMENTS ============ -->
+<div class="panel c2">
+  <div class="phead">3 &nbsp;· &nbsp;ENVIRONMENTS &amp; PROMOTION <span class="sub">parity is the point</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Environment</th><th>Purpose, and what must match production</th></tr></thead>
+      <tbody>
+        <tr><td><b>Local / dev</b></td><td>Fast iteration. Containers so runtime matches; data may be synthetic.</td></tr>
+        <tr><td><b>Ephemeral / PR</b></td><td>Created per pull request, destroyed on merge. Catches integration problems before they reach a shared environment.</td></tr>
+        <tr><td><b>Staging</b></td><td><b>Same topology, same deploy process, same manifests</b> as production. Scaled down is fine; shaped differently is not.</td></tr>
+        <tr><td><b>Production</b></td><td>The only environment that matters. Everything else exists to predict it.</td></tr>
+        <tr><td><b>DR</b></td><td>Provisioned from the same IaC. If it is built by hand it will not work when needed.</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">What breaks parity, in order of frequency</div>
+    <ul>
+      <li><b>Data volume</b> — a query fast on 10,000 rows and fatal on 100 million. The most common staging blind spot.</li>
+      <li><b>Traffic and concurrency</b> — connection pools, locks and race conditions only appear under load.</li>
+      <li><b>Configuration drift</b> — a flag set in production months ago that nobody replicated back.</li>
+      <li><b>Third-party sandboxes</b> that behave differently from the real service.</li>
+      <li><b>Manual changes</b> made in one environment and never codified.</li>
+    </ul>
+    <div class="h3">What legitimately varies per environment</div>
+    <table>
+      <thead><tr><th style="width:130px">Varies</th><th>Never varies</th></tr></thead>
+      <tbody>
+        <tr><td>Endpoints and hostnames</td><td>The artifact digest</td></tr>
+        <tr><td>Credentials and keys</td><td>Application code paths</td></tr>
+        <tr><td>Replica counts and instance sizes</td><td>The deployment mechanism</td></tr>
+        <tr><td>Rate limits and quotas</td><td>Migration scripts</td></tr>
+        <tr><td>Log level and sampling rate</td><td>Health check semantics</td></tr>
+        <tr><td>Feature flag values</td><td>The manifests, beyond substituted values</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Promote artifacts, not branches.</b> The same signed digest moves from staging to
+      production. Anything rebuilt for production was never tested.</div>
+    <div class="callout g"><b>Staging that nobody trusts is worse than no staging.</b> It costs money, slows every
+      release, and provides false confidence. Either invest in parity or shorten the path and rely on progressive delivery
+      in production with fast rollback — both are defensible; a neglected staging environment is not.</div>
+  </div>
+</div>
+
+<!-- ============ 4. STRATEGIES ============ -->
+<div class="panel c5">
+  <div class="phead">4 &nbsp;· &nbsp;DEPLOYMENT STRATEGIES <span class="sub">and what each costs</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:98px">Strategy</th><th>Behaviour · cost · when to choose it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Recreate</b></td><td>Stop all, start all. Downtime equal to startup time. No extra capacity. Fine for batch jobs, internal tools and anything with a maintenance window.</td></tr>
+        <tr><td><b>Rolling</b></td><td>Replace replicas gradually. No downtime, no duplicate environment — but <b>both versions run simultaneously</b>, so the change must be backward compatible. The sensible default.</td></tr>
+        <tr><td><b>Blue / green</b></td><td>Two full environments, switch traffic at the LB. Instant rollback, simplest mental model. <b>Doubles infrastructure</b> during the switch, and shared state (database, cache, queues) is still shared.</td></tr>
+        <tr><td><b>Canary</b></td><td>Small traffic share first, expand on metrics. Lowest blast radius, best signal. Needs good telemetry and enough traffic for the sample to mean anything.</td></tr>
+        <tr><td><b>Shadow</b></td><td>Mirror real traffic to the new version and discard responses. Excellent for validating performance; must not cause side effects — no writes, no third-party calls.</td></tr>
+        <tr><td><b>A/B</b></td><td>Route cohorts to compare outcomes. A product technique, not a safety one.</td></tr>
+        <tr><td><b>Feature flag</b></td><td>Deploy dark, release by configuration. Decouples the two entirely and gives the fastest possible revert.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Every strategy shares one weakness: the database.</b> Blue/green switches the
+      application but both colours point at the same schema. Canary runs old and new against one dataset. The strategy
+      protects the code path; nothing protects you from an incompatible data change.</div>
+    <div class="h3">Choosing, in practice</div>
+    <table>
+      <thead><tr><th style="width:150px">If…</th><th>Then</th></tr></thead>
+      <tbody>
+        <tr><td>Low traffic</td><td><b>Blue/green</b> — canary needs volume for the sample to mean anything</td></tr>
+        <tr><td>High traffic, good telemetry</td><td><b>Canary</b> with automated metric analysis</td></tr>
+        <tr><td>Cannot afford duplicate capacity</td><td><b>Rolling</b>, with strict backward compatibility</td></tr>
+        <tr><td>Change is risky but reversible</td><td><b>Feature flag</b> behind any of the above</td></tr>
+        <tr><td>Performance is the unknown</td><td><b>Shadow</b> first, then canary</td></tr>
+        <tr><td>Stateful workload</td><td>Ordered rolling with PVC care — <b>not</b> blue/green</td></tr>
+        <tr><td>Batch or internal tool</td><td><b>Recreate</b>. Do not over-engineer it</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Choose by blast radius and traffic volume.</b> Low traffic makes canary metrics
+      meaningless — prefer blue/green. High traffic and good telemetry make canary strictly better. Everything else is
+      preference.</div>
+  </div>
+</div>
+
+<!-- ============ 5. MIGRATIONS ============ -->
+<div class="panel c4 span2">
+  <div class="phead">5 &nbsp;· &nbsp;DATABASE &amp; DATA MIGRATIONS
+    <span class="sub">the part of a deployment that cannot be undone by redeploying the previous image — and the most common omission in a deployment guide</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The constraint that drives everything here.</b> During a rolling
+        deploy, blue/green switch or canary, <b>old and new application code run at the same time against one database</b>.
+        Every schema change must therefore work with both versions simultaneously — not just with the new one.</div>
+      <div class="h3">Expand → migrate → contract</div>
+      <div class="code"><span class="c">// renaming user.name → user.full_name, safely</span>
+
+<span class="k">EXPAND</span>   release 1, deploy before the code
+  ADD COLUMN full_name  <span class="c">// nullable, no default backfill</span>
+  <span class="c">// old code ignores it, new code not yet live</span>
+
+<span class="k">MIGRATE</span>  release 2
+  app writes BOTH columns, reads <span class="v">name</span>
+  backfill full_name in batches, throttled
+  <span class="c">// safe to roll back — both columns populated</span>
+
+<span class="k">SWITCH</span>   release 3
+  app reads <span class="v">full_name</span>, still writes both
+  <span class="c">// verify for days, not minutes</span>
+
+<span class="k">CONTRACT</span> release 4, days or weeks later
+  app stops writing <span class="v">name</span>
+  DROP COLUMN name    <span class="c">// only now, and irreversibly</span></div>
+      <div class="callout"><b>Four releases to rename a column</b> feels excessive until the first time a
+        rollback fails because the previous version wrote to a column that no longer exists. Each step is independently
+        reversible; the combined change is not.</div>
+    </div>
+    <div>
+      <div class="h3">Safe and unsafe changes</div>
+      <table>
+        <thead><tr><th style="width:130px">Change</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Add nullable column</td><td><b style="color:#047857">Safe</b> — old code ignores it</td></tr>
+          <tr><td>Add table</td><td><b style="color:#047857">Safe</b></td></tr>
+          <tr><td>Add index</td><td><b style="color:#b45309">Careful</b> — build concurrently or it locks writes</td></tr>
+          <tr><td>Add column with default</td><td><b style="color:#b45309">Careful</b> — may rewrite the table on older engines</td></tr>
+          <tr><td>Widen a type</td><td><b style="color:#b45309">Careful</b> — usually safe, sometimes a full rewrite</td></tr>
+          <tr><td>Add NOT NULL constraint</td><td><b style="color:#be123c">Unsafe</b> — old code inserts nulls</td></tr>
+          <tr><td>Rename column or table</td><td><b style="color:#be123c">Unsafe</b> — breaks whichever version is not updated</td></tr>
+          <tr><td>Drop column or table</td><td><b style="color:#be123c">Unsafe &amp; irreversible</b> — contract phase only</td></tr>
+          <tr><td>Narrow a type</td><td><b style="color:#be123c">Unsafe</b> — data loss</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Operational rules</div>
+      <ul>
+        <li><b>Migrations run as their own pipeline step</b>, never on application startup — parallel replicas would each try to run them.</li>
+        <li><b>Versioned, reviewed, forward-only.</b> Write the compensating migration rather than relying on a <span class="mono">down</span> script nobody has tested.</li>
+        <li><b>Time it against production-sized data first.</b> A migration that takes four hours needs a different plan from one that takes four seconds.</li>
+        <li><b>Backfills run online</b>, batched and throttled, with progress visible and a way to pause.</li>
+        <li><b>Lock awareness</b> — know which statements take an exclusive lock and for how long. A brief lock on a busy table is an outage.</li>
+        <li><b>Take a backup or snapshot immediately before</b>, and confirm it completed.</li>
+      </ul>
+      <div class="callout p"><b>The same rules apply beyond the database.</b> Message schemas must be readable by
+        old and new consumers. Search indices need reindexing strategies. Cache key formats need versioning rather than a
+        flush. Every one of these is a migration with the same expand-contract shape.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. ZERO DOWNTIME ============ -->
+<div class="panel c8">
+  <div class="phead">6 &nbsp;· &nbsp;ZERO-DOWNTIME MECHANICS <span class="sub">what makes a roll actually safe</span></div>
+  <div class="pbody">
+    <div style="font-size:13.4px;line-height:1.46">A deployment strategy only delivers zero downtime if each instance can be
+      removed and replaced without dropping work. That is a property of the <b>application</b>, not of the pipeline.</div>
+    <div class="h3">The shutdown sequence</div>
+    <ol>
+      <li>Orchestrator sends <span class="mono">SIGTERM</span> and removes the instance from the load balancer.</li>
+      <li>Readiness probe starts failing, so no new traffic is routed.</li>
+      <li><b>Keep serving in-flight requests</b> — this is the step most often missed.</li>
+      <li>Stop consuming from queues; finish or return the current message.</li>
+      <li>Flush telemetry, close database and pool connections cleanly.</li>
+      <li>Exit within the termination grace period, before <span class="mono">SIGKILL</span>.</li>
+    </ol>
+    <div class="callout r"><b>The grace period must exceed your longest request.</b> A 30-second grace with a
+      60-second report endpoint kills that request mid-flight on every single deployment — and it will be blamed on the
+      network for months.</div>
+    <div class="h3">The startup side</div>
+    <ul>
+      <li><b>Readiness ≠ liveness.</b> Readiness gates traffic; liveness restarts the container. Liveness must not fail because a downstream dependency is down, or one outage becomes a restart loop.</li>
+      <li><b>Startup probes</b> for slow-booting applications, so liveness does not kill them mid-start.</li>
+      <li><b>Warm up before accepting traffic</b> — connection pools, JIT, caches. Cold instances at full traffic look like an outage.</li>
+      <li><b>Surge capacity</b> — a rolling update needs room for extra replicas; a cluster at capacity cannot roll.</li>
+      <li><b>PodDisruptionBudgets</b> so a node drain cannot take the last healthy replica.</li>
+    </ul>
+    <div class="callout g"><b>Test it deliberately.</b> Deploy under load and watch for dropped connections and
+      5xx spikes. Almost every service fails this the first time.</div>
+  </div>
+</div>
+
+<!-- ============ 7. ROLLBACK ============ -->
+<div class="panel c5">
+  <div class="phead">7 &nbsp;· &nbsp;ROLLBACK &amp; RECOVERY <span class="sub">decided before, not during</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>&ldquo;We can roll back&rdquo; is a claim about the whole change, not
+      the code.</b> Write down, before deploying, exactly what reverting undoes and what it does not.</div>
+    <table>
+      <thead><tr><th style="width:140px">Change type</th><th>Reversibility</th></tr></thead>
+      <tbody>
+        <tr><td>Stateless code</td><td><b style="color:#047857">Full</b> — redeploy the previous digest</td></tr>
+        <tr><td>Config change</td><td><b style="color:#047857">Full</b> — if versioned</td></tr>
+        <tr><td>Feature flag</td><td><b style="color:#047857">Instant</b> — the fastest revert available</td></tr>
+        <tr><td>Additive schema</td><td><b style="color:#b45309">Partial</b> — new column stays, harmlessly</td></tr>
+        <tr><td>Backfilled data</td><td><b style="color:#b45309">Partial</b> — needs a compensating job</td></tr>
+        <tr><td>Destructive schema</td><td><b style="color:#be123c">None</b> — restore from backup</td></tr>
+        <tr><td>Consumed messages</td><td><b style="color:#be123c">None</b> — offsets have advanced</td></tr>
+        <tr><td>Third-party side effects</td><td><b style="color:#be123c">None</b> — the payment was taken</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Making it fast</div>
+    <ul>
+      <li><b>Automate the trigger</b> — SLO burn rate or error-rate threshold, not a human noticing a graph.</li>
+      <li><b>Practise it.</b> Rollback is the least-exercised path in most systems and runs when everyone is already stressed.</li>
+      <li><b>Keep previous artifacts</b> available and deployable; do not prune the registry aggressively.</li>
+      <li><b>Decide the roll-forward threshold</b> in advance — for some failures a fix forward is faster and safer than reverting.</li>
+      <li><b>Name the decision-maker</b> before the deploy. Debating authority during an incident costs more than the rollback.</li>
+    </ul>
+    <div class="callout"><b>Time to restore beats time between failures.</b> A team that can revert in two minutes
+      can take deployment risks that a team needing a two-hour restore cannot — which is why speed of recovery, not caution,
+      is what enables frequent releases.</div>
+  </div>
+</div>
+
+<!-- ============ 8. CONFIG ============ -->
+<div class="panel c6">
+  <div class="phead">8 &nbsp;· &nbsp;CONFIGURATION &amp; SECRETS <span class="sub">as risky as code</span></div>
+  <div class="pbody">
+    <div class="h3">Configuration</div>
+    <ul>
+      <li><b>Externalised</b> from the artifact — one image, many environments, config injected at deploy time.</li>
+      <li><b>Versioned and reviewed</b> in Git, with the same approval path as code.</li>
+      <li><b>Validated at startup</b> — fail fast and loudly on a missing or malformed value rather than at first use.</li>
+      <li><b>No environment branching in code</b> — <span class="mono">if (env == "prod")</span> means production runs an untested path.</li>
+      <li><b>Drift detection</b> — reconcile actual against declared, and alert when they differ.</li>
+    </ul>
+    <div class="h3">Secrets</div>
+    <ul>
+      <li>From a managed store at runtime, never in images, repositories, logs or environment dumps.</li>
+      <li><b>Short-lived and rotated</b>; prefer dynamic credentials over static ones.</li>
+      <li><b>Workload identity / OIDC federation</b> from CI to cloud — removes long-lived keys entirely.</li>
+      <li>Least privilege per service; a compromised service should not hold the union of every permission.</li>
+      <li>Audit access, and have a tested revocation path.</li>
+    </ul>
+    <div class="callout r"><b>Config changes cause outages at a rate comparable to code changes</b>, and usually
+      reach production faster because they bypass the pipeline. A rate limit typo, a wrong endpoint, a flag flipped for the
+      wrong cohort — all deploy in seconds with no test suite. Treat configuration as a deployment: reviewed, staged,
+      progressive, observable, revertible.</div>
+    <div class="callout g"><b>Feature flags need a lifecycle.</b> Every flag is a permanent branch in your code
+      until deleted. Set an expiry when you create it, and clean up on a schedule — stale flags become untested combinations
+      nobody can reason about.</div>
+  </div>
+</div>
+
+<!-- ============ 9. CONSIDERATIONS ============ -->
+<div class="panel c7 span2">
+  <div class="phead">9 &nbsp;· &nbsp;WHAT TO DECIDE PER SYSTEM <span class="sub">not every system needs every control — match the investment to the criticality tier</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:150px">Concern</th><th>Decide</th><th style="width:172px">When it matters most</th></tr></thead>
+        <tbody>
+          <tr><td><b>Criticality tier</b></td><td>Tier the system, and let RTO/RPO, approval depth and on-call follow from it</td><td>First decision — everything else derives from it</td></tr>
+          <tr><td><b>Resource estimation</b></td><td>Users, RPS, data volume, growth; peak vs average; headroom</td><td>Always — at design and at every capacity review</td></tr>
+          <tr><td><b>Data store choice</b></td><td>Access patterns first, then the engine; indexing, sharding, pooling</td><td>Any system with persistent state</td></tr>
+          <tr><td><b>High availability</b></td><td>Multi-AZ, stateless services, health checks, autoscaling</td><td>Anything with an availability commitment</td></tr>
+          <tr><td><b>Disaster recovery</b></td><td>Cross-region strategy, RTO/RPO, and rehearsed drills</td><td>Business-critical and regulated systems</td></tr>
+          <tr><td><b>Backup &amp; restore</b></td><td>Automated, offsite, encrypted — and <b>restore-tested</b></td><td>Anything holding data you cannot recreate</td></tr>
+          <tr><td><b>Security</b></td><td>IAM, least privilege, encryption, secrets, admission policy</td><td>Always, every environment</td></tr>
+          <tr><td><b>Observability</b></td><td>Logs, metrics, traces, SLOs, alerting with runbooks</td><td>Always — you cannot operate what you cannot see</td></tr>
+          <tr><td><b>CI/CD</b></td><td>Build once, automated gates, progressive deploy, auto-rollback</td><td>Always — it is the delivery mechanism itself</td></tr>
+          <tr><td><b>Deployment strategy</b></td><td>Per service, by blast radius and traffic volume</td><td>Every release</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:150px">Concern</th><th>Decide</th><th style="width:172px">When it matters most</th></tr></thead>
+        <tbody>
+          <tr><td><b>Data change process</b></td><td>Expand-contract discipline, migration tooling, backfill approach</td><td>Any system with a schema — which is nearly all</td></tr>
+          <tr><td><b>Rollback plan</b></td><td>What is reversible, the trigger, and who decides</td><td>Every deployment, written before it starts</td></tr>
+          <tr><td><b>Vulnerability management</b></td><td>Scanning coverage, prioritisation signal, remediation SLA</td><td>Always — and audited in regulated sectors</td></tr>
+          <tr><td><b>Capacity &amp; autoscaling</b></td><td>Scaling signal, limits, surge headroom for deployments</td><td>Variable or growing traffic</td></tr>
+          <tr><td><b>Cost</b></td><td>Cost per environment and per request; a budget with alerting</td><td>Always — and reviewed monthly, not annually</td></tr>
+          <tr><td><b>Compliance &amp; residency</b></td><td>Which regimes apply, where data may live, retention and erasure</td><td>Regulated sectors and personal data</td></tr>
+          <tr><td><b>Multi-tenancy</b></td><td>Isolation model, noisy-neighbour limits, per-tenant data separation</td><td>SaaS and shared platforms</td></tr>
+          <tr><td><b>Incident response</b></td><td>On-call, severity levels, comms, postmortems</td><td>Anything with users who will notice</td></tr>
+          <tr><td><b>Change management</b></td><td>Approvals, change records, freeze policy, audit trail</td><td>Regulated and enterprise environments</td></tr>
+          <tr><td><b>Dependency lifecycle</b></td><td>Version currency, EOL tracking, upgrade cadence</td><td>Always — deferred upgrades compound into rewrites</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The most expensive mistake is applying a Tier-1 process to a Tier-3 system.</b>
+        Approval gates, DR drills and change boards on an internal reporting tool slow everything and teach people to route
+        around the process. Tier honestly, then apply the controls the tier actually warrants.</div>
+      <div class="callout g"><b>The four columns everyone forgets:</b> cost, compliance, dependency currency and
+        incident response. All four are invisible until a budget review, an audit, a CVE in an unsupported runtime, or a
+        3am page finds them.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 10. ESTIMATION ============ -->
+<div class="panel c2">
+  <div class="phead">10 &nbsp;· &nbsp;RESOURCE ESTIMATION <span class="sub">start with a baseline</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:110px">Factor</th><th>What to derive from it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Users &amp; traffic</b></td><td>DAU/MAU → concurrent users → average RPS → <b>peak RPS</b>. Peak is usually several times average; size for peak, not the mean.</td></tr>
+        <tr><td><b>Data volume</b></td><td>Records × size × replication × retention, plus index overhead and growth rate.</td></tr>
+        <tr><td><b>Transactions</b></td><td>Write rate, read:write ratio, connection count, transaction duration.</td></tr>
+        <tr><td><b>Performance</b></td><td>Latency target at <b>p95 and p99</b>, not average. Throughput ceiling from load testing.</td></tr>
+        <tr><td><b>Integrations</b></td><td>External call volume, their rate limits, and their latency added to yours.</td></tr>
+        <tr><td><b>Retention</b></td><td>Log, metric, backup and audit retention — often the largest storage line.</td></tr>
+        <tr><td><b>Environments</b></td><td>Multiply by the number of environments. Non-production is routinely half the bill.</td></tr>
+        <tr><td><b>Growth</b></td><td>Projected over 12–18 months, with the point at which the design must change.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Add headroom deliberately, and say how much.</b> Enough to absorb a peak, an AZ
+      failure and a rolling deployment's surge simultaneously — those can coincide. An unstated buffer gets optimised away
+      by the first person reviewing costs.</div>
+    <div class="h3">A worked example — illustrative, not a benchmark</div>
+    <div class="code"><span class="c">// checkout service, from users to pod count</span>
+registered users            1,000,000
+daily active        10%   =   100,000
+sessions per user   1.5   =   150,000 / day
+requests per session  40  = 6,000,000 / day
+
+average RPS   6,000,000 / 86,400   ≈  <span class="v">70 rps</span>
+peak factor   x5 (evening peak)    ≈ <span class="v">350 rps</span>
+
+<span class="c">// concurrency from Little's Law: L = λ × W</span>
+service time W = 200ms
+in-flight  L = 350 × 0.2          =  <span class="v">70 concurrent</span>
+
+<span class="c">// sizing</span>
+12 concurrent per pod   → 70 / 12  ≈  6 pods
++ 50% headroom (peak, AZ loss, rollout surge)
+                                  =  <span class="r">9 pods</span>
+
+<span class="c">// then verify by load testing. The arithmetic</span>
+<span class="c">// gets you a starting point, not an answer.</span></div>
+    <div class="callout g"><b>Baseline → measure → optimise → right-size, continuously.</b> The first estimate
+      is always wrong; its purpose is to be close enough to start and specific enough to correct. Re-estimate after every
+      significant traffic or feature change.</div>
+  </div>
+</div>
+
+<!-- ============ 11. HA/DR ============ -->
+<div class="panel c3">
+  <div class="phead">11 &nbsp;· &nbsp;HA, DR &amp; BACKUP <span class="sub">three different problems</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:78px"></th><th>Protects against</th><th>Mechanism</th></tr></thead>
+      <tbody>
+        <tr><td><b>HA</b></td><td>Instance or AZ failure</td><td>Redundancy across AZs, load balancing, health checks, autoscaling, stateless services</td></tr>
+        <tr><td><b>DR</b></td><td>Region loss, major incident</td><td>Cross-region replication, documented plan, rehearsed drills</td></tr>
+        <tr><td><b>Backup</b></td><td>Deletion, corruption, ransomware</td><td>Automated, offsite, encrypted, immutable, restore-tested</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>They do not substitute for each other.</b> Replication faithfully copies a
+      <span class="mono">DROP TABLE</span> to every replica in milliseconds. HA gives you no protection at all from a bad
+      deployment or a bad command — only a backup does.</div>
+    <div class="h3">Illustrative targets by tier</div>
+    <table>
+      <thead><tr><th style="width:96px">Tier</th><th>RTO</th><th>RPO</th></tr></thead>
+      <tbody>
+        <tr><td><b>Critical</b></td><td>≤ 1 hour</td><td>≤ 15 minutes</td></tr>
+        <tr><td><b>High</b></td><td>≤ 4 hours</td><td>≤ 1 hour</td></tr>
+        <tr><td><b>Medium</b></td><td>≤ 24 hours</td><td>≤ 4 hours</td></tr>
+        <tr><td><b>Low</b></td><td>≤ 72 hours</td><td>≤ 24 hours</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>These are starting points, not standards.</b> The numbers come from what the business
+      can tolerate, and they must be agreed with whoever owns that tolerance — then verified by an actual restore, because
+      an unmeasured RTO is an aspiration.</div>
+    <div class="h3">Backup rules that survive an incident</div>
+    <ul>
+      <li><b>Three copies, two media, one offsite</b> — and at least one <b>immutable</b> or air-gapped, because ransomware targets backups first.</li>
+      <li><b>Separate credentials and account</b> from production, so one compromise cannot delete both.</li>
+      <li><b>Restore-test on a schedule</b>, to a clean environment, timed and recorded.</li>
+      <li><b>Backup the configuration too</b> — IaC state, secrets metadata, dashboards, alert rules.</li>
+      <li><b>Know your retention</b> against the longest plausible detection delay; corruption found after 30 days needs a 30-day-old copy.</li>
+    </ul>
+    <div class="callout g"><b>DR patterns by cost:</b> backup-and-restore (cheapest, slowest) → pilot light →
+      warm standby → active-active (fastest, most expensive). Pick from the RTO, then confirm you are willing to pay for it.</div>
+    <div class="h3">What a drill has to prove</div>
+    <ul>
+      <li>The runbook is followable by someone who did not write it</li>
+      <li>Credentials and access work <b>when the primary region is unavailable</b> — a surprisingly common failure</li>
+      <li>DNS and traffic actually shift, within the expected time</li>
+      <li>Data loss is within RPO, measured rather than assumed</li>
+      <li>Dependencies — identity, secrets, registries — are also available in the DR region</li>
+      <li>Someone recorded the elapsed time, and it met RTO</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 12. VULNERABILITIES ============ -->
+<div class="panel c5 span2">
+  <div class="phead">12 &nbsp;· &nbsp;VULNERABILITY &amp; PATCH MANAGEMENT <span class="sub">the process, and why CVSS severity alone is the wrong thing to queue work by</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The loop</div>
+      <table>
+        <thead><tr><th style="width:120px">Stage</th><th>What it involves</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 · Inventory</b></td><td>You cannot patch what you do not know you run. Asset and dependency inventory, SBOMs per artifact, and a registry you can query.</td></tr>
+          <tr><td><b>2 · Scan</b></td><td>Source (SAST), dependencies (SCA), images, IaC, running workloads. Continuously — a clean scan at build time says nothing about a CVE published next week.</td></tr>
+          <tr><td><b>3 · Prioritise</b></td><td>Severity, exploitation evidence, exposure and reachability together. See opposite.</td></tr>
+          <tr><td><b>4 · Remediate</b></td><td>Patch, upgrade, or apply a compensating control. Record an accepted risk with an owner and an expiry when you cannot fix it.</td></tr>
+          <tr><td><b>5 · Verify</b></td><td>Re-scan and confirm the fix reached every running instance, not just the repository.</td></tr>
+          <tr><td><b>6 · Track</b></td><td>Open counts by severity, mean time to remediate, SLA breaches, trend over time.</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Remediation targets — a defensible starting point</div>
+      <table>
+        <thead><tr><th style="width:150px">Class</th><th>Internal</th><th>Internet-facing</th></tr></thead>
+        <tbody>
+          <tr><td><b>Known exploited</b><br><span style="color:#6b7391">confirmed in the wild</span></td><td>Immediate</td><td><b>Immediate</b></td></tr>
+          <tr><td><b>Critical</b> (9.0–10.0)</td><td>≤ 30 days</td><td>≤ 7 days</td></tr>
+          <tr><td><b>High</b> (7.0–8.9)</td><td>≤ 60 days</td><td>≤ 15 days</td></tr>
+          <tr><td><b>Medium</b> (4.0–6.9)</td><td>≤ 90 days</td><td>≤ 30 days</td></tr>
+          <tr><td><b>Low</b> (0.1–3.9)</td><td>Next cycle</td><td>≤ 90 days</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Exposure changes the target.</b> The same CVE on an internet-facing gateway and on
+        an internal batch job are not the same risk, and a single SLA column forces you to treat them identically.</div>
+      <div class="h3">Coverage — what gets scanned, and where</div>
+      <table>
+        <thead><tr><th style="width:150px">Surface</th><th>Scanned at</th></tr></thead>
+        <tbody>
+          <tr><td>First-party source</td><td>Every commit (SAST)</td></tr>
+          <tr><td>Dependencies</td><td>Every commit, and continuously against new advisories</td></tr>
+          <tr><td>Container images</td><td>At build, and re-scanned in the registry on a schedule</td></tr>
+          <tr><td>Infrastructure as code</td><td>Every commit, before apply</td></tr>
+          <tr><td>Running workloads</td><td>Continuously — drift and newly disclosed CVEs</td></tr>
+          <tr><td>The running application</td><td>DAST against staging, authenticated</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>CVSS alone over-reports and mis-orders the queue.</b> A CVSS
+        base score describes how bad a vulnerability would be <i>if exploited</i>. It says nothing about whether anyone is
+        exploiting it, or whether the vulnerable code path is reachable in your deployment. Queue purely by CVSS and teams
+        drown in Criticals that will never be attacked while a Medium under active exploitation waits behind them.</div>
+      <div class="h3">Three signals, used together</div>
+      <table>
+        <thead><tr><th style="width:110px">Signal</th><th>Answers</th></tr></thead>
+        <tbody>
+          <tr><td><b>CVSS</b></td><td><i>How severe is the impact?</i> Use it as a severity floor — never deprioritise a critical-impact vulnerability on the basis of the other two alone.</td></tr>
+          <tr><td><b>EPSS</b></td><td><i>How likely is exploitation?</i> A probability that a CVE will be exploited in the wild in the near term. Use it to order work <b>within</b> a severity tier.</td></tr>
+          <tr><td><b>KEV catalogue</b></td><td><i>Is it already being exploited?</i> CISA's Known Exploited Vulnerabilities list is confirmation rather than prediction. Anything on it goes to the top regardless of score.</td></tr>
+          <tr><td><b>Reachability</b></td><td><i>Does our code actually call it?</i> A vulnerable function in an unused dependency path is a very different risk from one on the request path.</td></tr>
+          <tr><td><b>Exposure</b></td><td><i>Who can reach the system?</i> Internet-facing, internal, or isolated.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The practical rule.</b> Known-exploited first, always. Then rank within each
+        severity tier by exploitation likelihood, filtered by whether the path is reachable and how exposed the system is.
+        That ordering turns an unmanageable backlog into a short list — and it is defensible to an auditor, which a raw
+        CVSS queue is not.</div>
+      <div class="h3">Metrics that show whether this works</div>
+      <ul>
+        <li><b>Mean time to remediate</b>, split by severity and by exposure</li>
+        <li><b>Open findings past SLA</b> — the number that should trend to zero</li>
+        <li><b>Scan coverage</b> — share of running artifacts with a current scan and an SBOM</li>
+        <li><b>Backlog age distribution</b>, not just the count. A stable count can hide an ageing tail</li>
+        <li><b>Accepted risks with expiry dates</b>, reviewed rather than silently permanent</li>
+      </ul>
+      <div class="h3">Making patching sustainable</div>
+      <ul>
+        <li><b>Automate dependency updates</b> with a bot raising PRs continuously — small, frequent upgrades beat an annual scramble.</li>
+        <li><b>Rebuild images on a schedule</b>, not only on code change. Base images accumulate CVEs while your code sits still.</li>
+        <li><b>Track runtime and framework EOL dates</b> as planned work. An unsupported runtime is an unpatchable one.</li>
+        <li><b>Patch in lower environments first</b>, then promote through the same pipeline as any other change.</li>
+        <li><b>Emergency path</b> — a documented, rehearsed route for a zero-day that bypasses the normal cadence but not the pipeline.</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;DEPLOYMENT CHECKLIST <span class="sub">before · during · after — and the standing controls that make each deployment routine</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Criticality tier agreed</b>, with RTO/RPO and approval depth following from it</div>
+      <div>&#9744; <b>Rollback plan written</b> — what reverts, what does not, who decides</div>
+      <div>&#9744; <b>Migration reviewed</b> and confirmed backward compatible with the running version</div>
+      <div>&#9744; <b>Migration timed</b> against production-sized data</div>
+      <div>&#9744; <b>Backup taken and verified</b> immediately before a destructive change</div>
+      <div>&#9744; <b>Same artifact digest</b> as the one tested in staging</div>
+      <div>&#9744; <b>Config and secrets present</b> for the target environment, validated at startup</div>
+      <div>&#9744; <b>Surge capacity available</b> for the rollout</div>
+      <div>&#9744; <b>Dependencies notified</b> if the change affects a shared contract</div>
+      <div>&#9744; <b>Deployment window appropriate</b> — and enough people awake to respond</div>
+      <div>&#9744; <b>Change record raised</b> where governance requires it</div>
+      <div>&#9744; <b>Progressive strategy chosen</b> to match blast radius and traffic volume</div>
+      <div>&#9744; <b>Automated rollback trigger armed</b> on error rate or SLO burn</div>
+      <div>&#9744; <b>Deployment marker</b> emitted to dashboards and traces</div>
+      <div>&#9744; <b>Canary metrics watched</b> for the agreed bake period, not just at cutover</div>
+      <div>&#9744; <b>Smoke tests and synthetics green</b> against production</div>
+      <div>&#9744; <b>Error rate, latency p99 and saturation</b> compared to pre-deploy baseline</div>
+      <div>&#9744; <b>Queue depth and consumer lag</b> checked — async paths fail quietly</div>
+      <div>&#9744; <b>Logs checked for new error signatures</b>, not only for volume</div>
+      <div>&#9744; <b>Contract phase scheduled</b> for a later release, with an owner</div>
+      <div>&#9744; <b>Feature flags recorded</b> with an owner and an expiry date</div>
+      <div>&#9744; <b>CDN or cache invalidated</b> where assets changed</div>
+      <div>&#9744; <b>Runbook updated</b> if behaviour or failure modes changed</div>
+      <div>&#9744; <b>Cost impact reviewed</b> after scaling or instance-type changes</div>
+      <div>&#9744; <b>Capacity plan current</b> and headroom stated explicitly</div>
+      <div>&#9744; <b>HA verified</b> — failover actually exercised, not assumed</div>
+      <div>&#9744; <b>DR plan documented and drilled</b>, with the date of the last drill recorded</div>
+      <div>&#9744; <b>Restore tested end to end</b>, and the restore time measured</div>
+      <div>&#9744; <b>Graceful shutdown verified</b> under load — no dropped connections</div>
+      <div>&#9744; <b>Grace period exceeds</b> the longest request the service serves</div>
+      <div>&#9744; <b>Readiness and liveness distinct</b>; liveness independent of dependencies</div>
+      <div>&#9744; <b>SLOs defined, alerting on burn rate</b>, every alert with a runbook</div>
+      <div>&#9744; <b>On-call rota staffed</b> and escalation path known</div>
+      <div>&#9744; <b>Secrets rotated on schedule</b>; no long-lived cloud keys in CI</div>
+      <div>&#9744; <b>Scans automated</b> across source, dependencies, images, IaC and runtime</div>
+      <div>&#9744; <b>Vulnerabilities prioritised</b> by exploitation evidence, not CVSS alone</div>
+      <div>&#9744; <b>SBOMs generated and retained</b> per artifact; images signed and verified at admission</div>
+      <div>&#9744; <b>Base images rebuilt on a schedule</b>; EOL dates tracked as planned work</div>
+      <div>&#9744; <b>Environment parity reviewed</b> — data volume, config and topology</div>
+      <div>&#9744; <b>DORA metrics tracked</b> — frequency, lead time, change failure rate, time to restore</div>
+      <div>&#9744; <b>Postmortem process</b> in place, blameless, with actions tracked to closure</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>before you deploy, say out loud what you will do if
+      this goes wrong — and confirm that plan still works after the migration has run.</b> If the answer depends on data that
+      the deployment itself destroys, the change is not ready regardless of how green the pipeline is.</div>
+  </div>
+</div>
+
+</div>
