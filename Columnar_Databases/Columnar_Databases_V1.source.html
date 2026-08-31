@@ -1,0 +1,869 @@
+<meta charset="utf-8">
+<title>Columnar Databases — Architecture, Storage, Optimization &amp; Use Cases</title>
+<style>
+  @page { size: 3400px 4718px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:4718px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:4718px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 832px 734px 801px 563px 489px 577px 398px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:35px;letter-spacing:.8px;font-weight:700}
+  .title .stack{font-size:15.5px;color:#93a4d6;font-weight:600;text-align:right;line-height:1.45}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:22px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:14px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.4px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.8px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.4px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.4px;line-height:1.45} li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.7px;line-height:1.47;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .code .a{color:#a5b4fc}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:13px;
+           line-height:1.44;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13.2px;line-height:1.46}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>COLUMNAR DATABASES — ARCHITECTURE, STORAGE, OPTIMIZATION &amp; USE CASES<span class="v">V1</span></h1>
+  <div class="stack">Parquet · ORC · Arrow &nbsp;·&nbsp; Iceberg · Delta · Hudi &nbsp;·&nbsp; ClickHouse · Snowflake · BigQuery · DuckDB<br>
+    <span style="font-size:13.6px;color:#6d80b6;font-weight:500">file anatomy · encodings · data skipping · vectorized execution · the write path · what actually makes it fast</span></div>
+</div>
+
+<!-- ============ 1. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+    <span class="sub">query path above · physical file anatomy in the middle · the write path below — which is the half that decides whether any of it stays fast</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 758" width="3320" height="758">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- ===== BAND A : QUERY PATH ===== -->
+    <rect x="8" y="6" width="3304" height="286" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#1e3a8a">QUERY PATH — every stage exists to read fewer bytes than the one before it</text>
+
+    <rect x="26" y="44" width="164" height="106" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="108" y="66" font-size="13" font-weight="700" fill="#1e3a8a" text-anchor="middle">SQL client</text>
+    <text x="108" y="86" font-size="11" fill="#42507a" text-anchor="middle">BI tool · notebook</text>
+    <text x="108" y="103" font-size="11" fill="#42507a" text-anchor="middle">dashboard · app</text>
+    <text x="108" y="126" font-size="11" fill="#6b7391" text-anchor="middle">expects seconds,</text>
+    <text x="108" y="141" font-size="11" fill="#6b7391" text-anchor="middle">not milliseconds</text>
+
+    <rect x="206" y="44" width="176" height="106" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="294" y="66" font-size="13" font-weight="700" fill="#1e3a8a" text-anchor="middle">Coordinator</text>
+    <text x="294" y="86" font-size="11" fill="#42507a" text-anchor="middle">parse · authorise</text>
+    <text x="294" y="103" font-size="11" fill="#42507a" text-anchor="middle">plan · distribute</text>
+    <text x="294" y="120" font-size="11" fill="#42507a" text-anchor="middle">collect results</text>
+    <text x="294" y="141" font-size="11" fill="#6b7391" text-anchor="middle">no data of its own</text>
+
+    <!-- planner -->
+    <rect x="398" y="44" width="530" height="106" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="663" y="65" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">QUERY OPTIMIZER — decides what NOT to read</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="412" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.6"/>
+      <text x="471" y="94" font-size="11.4" font-weight="700" fill="#7c2d92">Logical plan</text>
+      <text x="471" y="111" fill="#4b3a5e">rewrite · unnest</text>
+      <text x="471" y="126" fill="#6b7391">predicate placement</text>
+      <rect x="542" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.6"/>
+      <text x="601" y="94" font-size="11.4" font-weight="700" fill="#7c2d92">Cost model</text>
+      <text x="601" y="111" fill="#4b3a5e">stats · NDV</text>
+      <text x="601" y="126" fill="#be123c">stale stats = bad plan</text>
+      <rect x="672" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.6"/>
+      <text x="731" y="94" font-size="11.4" font-weight="700" fill="#7c2d92">Join order</text>
+      <text x="731" y="111" fill="#4b3a5e">build vs probe side</text>
+      <text x="731" y="126" fill="#6b7391">runtime filters</text>
+      <rect x="802" y="76" width="112" height="60" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.6"/>
+      <text x="858" y="94" font-size="11.4" font-weight="700" fill="#7c2d92">Physical plan</text>
+      <text x="858" y="111" fill="#4b3a5e">pushdown set</text>
+      <text x="858" y="126" fill="#6b7391">parallelism</text>
+    </g>
+
+    <!-- execution -->
+    <rect x="944" y="44" width="530" height="106" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1209" y="65" font-size="13" font-weight="700" fill="#0f766e" text-anchor="middle">EXECUTION — vectorized, on columnar batches</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="958" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.6"/>
+      <text x="1017" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Scan</text>
+      <text x="1017" y="111" fill="#2f4f47">projection pushdown</text>
+      <text x="1017" y="126" fill="#6b7391">only listed columns</text>
+      <rect x="1088" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.6"/>
+      <text x="1147" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Filter</text>
+      <text x="1147" y="111" fill="#2f4f47">predicate pushdown</text>
+      <text x="1147" y="126" fill="#6b7391">selection vectors</text>
+      <rect x="1218" y="76" width="118" height="60" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.6"/>
+      <text x="1277" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Join</text>
+      <text x="1277" y="111" fill="#2f4f47">hash · broadcast</text>
+      <text x="1277" y="126" fill="#6b7391">bloom runtime filter</text>
+      <rect x="1348" y="76" width="112" height="60" rx="5" fill="#fff" stroke="#0f766e" stroke-width="1.6"/>
+      <text x="1404" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Aggregate</text>
+      <text x="1404" y="111" fill="#2f4f47">partial → final</text>
+      <text x="1404" y="126" fill="#6b7391">spill if needed</text>
+    </g>
+
+    <!-- storage layer -->
+    <rect x="1490" y="44" width="430" height="106" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="1705" y="65" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">STORAGE LAYER — the pruning cascade</text>
+    <g font-size="10.8">
+      <text x="1506" y="85" fill="#7a3d06">1 · <tspan font-weight="700">Partition pruning</tspan> — whole directories eliminated</text>
+      <text x="1506" y="102" fill="#7a3d06">2 · <tspan font-weight="700">File pruning</tspan> — manifest / table-format stats</text>
+      <text x="1506" y="119" fill="#7a3d06">3 · <tspan font-weight="700">Row-group pruning</tspan> — min/max in the footer</text>
+      <text x="1506" y="136" fill="#7a3d06">4 · <tspan font-weight="700">Page pruning</tspan> — column index, then bloom</text>
+    </g>
+
+    <!-- object store -->
+    <rect x="1936" y="44" width="360" height="106" rx="8" fill="#f0fbf8" stroke="#155e75" stroke-width="2.5"/>
+    <text x="2116" y="65" font-size="13" font-weight="700" fill="#155e75" text-anchor="middle">OBJECT STORE / DISK</text>
+    <text x="2116" y="85" font-size="11" fill="#2f4f47" text-anchor="middle">Parquet · ORC files, immutable</text>
+    <text x="2116" y="103" font-size="11" fill="#2f4f47" text-anchor="middle">read via ranged GETs, not whole files</text>
+    <text x="2116" y="122" font-size="11" fill="#2f4f47" text-anchor="middle">high latency, high throughput —</text>
+    <text x="2116" y="139" font-size="11" font-weight="700" fill="#be123c" text-anchor="middle">so request count matters as much as bytes</text>
+
+    <!-- separation callout -->
+    <rect x="2312" y="44" width="986" height="106" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="2328" y="65" font-size="13.4" font-weight="700" fill="#1e3a8a">STORAGE AND COMPUTE ARE SEPARATE — the architectural shift that defines the modern generation</text>
+    <text x="2328" y="86" font-size="11.4" fill="#42507a">Data lives once in object storage. Compute clusters are stateless, sized per workload, started and stopped independently, and several can read the same</text>
+    <text x="2328" y="102" font-size="11.4" fill="#42507a">table concurrently without copying it. Scaling reads no longer means rebalancing data, and an idle warehouse costs nothing but storage.</text>
+    <text x="2328" y="122" font-size="11.4" fill="#42507a">The cost is that every scan crosses a network with millisecond latency, which is why the pruning cascade, columnar layout and local caching are not</text>
+    <text x="2328" y="138" font-size="11.4" font-weight="700" fill="#be123c">optimisations here — they are what makes the architecture viable at all. A shared-nothing MPP cluster with local disks is the older, tightly-coupled alternative.</text>
+
+    <!-- arrows -->
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M190,97 L200,97"/><path d="M382,97 L392,97"/>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2.4" fill="none" marker-end="url(#p)"><path d="M928,97 L938,97"/></g>
+    <g stroke="#0f766e" stroke-width="2.4" fill="none" marker-end="url(#g)"><path d="M1474,97 L1484,97"/></g>
+    <g stroke="#b45309" stroke-width="2.4" fill="none" marker-end="url(#o)"><path d="M1920,97 L1930,97"/></g>
+
+    <!-- metadata strip -->
+    <rect x="26" y="162" width="1894" height="52" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+    <text x="42" y="181" font-size="12.4" font-weight="700" fill="#1e3a8a">METADATA / CATALOG LAYER — schema · partition spec · file manifests · column statistics · snapshots and versions · zone maps · bloom filters</text>
+    <text x="42" y="203" font-size="11.4" fill="#42507a">Consulted before any data file is opened. In a lakehouse this is the table format (Iceberg, Delta, Hudi); in a packaged warehouse it is internal. Either way it is the thing that turns &ldquo;scan the table&rdquo; into &ldquo;open four files&rdquo;.</text>
+
+    <rect x="1936" y="162" width="1362" height="52" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="1952" y="181" font-size="12.4" font-weight="700" fill="#047857">THE ONE SENTENCE THAT EXPLAINS COLUMNAR PERFORMANCE</text>
+    <text x="1952" y="203" font-size="11.6" fill="#2f4f47">It is not that columns are read faster. It is that a column layout lets the engine <tspan font-weight="700">not read</tspan> almost everything — wrong columns, wrong partitions, wrong row groups, wrong pages — and compress what remains far better.</text>
+
+    <rect x="26" y="224" width="3272" height="58" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="42" y="243" font-size="12.4" font-weight="700" fill="#b91c1c">EVERY ONE OF THOSE PRUNING STEPS DEPENDS ON HOW THE DATA WAS WRITTEN</text>
+    <text x="42" y="264" font-size="11.6" fill="#7f2b2b">Min/max statistics can only eliminate a row group if the values in it are <tspan font-weight="700">clustered</tspan>. Write rows in random order and every row group&rsquo;s min/max spans the entire domain, so nothing is ever skipped — the statistics are present, correct, and useless.</text>
+    <text x="42" y="278" font-size="11.4" fill="#7f2b2b">This is why sort order and file layout matter more than any query-side tuning, and why the same query can be a hundred times slower on identical data written differently.</text>
+
+    <!-- ===== BAND B : FILE ANATOMY ===== -->
+    <rect x="8" y="300" width="3304" height="222" rx="10" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="26" y="324" font-size="16.5" font-weight="700" fill="#b45309">PHYSICAL FILE ANATOMY — a Parquet file is four levels deep, and the middle one is the one people forget</text>
+
+    <!-- file -->
+    <rect x="26" y="336" width="1560" height="176" rx="8" fill="#fff" stroke="#b45309" stroke-width="2"/>
+    <text x="40" y="356" font-size="12.4" font-weight="700" fill="#b45309">FILE</text>
+    <rect x="40" y="364" width="52" height="132" rx="4" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.4"/>
+    <text x="66" y="432" font-size="10.6" fill="#475569" text-anchor="middle" transform="rotate(-90 66 432)">PAR1</text>
+
+    <!-- row group 1 -->
+    <rect x="100" y="364" width="470" height="132" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+    <text x="335" y="382" font-size="12" font-weight="700" fill="#0f766e" text-anchor="middle">ROW GROUP 1 &nbsp;— a horizontal slice of rows, 128 MB – 1 GB uncompressed</text>
+    <g font-size="10.2" text-anchor="middle">
+      <rect x="112" y="390" width="106" height="96" rx="4" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="165" y="406" font-size="10.8" font-weight="700" fill="#0f766e">col: date</text>
+      <rect x="120" y="412" width="90" height="20" rx="3" fill="#dbeafe" stroke="#93c5fd"/><text x="165" y="426" fill="#1e3a5f">dict page</text>
+      <rect x="120" y="436" width="90" height="20" rx="3" fill="#eef3fd" stroke="#93c5fd"/><text x="165" y="450" fill="#1e3a5f">data page</text>
+      <rect x="120" y="460" width="90" height="20" rx="3" fill="#eef3fd" stroke="#93c5fd"/><text x="165" y="474" fill="#1e3a5f">data page</text>
+
+      <rect x="226" y="390" width="106" height="96" rx="4" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="279" y="406" font-size="10.8" font-weight="700" fill="#0f766e">col: user_id</text>
+      <rect x="234" y="412" width="90" height="20" rx="3" fill="#dcfce7" stroke="#86efac"/><text x="279" y="426" fill="#14532d">dict page</text>
+      <rect x="234" y="436" width="90" height="20" rx="3" fill="#f0fdf4" stroke="#86efac"/><text x="279" y="450" fill="#14532d">data page</text>
+      <rect x="234" y="460" width="90" height="20" rx="3" fill="#f0fdf4" stroke="#86efac"/><text x="279" y="474" fill="#14532d">data page</text>
+
+      <rect x="340" y="390" width="106" height="96" rx="4" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="393" y="406" font-size="10.8" font-weight="700" fill="#0f766e">col: country</text>
+      <rect x="348" y="412" width="90" height="20" rx="3" fill="#f3e8ff" stroke="#d8b4fe"/><text x="393" y="426" fill="#4b3a5e">dict page</text>
+      <rect x="348" y="436" width="90" height="20" rx="3" fill="#faf5ff" stroke="#d8b4fe"/><text x="393" y="450" fill="#4b3a5e">data page</text>
+      <rect x="348" y="460" width="90" height="20" rx="3" fill="#faf5ff" stroke="#d8b4fe"/><text x="393" y="474" fill="#4b3a5e">data page</text>
+
+      <rect x="454" y="390" width="104" height="96" rx="4" fill="#fff" stroke="#0f766e" stroke-width="1.5"/>
+      <text x="506" y="406" font-size="10.8" font-weight="700" fill="#0f766e">col: amount</text>
+      <rect x="462" y="412" width="88" height="20" rx="3" fill="#ffedd5" stroke="#fdba74"/><text x="506" y="426" fill="#7a3d06">data page</text>
+      <rect x="462" y="436" width="88" height="20" rx="3" fill="#ffedd5" stroke="#fdba74"/><text x="506" y="450" fill="#7a3d06">data page</text>
+      <text x="506" y="474" font-size="9.6" fill="#6b7391">no dict — high NDV</text>
+    </g>
+
+    <rect x="582" y="364" width="470" height="132" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="2" stroke-dasharray="7 4"/>
+    <text x="817" y="382" font-size="12" font-weight="700" fill="#0f766e" text-anchor="middle">ROW GROUP 2 — same column set, next slice of rows</text>
+    <text x="817" y="410" font-size="11.4" fill="#2f4f47" text-anchor="middle">The row group is the unit of <tspan font-weight="700">parallelism</tspan> — one task reads one row group —</text>
+    <text x="817" y="430" font-size="11.4" fill="#2f4f47" text-anchor="middle">and the unit most min/max <tspan font-weight="700">skipping</tspan> operates on.</text>
+    <text x="817" y="454" font-size="11.4" fill="#2f4f47" text-anchor="middle">Too large and you lose skipping granularity and blow up writer memory.</text>
+    <text x="817" y="472" font-size="11.4" fill="#2f4f47" text-anchor="middle">Too small and the footer bloats and every read becomes many small requests.</text>
+
+    <rect x="1064" y="364" width="180" height="132" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="2" stroke-dasharray="7 4"/>
+    <text x="1154" y="432" font-size="12" font-weight="700" fill="#0f766e" text-anchor="middle">ROW GROUP N</text>
+
+    <rect x="1256" y="364" width="316" height="132" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="1414" y="384" font-size="12.4" font-weight="700" fill="#be123c" text-anchor="middle">FOOTER — at the END of the file</text>
+    <g font-size="10.6" fill="#7f2b2b">
+      <text x="1270" y="404">· full schema, types, nesting</text>
+      <text x="1270" y="420">· encodings and codec per column</text>
+      <text x="1270" y="436">· row counts and byte offsets</text>
+      <text x="1270" y="452">· <tspan font-weight="700">min / max / null count / NDV</tspan></text>
+      <text x="1282" y="466">per column chunk</text>
+      <text x="1270" y="486" font-weight="700" fill="#b91c1c">then footer length, then PAR1</text>
+    </g>
+
+    <!-- read pattern -->
+    <rect x="1602" y="336" width="840" height="176" rx="8" fill="#fff" stroke="#b45309" stroke-width="2"/>
+    <text x="1618" y="356" font-size="12.6" font-weight="700" fill="#b45309">WHY THE FOOTER POSITION MATTERS — it dictates the read pattern</text>
+    <text x="1618" y="378" font-size="11.4" fill="#42507a">Metadata sits at the end, so a reader cannot stream a Parquet file front to back. It must:</text>
+    <text x="1618" y="399" font-size="11.4" fill="#42507a">1 · read the last few bytes to get the footer length &nbsp;→&nbsp; 2 · read the footer &nbsp;→&nbsp; 3 · decide which</text>
+    <text x="1618" y="415" font-size="11.4" fill="#42507a">row groups and columns survive pruning &nbsp;→&nbsp; 4 · issue <tspan font-weight="700">ranged GETs</tspan> for exactly those byte ranges.</text>
+    <text x="1618" y="438" font-size="11.4" fill="#42507a">Consequences worth internalising: the file is <tspan font-weight="700">not appendable</tspan> — adding rows means writing a new file.</text>
+    <text x="1618" y="454" font-size="11.4" fill="#42507a">A truncated file is unreadable, because the footer is what went missing. Statistics live in three places</text>
+    <text x="1618" y="470" font-size="11.4" fill="#42507a">— column chunk, column index, and data page — each enabling a finer level of skipping than the last.</text>
+    <text x="1618" y="494" font-size="11.4" font-weight="700" fill="#be123c">And every tiny file pays the footer-read round trip in full, which is why small files are so expensive on object storage.</text>
+
+    <!-- ORC -->
+    <rect x="2458" y="336" width="840" height="176" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+    <text x="2474" y="356" font-size="12.6" font-weight="700" fill="#7c2d92">ORC — the same idea, different names</text>
+    <text x="2474" y="378" font-size="11.4" fill="#4b3a5e">ORC organises data into <tspan font-weight="700">stripes</tspan> rather than row groups. Each stripe carries its own index data,</text>
+    <text x="2474" y="394" font-size="11.4" fill="#4b3a5e">the column data itself, and a stripe footer; the file then ends with a file footer and a postscript.</text>
+    <text x="2474" y="416" font-size="11.4" fill="#4b3a5e">Practically the two formats are far more alike than different: both are columnar within a horizontal</text>
+    <text x="2474" y="432" font-size="11.4" fill="#4b3a5e">slice, both keep per-slice statistics for skipping, both encode then compress, both are immutable.</text>
+    <text x="2474" y="456" font-size="11.4" font-weight="700" fill="#7c2d92">Arrow is the third member and a different thing entirely:</text>
+    <text x="2474" y="472" font-size="11.4" fill="#4b3a5e">an <tspan font-weight="700">in-memory</tspan> columnar layout designed for zero-copy sharing between processes and for SIMD</text>
+    <text x="2474" y="488" font-size="11.4" fill="#4b3a5e">execution. Parquet and ORC optimise bytes at rest; Arrow optimises bytes in registers. They compose.</text>
+
+    <!-- ===== BAND C : WRITE PATH ===== -->
+    <rect x="8" y="530" width="3304" height="220" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="26" y="554" font-size="16.5" font-weight="700" fill="#047857">THE WRITE PATH — columnar files are immutable, so every update is really a rewrite. This is where columnar systems are actually hard.</text>
+
+    <g font-size="10.8">
+      <rect x="26" y="566" width="188" height="90" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="120" y="586" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Ingestion</text>
+      <text x="120" y="605" fill="#2f4f47" text-anchor="middle">batch files · CDC</text>
+      <text x="120" y="621" fill="#2f4f47" text-anchor="middle">Kafka / streaming</text>
+      <text x="120" y="640" fill="#be123c" text-anchor="middle">arrives row-at-a-time,</text>
+      <text x="120" y="652" fill="#be123c" text-anchor="middle">must be stored column-wise</text>
+
+      <rect x="228" y="566" width="188" height="90" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="322" y="586" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Buffer &amp; batch</text>
+      <text x="322" y="605" fill="#2f4f47" text-anchor="middle">accumulate in memory</text>
+      <text x="322" y="621" fill="#2f4f47" text-anchor="middle">or a write-ahead log</text>
+      <text x="322" y="640" fill="#6b7391" text-anchor="middle">flush on size or time —</text>
+      <text x="322" y="652" fill="#6b7391" text-anchor="middle">this is your freshness knob</text>
+
+      <rect x="430" y="566" width="188" height="90" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="524" y="586" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Sort / cluster</text>
+      <text x="524" y="605" fill="#2f4f47" text-anchor="middle">order by the columns</text>
+      <text x="524" y="621" fill="#2f4f47" text-anchor="middle">you filter on</text>
+      <text x="524" y="640" font-weight="700" fill="#b45309" text-anchor="middle">the step that decides</text>
+      <text x="524" y="652" font-weight="700" fill="#b45309" text-anchor="middle">whether pruning works</text>
+
+      <rect x="632" y="566" width="188" height="90" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="726" y="586" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Encode &amp; compress</text>
+      <text x="726" y="605" fill="#2f4f47" text-anchor="middle">per column, per page</text>
+      <text x="726" y="621" fill="#2f4f47" text-anchor="middle">then a block codec</text>
+      <text x="726" y="640" fill="#6b7391" text-anchor="middle">write statistics as</text>
+      <text x="726" y="652" fill="#6b7391" text-anchor="middle">you go, footer last</text>
+
+      <rect x="834" y="566" width="188" height="90" rx="7" fill="#fff" stroke="#155e75" stroke-width="1.8"/>
+      <text x="928" y="586" font-size="11.8" font-weight="700" fill="#155e75" text-anchor="middle">Commit</text>
+      <text x="928" y="605" fill="#2f4f47" text-anchor="middle">new immutable files</text>
+      <text x="928" y="621" fill="#2f4f47" text-anchor="middle">+ a new snapshot</text>
+      <text x="928" y="640" fill="#6b7391" text-anchor="middle">atomic metadata swap —</text>
+      <text x="928" y="652" fill="#6b7391" text-anchor="middle">readers never see partial</text>
+
+      <rect x="1036" y="566" width="188" height="90" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="2"/>
+      <text x="1130" y="586" font-size="11.8" font-weight="700" fill="#b45309" text-anchor="middle">Compaction</text>
+      <text x="1130" y="605" fill="#7a3d06" text-anchor="middle">merge small files</text>
+      <text x="1130" y="621" fill="#7a3d06" text-anchor="middle">re-sort · apply deletes</text>
+      <text x="1130" y="640" font-weight="700" fill="#b91c1c" text-anchor="middle">not optional —</text>
+      <text x="1130" y="652" font-weight="700" fill="#b91c1c" text-anchor="middle">it is scheduled work</text>
+    </g>
+    <g stroke="#047857" stroke-width="2.4" fill="none" marker-end="url(#g)">
+      <path d="M214,611 L222,611"/><path d="M416,611 L424,611"/><path d="M618,611 L626,611"/>
+      <path d="M820,611 L828,611"/><path d="M1022,611 L1030,611"/>
+    </g>
+
+    <rect x="1240" y="566" width="1010" height="90" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="1256" y="586" font-size="12.4" font-weight="700" fill="#047857">UPDATES AND DELETES — two strategies, and you must pick one per table</text>
+    <text x="1256" y="606" font-size="11.4" fill="#2f4f47"><tspan font-weight="700">Copy-on-write</tspan> — rewrite every file containing an affected row. Writes are slow and amplify heavily; reads stay clean and fast. Right for read-heavy tables updated in bulk.</text>
+    <text x="1256" y="624" font-size="11.4" fill="#2f4f47"><tspan font-weight="700">Merge-on-read</tspan> — append delete vectors or delta files and reconcile at query time. Writes are fast; reads pay a merge cost that grows until compaction runs. Right for frequent small changes.</text>
+    <text x="1256" y="648" font-size="11.4" font-weight="700" fill="#be123c">Neither makes a columnar store transactional. A single-row update still touches a file; at high update rates put an OLTP database in front.</text>
+
+    <rect x="2266" y="566" width="1032" height="90" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+    <text x="2282" y="586" font-size="12.4" font-weight="700" fill="#7c2d92">TABLE FORMATS — Iceberg, Delta Lake, Hudi — what they add on top of bare Parquet files</text>
+    <text x="2282" y="606" font-size="11.4" fill="#4b3a5e">A directory of Parquet files is not a table: there is no atomic commit, no way to know which files are current, and a reader can see a half-finished write. Table formats add a</text>
+    <text x="2282" y="624" font-size="11.4" fill="#4b3a5e">metadata layer over the same files: <tspan font-weight="700">ACID commits, snapshot isolation, time travel, schema evolution, and file-level statistics</tspan> for pruning before any file is opened.</text>
+    <text x="2282" y="648" font-size="11.4" fill="#4b3a5e">Iceberg also decouples the partition layout from the physical directory structure, so partitioning can be changed without rewriting history — the pain point of Hive-style tables.</text>
+
+    <rect x="26" y="668" width="3272" height="72" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="42" y="688" font-size="13" font-weight="700" fill="#047857">THE TRADE THAT DEFINES THE WHOLE CATEGORY</text>
+    <text x="42" y="710" font-size="11.8" fill="#42507a">A columnar store buys enormous analytical throughput by giving up cheap single-row access. Reconstructing one row means touching every column&rsquo;s chunk; writing one row means rewriting a file. In exchange, a query</text>
+    <text x="42" y="726" font-size="11.8" fill="#42507a">touching three columns of a two-hundred-column table reads roughly three columns&rsquo; worth of bytes, and those bytes compress far harder because each holds one type with similar, often sorted, values.</text>
+    <text x="42" y="742" font-size="11.8" font-weight="700" fill="#be123c">Choose columnar when queries scan many rows and few columns. Choose row-oriented when queries touch few rows and many columns. Almost every real disagreement about &ldquo;which database&rdquo; reduces to that one sentence.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 2. FILE LAYOUT DETAIL ============ -->
+<div class="panel c4 span2">
+  <div class="phead">2 &nbsp;· &nbsp;INSIDE THE FILE <span class="sub">the four levels, what statistics live where, and which knob to turn when</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The hierarchy, top down</div>
+      <table>
+        <thead><tr><th style="width:132px">Level</th><th>What it is, and typical size</th></tr></thead>
+        <tbody>
+          <tr><td><b>File</b></td><td>Self-describing and immutable. Opens and closes with the <span class="mono">PAR1</span> magic bytes; all metadata is in the footer.</td></tr>
+          <tr><td><b>Row group</b></td><td>A horizontal slice of rows, commonly <b>128 MB – 1 GB</b> uncompressed. The unit of parallel work and of most skipping. <b>The level the usual diagram omits</b> — without it, &ldquo;column chunk&rdquo; has no defined boundary.</td></tr>
+          <tr><td><b>Column chunk</b></td><td>All values of one column within one row group. Contiguous on disk, which is what makes a single-column read one sequential range.</td></tr>
+          <tr><td><b>Page</b></td><td>The smallest unit, commonly <b>8 KB – 1 MB</b>. Dictionary pages hold the lookup; data pages hold encoded values. Compression and encoding are applied here.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Read the hierarchy as a filter chain.</b> Partition eliminates directories, file
+        statistics eliminate files, row-group statistics eliminate slices, the column index eliminates pages, and only then are
+        bytes actually fetched. Each level exists to avoid work at the level below it.</div>
+      <div class="h3">What a reader actually does</div>
+      <div class="code"><span class="c">// reading 2 columns from a 200-column, 1 GB file</span>
+1. GET bytes[-8:]        <span class="c">// footer length + PAR1</span>
+2. GET footer            <span class="c">// schema, offsets, statistics</span>
+3. evaluate predicates against row-group min/max
+4. GET only the surviving (column chunk, row group)
+   byte ranges — typically a handful of ranged reads
+5. decode pages, filter, aggregate
+
+<span class="c">// bytes transferred can be a fraction of one percent</span>
+<span class="c">// of the file — but it costs 2 round trips before</span>
+<span class="c">// any data moves, which is why file count matters</span></div>
+      <div class="h3">Where statistics live</div>
+      <table>
+        <thead><tr><th style="width:132px">Location</th><th>Enables</th></tr></thead>
+        <tbody>
+          <tr><td><b>Footer, per column chunk</b></td><td>min, max, null count, distinct count — row-group pruning, the coarsest and cheapest.</td></tr>
+          <tr><td><b>Column index</b></td><td>Per-page min/max, so a matching row group can still skip most of its pages.</td></tr>
+          <tr><td><b>Bloom filter</b></td><td>Equality on high-cardinality columns, where min/max is useless because the range is wide but the value is absent.</td></tr>
+          <tr><td><b>Table format manifest</b></td><td>File-level stats, so files are eliminated <i>before</i> any footer is read — the only level that avoids a round trip entirely.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Sizing, and the two failure modes</div>
+      <table>
+        <thead><tr><th style="width:118px">If files are…</th><th>What goes wrong</th></tr></thead>
+        <tbody>
+          <tr><td><b>Too small</b><br><span style="color:#6b7391">the common case</span></td><td>Every file costs a footer read before a single value is returned. Thousands of small files turn one logical scan into thousands of round trips, and on object storage latency dominates. Metadata also grows until planning itself is slow.</td></tr>
+          <tr><td><b>Too large</b></td><td>Fewer, coarser row groups mean less skipping granularity, higher writer memory, and worse parallelism — a single 10 GB file cannot be split across many workers as evenly.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Target a few hundred megabytes per file</b> with row groups in the low hundreds of
+        megabytes, then let compaction hold it there. Exact values depend on the engine and the storage, but the shape of the
+        trade-off does not — and being an order of magnitude out in either direction is far more costly than being imprecise.</div>
+      <div class="h3">Nested and missing data</div>
+      <ul>
+        <li><b>Nulls are not stored as values.</b> They are recorded in a definition level, so a mostly-null column costs almost nothing — very different from a row store padding every record.</li>
+        <li><b>Nested structures are flattened</b> into leaf columns, with repetition and definition levels recording the structure. A struct of five fields is five columns, and you can read one without touching the rest.</li>
+        <li><b>Deeply nested arrays cost more</b> on both write and read. If a nested field is filtered on constantly, promoting it to a top-level column is usually the right call.</li>
+      </ul>
+      <div class="callout r"><b>The footer is a single point of failure.</b> Because metadata is written last, a
+        partially-written file is unreadable rather than partially readable. This is exactly why a table format&rsquo;s atomic commit
+        matters — readers must never see a file that a writer has not finished.</div>
+      <div class="callout"><b>Statistics are only as good as their granularity.</b> One set of min/max per
+        column chunk on a 1 GB row group is a coarse filter. Smaller row groups give finer skipping at the cost of a larger
+        footer — which is the real trade-off behind row-group sizing, not writer memory alone.</div>
+      <div class="callout p"><b>Column chunk contiguity is the whole trick.</b> One column&rsquo;s values sit together
+        on disk, so reading it is one sequential range rather than a stride across every row. That single property is what makes
+        projection pushdown a genuine byte-level saving instead of a filter applied after reading everything.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. ROW vs COLUMN ============ -->
+<div class="panel c1">
+  <div class="phead">3 &nbsp;· &nbsp;ROW vs COLUMNAR <span class="sub">the same data, laid out differently</span></div>
+  <div class="pbody">
+    <div class="code" style="margin-top:0"><span class="c">// logical table</span>
+ id | date       | country | amount
+ ---+------------+---------+-------
+  1 | 2026-05-01 | US      | 120
+  2 | 2026-05-01 | IN      | 200
+  3 | 2026-05-01 | UK      | 150
+
+<span class="c">// ROW layout — records contiguous</span>
+<span class="a">[1,2026-05-01,US,120]</span><span class="v">[2,2026-05-01,IN,200]</span>...
+<span class="c">   read one row  = one seek</span>
+<span class="c">   read one column = touch every record</span>
+
+<span class="c">// COLUMNAR layout — columns contiguous</span>
+id:      <span class="a">[1,2,3]</span>
+date:    <span class="v">[2026-05-01,2026-05-01,2026-05-01]</span>  <span class="c">← RLE</span>
+country: <span class="k">[US,IN,UK]</span>                          <span class="c">← dictionary</span>
+amount:  <span class="r">[120,200,150]</span>                       <span class="c">← bit-packed</span>
+<span class="c">   read one column = one sequential range</span>
+<span class="c">   read one row    = one seek per column</span></div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:118px"></th><th>Row-oriented</th><th>Columnar</th></tr></thead>
+      <tbody>
+        <tr><td><b>Reads</b></td><td>Whole rows cheaply</td><td>Selected columns cheaply</td></tr>
+        <tr><td><b>Writes</b></td><td>Single-row insert and update are cheap</td><td>Writes batch into files; single-row update rewrites</td></tr>
+        <tr><td><b>Compression</b></td><td>Poor — mixed types adjacent</td><td>Strong — one type, similar values adjacent</td></tr>
+        <tr><td><b>Point lookup</b></td><td>Index seek, sub-millisecond</td><td>Touches every column chunk</td></tr>
+        <tr><td><b>Aggregate a column</b></td><td>Reads every row</td><td>Reads one column</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Compression is a consequence of the layout, not a separate feature.</b> Adjacent values in
+      a column share a type and often a range or a sort order, so encodings have something to exploit. In a row layout an integer
+      sits beside a timestamp beside a string, and there is very little structure to compress.</div>
+    <div class="callout r"><b>Ratios are workload-dependent — treat published multipliers with care.</b> A
+      low-cardinality, well-sorted column can compress by orders of magnitude; a high-cardinality random one barely at all. The same
+      is true of query speed-ups: the gain comes from columns skipped and rows pruned, so it scales with how selective your queries
+      are and how well the data is clustered, not with the product.</div>
+  </div>
+</div>
+
+<!-- ============ 4. DATA SKIPPING ============ -->
+<div class="panel c5 span2">
+  <div class="phead">4 &nbsp;· &nbsp;DATA SKIPPING AND SORT ORDER <span class="sub">the largest single lever on columnar performance, and the one most often left untouched</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Min/max statistics are useless on unsorted data.</b> They are
+        still written, still correct, and still consulted — and they eliminate nothing, because every row group&rsquo;s range spans
+        the whole domain. Teams conclude &ldquo;data skipping does not work here&rdquo; when what actually happened is that nobody
+        controlled write order.</div>
+      <div class="code"><span class="c">// UNSORTED — 3 row groups, filter: date = '2026-05-03'</span>
+RG1  min=2026-05-01  max=2026-05-31   <span class="r">→ cannot skip</span>
+RG2  min=2026-05-01  max=2026-05-31   <span class="r">→ cannot skip</span>
+RG3  min=2026-05-01  max=2026-05-31   <span class="r">→ cannot skip</span>
+                                      <span class="r">reads 100%</span>
+
+<span class="c">// SORTED BY date — same data, same query</span>
+RG1  min=2026-05-01  max=2026-05-10   <span class="v">→ read</span>
+RG2  min=2026-05-11  max=2026-05-20   <span class="k">→ skip</span>
+RG3  min=2026-05-21  max=2026-05-31   <span class="k">→ skip</span>
+                                      <span class="v">reads ~33%</span>
+
+<span class="c">// same files, same statistics, same engine.</span>
+<span class="c">// the only difference is the order rows were written.</span></div>
+      <div class="callout g"><b>Re-sorting is expensive, and that is the point of doing it once.</b> Sorting on
+        write, or during a compaction pass, costs CPU once and pays back on every subsequent query. Sorting inside the query pays
+        on every execution and skips nothing, because the files were already read by then.</div>
+      <div class="callout"><b>Clustering degrades gracefully; partitioning does not.</b> A sort key that stops
+        matching query patterns still prunes partially. A partition key that stops matching leaves you with millions of
+        directories and a rewrite — which is why Iceberg&rsquo;s ability to evolve the partition spec without rewriting history
+        matters more than it first appears.</div>
+      <div class="h3">The pruning mechanisms, coarsest first</div>
+      <table>
+        <thead><tr><th style="width:132px">Mechanism</th><th>Works when</th></tr></thead>
+        <tbody>
+          <tr><td><b>Partition pruning</b></td><td>The filter is on the partition column, unwrapped. Coarsest and cheapest — whole directories never listed.</td></tr>
+          <tr><td><b>File / manifest stats</b></td><td>The table format tracks per-file min/max, so files are dropped before a footer is read.</td></tr>
+          <tr><td><b>Zone maps<br>(row-group min/max)</b></td><td>Values are <b>clustered</b> on the filter column. This is the one that depends entirely on write order.</td></tr>
+          <tr><td><b>Column index<br>(page min/max)</b></td><td>A surviving row group still contains mostly irrelevant pages.</td></tr>
+          <tr><td><b>Bloom filter</b></td><td>Equality on high-cardinality columns — the case min/max cannot help with, because the range is wide but the value is simply absent.</td></tr>
+          <tr><td><b>Runtime / join filters</b></td><td>A small build side produces a filter pushed into the probe side&rsquo;s scan, pruning during execution rather than planning.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Choosing a sort key</div>
+      <ul>
+        <li><b>Sort by what you filter on</b>, not by what you group by. Pruning happens on predicates.</li>
+        <li><b>Time first</b> for event data — nearly every analytical query is bounded by a date range, and time is naturally clustered on ingest.</li>
+        <li><b>Then the next most selective filter</b>, typically a tenant, account or region.</li>
+        <li><b>Only the leading column prunes well.</b> A composite sort gives the second column far less benefit, and the third almost none — so choose the order deliberately.</li>
+        <li><b>Multi-dimensional clustering</b> (Z-order, space-filling curves) trades some single-column skipping for usable skipping on several columns. Worth it when queries genuinely filter on different columns; not otherwise.</li>
+        <li><b>High-cardinality equality wants a bloom filter</b>, not a sort key.</li>
+      </ul>
+      <div class="callout r"><b>Predicates that silently disable pruning.</b> Statistics are compared against literal
+        values, so anything that hides the column from the optimiser costs you the skip:</div>
+      <div class="code"><span class="c">-- kills pruning: the column is wrapped in a function</span>
+<span class="r">WHERE</span> DATE(event_ts) = <span class="v">'2026-05-03'</span>
+<span class="r">WHERE</span> CAST(id <span class="k">AS</span> VARCHAR) = <span class="v">'1234'</span>
+<span class="r">WHERE</span> UPPER(country) = <span class="v">'US'</span>
+
+<span class="c">-- prunes: the column is compared directly to literals</span>
+<span class="v">WHERE</span> event_ts &gt;= <span class="v">'2026-05-03'</span>
+  <span class="v">AND</span> event_ts &lt;  <span class="v">'2026-05-04'</span>
+<span class="v">WHERE</span> id = <span class="v">1234</span>
+
+<span class="c">-- also weak: leading wildcards, OR across many</span>
+<span class="c">-- columns, and joins on the partition column</span>
+<span class="r">WHERE</span> name <span class="r">LIKE</span> <span class="v">'%smith'</span></div>
+      <div class="callout g"><b>How to tell whether it is working.</b> Read the query profile for bytes scanned or
+        files/row groups pruned, not the wall clock. If a date-filtered query scans the whole table, the problem is layout —
+        and no amount of extra compute will fix it, it will only cost more.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 5. ENCODINGS ============ -->
+<div class="panel c2">
+  <div class="phead">5 &nbsp;· &nbsp;ENCODINGS <span class="sub">type-aware, applied per column</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:118px">Encoding</th><th>How it works, and when it pays</th></tr></thead>
+      <tbody>
+        <tr><td><b>Dictionary</b></td><td>Store each distinct value once, then store small integer codes. Enormous win on low-cardinality strings — country, status, category. Writers fall back to plain encoding once the dictionary grows past a size limit, which is why it quietly stops helping on high-cardinality columns.</td></tr>
+        <tr><td><b>Run-length (RLE)</b></td><td>A repeated value becomes value + count. Only effective when equal values are <b>adjacent</b>, so its benefit is created by sort order, not by the encoder.</td></tr>
+        <tr><td><b>Bit-packing</b></td><td>Store integers in the minimum bits needed rather than the full type width — values 0–7 need three bits, not thirty-two. Applied to dictionary codes and small integers.</td></tr>
+        <tr><td><b>Delta</b></td><td>Store differences between consecutive values. Ideal for sorted timestamps and monotonic ids, where the deltas are tiny and highly compressible.</td></tr>
+        <tr><td><b>Frame of reference</b></td><td>Subtract a per-block base value, then bit-pack the remainder. Suits clustered numeric ranges.</td></tr>
+        <tr><td><b>Specialised float<br>and string codecs</b></td><td>Newer encodings target the two cases classic techniques handle worst: floating-point measurements and short strings. Worth checking whether your engine version supports them before assuming a column is incompressible.</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Dictionary encoding, concretely</div>
+    <div class="code"><span class="c">// country column, 1,000,000 rows, 4 distinct values</span>
+raw:   [<span class="v">"United States"</span>, <span class="v">"India"</span>, <span class="v">"United States"</span>, ...]
+       1M × ~13 bytes
+
+dict page:  0→<span class="v">"India"</span>  1→<span class="v">"United Kingdom"</span>
+            2→<span class="v">"United States"</span>  3→<span class="v">"Germany"</span>
+data page:  [<span class="k">2</span>,<span class="k">0</span>,<span class="k">2</span>,<span class="k">2</span>,<span class="k">1</span>,<span class="k">2</span>,<span class="k">3</span>, ...]   <span class="c">// 2 bits each</span>
+
+<span class="c">// and if the column were SORTED, those codes</span>
+<span class="c">// collapse further into runs: RLE takes over</span>
+sorted:     [<span class="k">0</span>×250k][<span class="k">1</span>×250k][<span class="k">2</span>×250k][<span class="k">3</span>×250k]
+            → four runs instead of a million values</div>
+    <div class="callout g"><b>Parquet chains them.</b> An integer column is typically dictionary-encoded first, then
+      the resulting codes are stored with a hybrid of RLE and bit-packing — runs of eight or more identical codes become a run,
+      everything else is bit-packed. You get both wins from one column without configuring anything.</div>
+    <div class="callout"><b>Inspect rather than assume.</b> Parquet tooling can dump per-column encodings,
+      compressed and uncompressed sizes per column chunk. That report tells you immediately which column is costing you the storage
+      and whether the dictionary fell back — far more useful than reasoning about it from the schema.</div>
+    <div class="callout r"><b>Cardinality decides everything here.</b> A UUID column defeats dictionary encoding,
+      defeats RLE, and leaves a general-purpose codec with almost nothing to work with. If a high-cardinality column dominates
+      your storage bill, the fix is usually to stop storing it, hash it, or move it out of the hot table — not to change codec.</div>
+  </div>
+</div>
+
+<!-- ============ 6. COMPRESSION ============ -->
+<div class="panel c8">
+  <div class="phead">6 &nbsp;· &nbsp;COMPRESSION CODECS <span class="sub">a separate stage</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Encoding and compression are two different things, and listing them
+      together is the most common conceptual error about columnar storage.</b> Encoding is <b>type-aware</b>: it understands that
+      this is a run of integers or a repeated string, and it preserves structured access. Compression is <b>type-blind</b>: a
+      general-purpose codec applied to the already-encoded page bytes, looking only for repeated byte sequences.</div>
+    <div class="code"><span class="c">// the actual write pipeline, per page</span>
+raw values
+   ↓  <span class="k">encode</span>      dictionary → RLE / bit-pack   <span class="c">(type-aware)</span>
+encoded bytes
+   ↓  <span class="k">compress</span>    snappy | zstd | gzip | lz4    <span class="c">(type-blind)</span>
+page written to disk
+
+<span class="c">// on read, the reverse — but a good engine can often</span>
+<span class="c">// filter and aggregate on dictionary codes directly,</span>
+<span class="c">// without ever materialising the original strings</span></div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:96px">Codec</th><th>Character, and when to choose it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Snappy</b></td><td>Fast to compress and decompress, modest ratio. The practical default when scan speed matters more than storage.</td></tr>
+        <tr><td><b>ZSTD</b></td><td>Has largely superseded Gzip: comparable ratio at substantially faster decompression, with a tunable level. The reasonable default for cold or large data.</td></tr>
+        <tr><td><b>Gzip</b></td><td>Good ratio, slow to decompress. Mostly legacy now that ZSTD exists.</td></tr>
+        <tr><td><b>LZ4</b></td><td>Fastest, lowest ratio. Suits hot data where CPU is the constraint.</td></tr>
+        <tr><td><b>Uncompressed</b></td><td>Occasionally correct — when the encodings already did the work and you are CPU-bound rather than I/O-bound.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>The right question is not &ldquo;which codec compresses best&rdquo;.</b> It is where your
+      bottleneck is. If queries are I/O-bound against object storage, a heavier codec reads fewer bytes and wins. If they are
+      CPU-bound on a warm cache, a lighter codec wins even though the files are larger.</div>
+  </div>
+</div>
+
+<!-- ============ 7. VECTORIZED EXECUTION ============ -->
+<div class="panel c3">
+  <div class="phead">7 &nbsp;· &nbsp;VECTORIZED EXECUTION <span class="sub">why the CPU keeps up</span></div>
+  <div class="pbody">
+    <div style="font-size:13.4px;line-height:1.46">A classic engine processes one row at a time through a chain of operators —
+      a virtual function call per row per operator. On a billion rows the interpretation overhead dwarfs the actual work. A
+      vectorized engine passes <b>batches of a column</b> between operators instead.</div>
+    <div class="code"><span class="c">// row-at-a-time: per-row dispatch, unpredictable branches</span>
+<span class="k">for</span> (row : rows)
+    <span class="k">if</span> (filter(row)) out.add(project(row));
+
+<span class="c">// vectorized: one call per batch, tight typed loop</span>
+<span class="k">for</span> (batch : batches)            <span class="c">// e.g. ~1–10k values</span>
+    selection = filter(batch.col[<span class="v">"country"</span>]);
+    sum      += aggregate(batch.col[<span class="v">"amount"</span>], selection);</div>
+    <div class="h3">Why it is so much faster</div>
+    <ul>
+      <li><b>Dispatch cost is amortised</b> across the whole batch rather than paid per row.</li>
+      <li><b>The inner loop is typed and branch-free</b>, so it vectorises to SIMD instructions that process many values per cycle.</li>
+      <li><b>Cache locality is excellent</b> — a batch of one column is contiguous memory of one type, which is exactly what a prefetcher handles well.</li>
+      <li><b>Filters produce selection vectors</b> rather than copying data, so a highly selective predicate stays cheap.</li>
+      <li><b>Late materialization</b> — carry positions and dictionary codes through the plan and fetch real values only at the end, for the rows that survived.</li>
+    </ul>
+    <div class="callout g"><b>Batch size is a real tuning parameter.</b> Too small and per-batch overhead returns;
+      too large and intermediate vectors fall out of CPU cache. Engines default to a few thousand values for that reason —
+      sized to stay in cache, not to fill memory.</div>
+    <div class="callout"><b>Arrow is the in-memory counterpart.</b> Parquet is the format at rest; Arrow is the
+      layout in memory, designed so batches can be shared between processes and languages without serialisation. That is why a
+      Parquet-to-Arrow read path can be close to zero-copy.</div>
+  </div>
+</div>
+
+<!-- ============ 8. PARTITIONING ============ -->
+<div class="panel c6">
+  <div class="phead">8 &nbsp;· &nbsp;PARTITIONING &amp; FILE LAYOUT <span class="sub">easy to get badly wrong</span></div>
+  <div class="pbody">
+    <div style="font-size:13.4px;line-height:1.46">Partitioning splits a table into directories by column value so whole
+      directories can be eliminated. It is the coarsest and cheapest pruning available — and the most frequently over-applied.</div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:126px">Choice</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td><b>By date</b><br><span style="color:#6b7391">day or month</span></td><td>The default that is usually right. Almost every analytical query is time-bounded, and partitions stay a sensible size.</td></tr>
+        <tr><td><b>By tenant / region</b></td><td>Good when queries are always scoped that way and the values are evenly distributed.</td></tr>
+        <tr><td><b>By high-cardinality<br>column</b></td><td><b>Almost always wrong.</b> Partitioning by user id or event id produces millions of tiny directories, each with a tiny file, and planning alone becomes slower than the scan you were avoiding.</td></tr>
+        <tr><td><b>Too many levels</b></td><td>year/month/day/hour/region multiplies out fast. Each level is only useful if queries actually filter on it.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The small-file problem is the defining operational failure of columnar systems.</b>
+      Streaming ingestion writing every few seconds, or partitioning too finely, produces enormous numbers of small files. Each
+      costs a footer read and a round trip; metadata grows until planning dominates; and compression suffers because there is not
+      enough data per file for encodings to find structure. Compaction is not tidying — it is required, scheduled work.</div>
+    <div class="callout g"><b>Prefer clustering over more partitions.</b> Once partitions are roughly the right size,
+      further skipping should come from sort order within files, which costs nothing in metadata and degrades gracefully.
+      Partition on one or two low-cardinality columns; cluster on the rest.</div>
+    <div class="callout"><b>Watch for skew.</b> Partitioning by a column with one dominant value produces one enormous
+      partition and a long tail of empty ones, so a single task becomes the whole query&rsquo;s runtime. Check the distribution
+      before choosing the key, not after the first slow query.</div>
+  </div>
+</div>
+
+<!-- ============ 9. USE CASES ============ -->
+<div class="panel c7 span2">
+  <div class="phead">9 &nbsp;· &nbsp;WHEN TO USE ONE, AND WHEN NOT TO <span class="sub">the boundary is access pattern, not data volume — small analytical tables still belong here</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Strong fit</div>
+      <table>
+        <thead><tr><th style="width:158px">Workload</th><th>Why it fits</th></tr></thead>
+        <tbody>
+          <tr><td><b>BI and reporting</b></td><td>Wide tables, few columns per query, heavy aggregation, read-mostly.</td></tr>
+          <tr><td><b>Data warehousing</b></td><td>Large historical fact tables loaded in batches and queried repeatedly.</td></tr>
+          <tr><td><b>Ad-hoc exploration</b></td><td>Unpredictable predicates over large scans, where indexing every access path is impractical.</td></tr>
+          <tr><td><b>Time series and events</b></td><td>Append-mostly, naturally clustered on time, filtered by time — the best possible case for skipping.</td></tr>
+          <tr><td><b>Logs and metrics</b></td><td>Enormous volume, low-cardinality repeated fields that compress extremely well.</td></tr>
+          <tr><td><b>Offline ML features</b></td><td>Large-scale training-set construction and backfills over history.</td></tr>
+          <tr><td><b>Near-real-time analytics</b></td><td>Workable with streaming ingest — provided compaction keeps up.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>One correction worth making explicitly: a feature store is not one system.</b>
+        The <b>offline</b> side — building training sets, backfilling, point-in-time joins over history — is an ideal columnar
+        workload. The <b>online</b> side serves single-entity lookups in single-digit milliseconds during inference, which is the
+        exact access pattern columnar is worst at. Those are two stores kept consistent, not one. Listing &ldquo;feature store&rdquo;
+        as a columnar use case without that split is how teams end up serving inference from a warehouse and wondering why
+        p99 latency is unusable.</div>
+    </div>
+    <div>
+      <div class="h3">Poor fit</div>
+      <table>
+        <thead><tr><th style="width:158px">Workload</th><th>Why it does not fit</th></tr></thead>
+        <tbody>
+          <tr><td><b>OLTP transactions</b></td><td>Single-row insert, update and delete against an immutable file layout. The impedance mismatch is fundamental, not a tuning problem.</td></tr>
+          <tr><td><b>Point lookups</b></td><td>Reconstructing one row means seeking into every column chunk. A row store with an index does it in one seek.</td></tr>
+          <tr><td><b>High-frequency small writes</b></td><td>Produces the small-file problem directly. Buffer and batch, or put a row store in front.</td></tr>
+          <tr><td><b>Serving low-latency APIs</b></td><td>Built for throughput on large scans, not for consistent single-digit-millisecond responses.</td></tr>
+          <tr><td><b>Highly normalised models</b></td><td>Many-way joins across narrow tables. Columnar engines prefer wide, denormalised tables — storage is cheap because it compresses.</td></tr>
+          <tr><td><b><span class="mono">SELECT *</span> workloads</b></td><td>Reading every column forfeits the entire advantage and adds decompression cost on top.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The usual right answer is both.</b> An OLTP database owns the writes and the
+        point lookups; changes flow by CDC into a columnar store that owns the analytics. Trying to serve both from one engine is
+        the decision most often regretted — in either direction.</div>
+      <div class="callout"><b>Volume is not the deciding factor.</b> A ten-million-row table queried with wide
+        scans and aggregates belongs in a columnar engine; a ten-billion-row table queried only by primary key does not. Ask what
+        the queries look like before asking how big the data is.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 10. LANDSCAPE ============ -->
+<div class="panel c2">
+  <div class="phead">10 &nbsp;· &nbsp;THE LANDSCAPE <span class="sub">four different things, often confused</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:126px">Category</th><th>What it is · examples</th></tr></thead>
+      <tbody>
+        <tr><td><b>File formats</b></td><td>Columnar bytes at rest, engine-independent. <b>Parquet</b>, <b>ORC</b>. You can read them from anything; they carry no notion of a table.</td></tr>
+        <tr><td><b>In-memory format</b></td><td><b>Arrow</b> — the columnar layout in RAM, for zero-copy sharing and SIMD execution. Not a storage format.</td></tr>
+        <tr><td><b>Table formats</b></td><td><b>Iceberg</b>, <b>Delta Lake</b>, <b>Hudi</b> — a metadata layer over those files that provides atomic commits, snapshots, time travel and schema evolution. This is what makes a directory of files behave like a table.</td></tr>
+        <tr><td><b>Engines &amp; warehouses</b></td><td><b>ClickHouse</b>, <b>Snowflake</b>, <b>BigQuery</b>, <b>Redshift</b>, <b>Databricks</b>, <b>DuckDB</b>, <b>Doris</b>, <b>StarRocks</b>, <b>Druid</b>, <b>Pinot</b>, <b>Vertica</b>. These execute queries; several read the formats above directly.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>They compose rather than compete.</b> A common modern stack is Parquet files, organised by
+      Iceberg, queried by more than one engine, with Arrow as the in-memory representation in between. Asking &ldquo;Parquet or
+      Iceberg?&rdquo; or &ldquo;Arrow or Parquet?&rdquo; is a category error — they operate at different layers.</div>
+    <div class="h3">Rough positioning</div>
+    <ul>
+      <li><b>Real-time, high-ingest analytics</b> — ClickHouse, Doris, StarRocks, Druid, Pinot. Built for fresh data and fast filtered aggregates.</li>
+      <li><b>Cloud warehouses</b> — Snowflake, BigQuery, Redshift. Managed, elastic, storage-compute separated, strongest on governance and concurrency.</li>
+      <li><b>Lakehouse</b> — engines over Iceberg or Delta on object storage. Open formats, multiple engines, no vendor lock on the data itself.</li>
+      <li><b>Embedded / single-node</b> — DuckDB. Genuinely fast on data far larger than people expect, and it removes a cluster from many problems.</li>
+    </ul>
+    <div class="callout g"><b>Start smaller than feels right.</b> Single-node engines handle datasets in the hundreds
+      of gigabytes comfortably on modern hardware. Distributed systems are chosen for concurrency, governance and elasticity at
+      least as often as for raw size — and they cost far more to operate.</div>
+  </div>
+</div>
+
+<!-- ============ 11. QUERY FLOW ============ -->
+<div class="panel c1">
+  <div class="phead">11 &nbsp;· &nbsp;A QUERY, END TO END <span class="sub">where the bytes go</span></div>
+  <div class="pbody">
+    <div class="code" style="margin-top:0"><span class="k">SELECT</span> country, <span class="k">SUM</span>(amount)
+<span class="k">FROM</span>   sales
+<span class="k">WHERE</span>  event_date &gt;= <span class="v">'2026-05-01'</span>
+  <span class="k">AND</span>  event_date &lt;  <span class="v">'2026-06-01'</span>
+<span class="k">GROUP BY</span> country;
+
+<span class="c">// table: 200 columns, 5 TB, partitioned by month,</span>
+<span class="c">// sorted by event_date within each partition</span></div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:34px">#</th><th>Stage</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Parse and plan</b></td><td>Two columns are required — <span class="mono">country</span> and <span class="mono">amount</span> — plus <span class="mono">event_date</span> for the filter. The other 197 are never considered again.</td></tr>
+        <tr><td>2</td><td><b>Partition pruning</b></td><td>The predicate is a bare range on the partition column, so only May&rsquo;s directory is listed. Eleven twelfths of the table is eliminated without opening a file.</td></tr>
+        <tr><td>3</td><td><b>File pruning</b></td><td>Manifest statistics drop files whose date range falls outside the window — before any footer is read.</td></tr>
+        <tr><td>4</td><td><b>Footer read</b></td><td>For each surviving file, the footer is fetched to get row-group offsets and statistics.</td></tr>
+        <tr><td>5</td><td><b>Row-group pruning</b></td><td>Min/max on <span class="mono">event_date</span> eliminates row groups. <b>This step only works because the data was sorted on write.</b></td></tr>
+        <tr><td>6</td><td><b>Projection pushdown</b></td><td>Ranged GETs fetch only the three columns&rsquo; chunks from surviving row groups. Nothing else crosses the network.</td></tr>
+        <tr><td>7</td><td><b>Decode</b></td><td>Pages are decompressed and decoded into columnar batches — often still as dictionary codes rather than materialised strings.</td></tr>
+        <tr><td>8</td><td><b>Filter and aggregate</b></td><td>Vectorized evaluation produces a selection vector; partial aggregates are computed per task and merged.</td></tr>
+        <tr><td>9</td><td><b>Return</b></td><td>A handful of rows — one per country.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Every stage before the last three exists to avoid reading bytes.</b> Of a 5 TB table,
+      a well-laid-out version of this query might touch a few gigabytes. Change the filter to
+      <span class="mono">WHERE MONTH(event_date) = 5</span> and steps 2, 3 and 5 all stop working — the same query then scans the
+      whole table, on the same hardware, with the same configuration.</div>
+  </div>
+</div>
+
+<!-- ============ 12. TRAPS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">12 &nbsp;· &nbsp;TRAPS THAT COST THE MOST <span class="sub">in roughly the order they are encountered — each one makes the system slow or expensive while looking correctly configured</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:152px">Trap</th><th>What actually happens</th><th style="width:186px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Unsorted writes</b></td><td>Every row group's min/max spans the whole domain, so no pruning is ever possible. Statistics are written, correct, and worthless.</td><td>Sort or cluster on the leading filter column at write time; re-sort during compaction.</td></tr>
+          <tr><td><b>Small files</b></td><td>Each costs a footer read and a round trip; metadata grows until planning dominates; encodings have too little data to exploit.</td><td>Scheduled compaction, and buffer streaming writes before flushing.</td></tr>
+          <tr><td><b>Functions on filter columns</b></td><td><span class="mono">DATE(ts)</span>, <span class="mono">CAST</span> or <span class="mono">UPPER</span> hides the column, so statistics cannot be compared and pruning silently stops.</td><td>Rewrite as a bare range against literals; or store the derived column.</td></tr>
+          <tr><td><b><span class="mono">SELECT *</span></b></td><td>Forfeits projection pushdown entirely — the single largest advantage — and adds decompression on every column.</td><td>Name columns. It is not style; it is most of the performance.</td></tr>
+          <tr><td><b>Over-partitioning</b></td><td>Partitioning on a high-cardinality column creates millions of directories and tiny files. Planning becomes slower than the scan.</td><td>Partition on one or two low-cardinality columns; cluster on the rest.</td></tr>
+          <tr><td><b>Row-by-row ingestion</b></td><td>An insert per event produces a file per event and a compaction backlog that never clears.</td><td>Batch on size or time; use the engine's bulk path.</td></tr>
+          <tr><td><b>Using it as OLTP</b></td><td>Single-row updates rewrite files or accumulate delete vectors until reads degrade badly.</td><td>OLTP database in front, CDC into the columnar store.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:152px">Trap</th><th>What actually happens</th><th style="width:186px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>No compaction schedule</b></td><td>Merge-on-read tables accumulate delete files and deltas; query time grows steadily and nobody can point at a change that caused it.</td><td>Treat compaction as a first-class scheduled job with its own monitoring.</td></tr>
+          <tr><td><b>Stale statistics</b></td><td>The cost model picks wrong join orders and build sides, producing plans orders of magnitude off.</td><td>Refresh statistics after significant loads; verify the plan, not just the result.</td></tr>
+          <tr><td><b>High-cardinality columns</b></td><td>UUIDs and free text defeat dictionary encoding and RLE, then dominate storage and scan cost.</td><td>Hash, drop, or move them out of the hot table.</td></tr>
+          <tr><td><b>Partition skew</b></td><td>One dominant value creates one enormous partition; a single task becomes the entire query runtime.</td><td>Check the distribution before choosing the key; salt or sub-partition if needed.</td></tr>
+          <tr><td><b>Wide nested structures</b></td><td>Deeply nested repeated fields are expensive to encode and to reconstruct, especially when filtered on constantly.</td><td>Promote frequently-filtered nested fields to top-level columns.</td></tr>
+          <tr><td><b>Tuning compute, not layout</b></td><td>A bigger warehouse makes a full scan finish sooner at higher cost, while the actual defect — no pruning — is untouched.</td><td>Read bytes scanned and files pruned first. Resize only after layout is right.</td></tr>
+          <tr><td><b>Assuming published ratios</b></td><td>Compression and speed-up figures are workload-dependent. Capacity plans built on a marketing multiplier miss badly in both directions.</td><td>Measure on a representative sample of your own data.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The pattern across all fourteen.</b> Almost none are query-tuning problems. They are
+        decisions about how data was written, partitioned, sorted and maintained — which is why the fastest route to a faster
+        columnar system is usually to change the write path, not the query.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;DESIGN &amp; OPERATIONS CHECKLIST <span class="sub">confirm before a columnar table carries a workload anyone depends on</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Access pattern verified as scan-and-aggregate</b>, not point lookup</div>
+      <div>&#9744; <b>An OLTP store owns the writes</b> if single-row updates are frequent</div>
+      <div>&#9744; <b>Sort / cluster key chosen from actual query predicates</b></div>
+      <div>&#9744; <b>Leading sort column is the most common filter</b> (usually time)</div>
+      <div>&#9744; <b>Partition columns are low cardinality</b>, one or two levels</div>
+      <div>&#9744; <b>Partition size distribution checked</b> for skew before launch</div>
+      <div>&#9744; <b>Target file size set</b> and enforced by compaction</div>
+      <div>&#9744; <b>Row-group size chosen deliberately</b>, not left at a default that fights the file size</div>
+      <div>&#9744; <b>Compaction is a scheduled, monitored job</b> with alerting on backlog</div>
+      <div>&#9744; <b>Streaming writes buffered</b> on size or time, never per event</div>
+      <div>&#9744; <b>Copy-on-write vs merge-on-read chosen per table</b>, with the reason recorded</div>
+      <div>&#9744; <b>Delete-file / delta accumulation monitored</b> on merge-on-read tables</div>
+      <div>&#9744; <b>A table format is in use</b> if multiple writers or readers share the data</div>
+      <div>&#9744; <b>Atomic commit verified</b> — no reader can observe a partial write</div>
+      <div>&#9744; <b>Snapshot retention and expiry configured</b>; old snapshots actually expire</div>
+      <div>&#9744; <b>Orphan file cleanup scheduled</b> after failed writes</div>
+      <div>&#9744; <b>Schema evolution path tested</b>, including column rename and type widening</div>
+      <div>&#9744; <b>Codec chosen from the bottleneck</b> — I/O-bound or CPU-bound, measured</div>
+      <div>&#9744; <b>High-cardinality columns identified</b> and justified or removed</div>
+      <div>&#9744; <b>Bloom filters enabled</b> on high-cardinality equality predicates</div>
+      <div>&#9744; <b>Nested fields that are filtered on</b> promoted to top level</div>
+      <div>&#9744; <b>Statistics refreshed</b> after significant loads</div>
+      <div>&#9744; <b>Query profiles reviewed for bytes scanned</b> and row groups pruned</div>
+      <div>&#9744; <b>No <span class="mono">SELECT *</span></b> in any scheduled or dashboard query</div>
+      <div>&#9744; <b>No functions or casts wrapping filter columns</b> in hot queries</div>
+      <div>&#9744; <b>Predicate and projection pushdown confirmed in the plan</b>, not assumed</div>
+      <div>&#9744; <b>Compression and speed-up measured on your own data</b>, not taken from a datasheet</div>
+      <div>&#9744; <b>Cost model understood</b> — bytes scanned, compute time, or storage</div>
+      <div>&#9744; <b>Cost guardrails set</b> so one bad ad-hoc query cannot scan the whole table</div>
+      <div>&#9744; <b>Concurrency limits understood</b> for the expected number of dashboard users</div>
+      <div>&#9744; <b>Freshness requirement stated</b> and the ingest interval matched to it</div>
+      <div>&#9744; <b>Backfill and reprocessing path tested</b> at realistic volume</div>
+      <div>&#9744; <b>Time travel / retention window agreed</b> with whoever needs it</div>
+      <div>&#9744; <b>Single-node engine evaluated</b> before committing to a cluster</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>run your slowest real query and read how many bytes it
+      scanned against how many it needed.</b> The gap between those two numbers is the entire subject — and it is almost always
+      closed by changing how the data is written, not by adding compute.</div>
+  </div>
+</div>
+
+</div>
