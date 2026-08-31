@@ -1,0 +1,985 @@
+<meta charset="utf-8">
+<title>Circuit Breaker Framework in Java — Resilience4j</title>
+<style>
+  @page { size: 3400px 5624px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5624px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5624px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 822px 905px 800px 741px 945px 638px 449px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:36px;letter-spacing:.9px;font-weight:700}
+  .title .stack{font-size:16px;color:#93a4d6;font-weight:600;text-align:right;line-height:1.45}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:22px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:14px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.4px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.8px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.4px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.4px;line-height:1.45} li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.7px;line-height:1.47;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .code .a{color:#a5b4fc} .code .s{color:#fbcfe8}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:13px;
+           line-height:1.44;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13.2px;line-height:1.46}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>CIRCUIT BREAKER FRAMEWORK IN JAVA — RESILIENCE4J<span class="v">V1</span></h1>
+  <div class="stack">Spring Boot 3.x &nbsp;·&nbsp; resilience4j-spring-boot3 &nbsp;·&nbsp; Java 17+<br>
+    <span style="font-size:14px;color:#6d80b6;font-weight:500">state machine · sliding windows · aspect order · fallbacks · metrics · testing · the traps that bite in production</span></div>
+</div>
+
+<!-- ============ 1. STATE MACHINE + STACK ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;STATE MACHINE, THE OPEN DECISION, AND THE RESILIENCE STACK
+    <span class="sub">six states, not three · the circuit opens on a <b>rate</b>, never on a count · and the decorator order is fixed unless you change it</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 748" width="3320" height="748">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#be123c"/></marker>
+      <marker id="s" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#475569"/></marker>
+      <marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- ===== BAND A : STATE MACHINE ===== -->
+    <rect x="8" y="6" width="1690" height="296" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#1e3a8a">THE THREE NORMAL STATES — a finite state machine, driven entirely by recorded outcomes in a sliding window</text>
+
+    <!-- CLOSED -->
+    <circle cx="180" cy="120" r="56" fill="#d1fae5" stroke="#047857" stroke-width="3"/>
+    <text x="180" y="115" font-size="16" font-weight="700" fill="#047857" text-anchor="middle">CLOSED</text>
+    <text x="180" y="136" font-size="11.4" fill="#065f46" text-anchor="middle">calls pass through</text>
+    <!-- OPEN -->
+    <circle cx="720" cy="120" r="56" fill="#fee2e2" stroke="#be123c" stroke-width="3"/>
+    <text x="720" y="115" font-size="16" font-weight="700" fill="#be123c" text-anchor="middle">OPEN</text>
+    <text x="720" y="136" font-size="11.4" fill="#7f1d1d" text-anchor="middle">calls rejected</text>
+    <!-- HALF_OPEN -->
+    <circle cx="450" cy="248" r="56" fill="#fef3c7" stroke="#b45309" stroke-width="3"/>
+    <text x="450" y="243" font-size="15" font-weight="700" fill="#b45309" text-anchor="middle">HALF_OPEN</text>
+    <text x="450" y="264" font-size="11.4" fill="#78350f" text-anchor="middle">probe calls only</text>
+
+    <!-- CLOSED -> OPEN -->
+    <path d="M236,120 L662,120" stroke="#be123c" stroke-width="2.6" fill="none" marker-end="url(#r)"/>
+    <text x="449" y="72" font-size="12.4" font-weight="700" fill="#be123c" text-anchor="middle">failureRate ≥ threshold  OR  slowCallRate ≥ threshold</text>
+    <text x="449" y="90" font-size="11.4" fill="#7f1d1d" text-anchor="middle">evaluated only once minimumNumberOfCalls have been recorded</text>
+    <text x="449" y="108" font-size="11.4" font-weight="700" fill="#7f1d1d" text-anchor="middle">a rate, not a raw failure count</text>
+
+    <!-- OPEN -> HALF_OPEN -->
+    <path d="M690,172 L512,212" stroke="#b45309" stroke-width="2.6" fill="none" marker-end="url(#o)"/>
+    <text x="648" y="212" font-size="12" font-weight="700" fill="#b45309">after waitDurationInOpenState</text>
+    <text x="648" y="229" font-size="11" fill="#78350f">lazily on the next call, unless</text>
+    <text x="648" y="244" font-size="11" fill="#78350f">automaticTransitionFromOpenTo</text>
+    <text x="648" y="258" font-size="11" fill="#78350f">HalfOpenEnabled: true</text>
+
+    <!-- HALF_OPEN -> CLOSED -->
+    <path d="M396,212 L222,168" stroke="#047857" stroke-width="2.6" fill="none" marker-end="url(#g)"/>
+    <text x="42" y="212" font-size="12" font-weight="700" fill="#047857">permittedNumberOfCalls</text>
+    <text x="42" y="228" font-size="12" font-weight="700" fill="#047857">InHalfOpenState succeed</text>
+    <text x="42" y="245" font-size="11" fill="#065f46">the window is reset</text>
+
+    <!-- HALF_OPEN -> OPEN (curved back) -->
+    <path d="M498,212 Q640,190 700,176" stroke="#be123c" stroke-width="2.6" fill="none" stroke-dasharray="6 4" marker-end="url(#r)"/>
+    <text x="470" y="292" font-size="11.4" fill="#7f1d1d">any probe breaching a threshold sends it straight back to OPEN</text>
+
+    <!-- special states -->
+    <rect x="800" y="44" width="880" height="248" rx="9" fill="#fff" stroke="#334155" stroke-width="2.5"/>
+    <text x="816" y="66" font-size="14" font-weight="700" fill="#334155">THE THREE SPECIAL STATES — operational controls, and the ones most cheat sheets omit</text>
+    <g font-size="11.6">
+      <rect x="816" y="78" width="278" height="72" rx="6" fill="#f1f5f9" stroke="#475569" stroke-width="1.8"/>
+      <text x="955" y="98" font-size="13" font-weight="700" fill="#334155" text-anchor="middle">FORCED_OPEN</text>
+      <text x="955" y="117" fill="#42507a" text-anchor="middle">always denies access</text>
+      <text x="955" y="134" fill="#6b7391" text-anchor="middle">your kill switch for a bad dependency</text>
+
+      <rect x="1108" y="78" width="278" height="72" rx="6" fill="#f1f5f9" stroke="#475569" stroke-width="1.8"/>
+      <text x="1247" y="98" font-size="13" font-weight="700" fill="#334155" text-anchor="middle">DISABLED</text>
+      <text x="1247" y="117" fill="#42507a" text-anchor="middle">always allows access</text>
+      <text x="1247" y="134" fill="#6b7391" text-anchor="middle">bypass without removing the annotation</text>
+
+      <rect x="1400" y="78" width="264" height="72" rx="6" fill="#f1f5f9" stroke="#475569" stroke-width="1.8"/>
+      <text x="1532" y="98" font-size="13" font-weight="700" fill="#334155" text-anchor="middle">METRICS_ONLY</text>
+      <text x="1532" y="117" fill="#42507a" text-anchor="middle">records, never opens</text>
+      <text x="1532" y="134" fill="#6b7391" text-anchor="middle">shadow mode for tuning thresholds</text>
+
+      <rect x="816" y="160" width="848" height="52" rx="6" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.6"/>
+      <text x="830" y="179" font-size="11.8" font-weight="700" fill="#b91c1c">In FORCED_OPEN and DISABLED no events are generated and no metrics are recorded, apart from the state transition itself.</text>
+      <text x="830" y="199" font-size="11.4" fill="#7f2b2b">METRICS_ONLY is the exception: it behaves like CLOSED, records everything, and simply never opens — which is what makes it safe for tuning.</text>
+
+      <rect x="816" y="222" width="848" height="58" rx="6" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.6"/>
+      <text x="830" y="241" font-size="11.8" font-weight="700" fill="#047857">Roll out a new breaker in METRICS_ONLY first.</text>
+      <text x="830" y="259" font-size="11.4" fill="#2f4f47">Watch the failure rate it <tspan font-style="italic">would</tspan> have tripped on for a week, then set thresholds from that data and switch to CLOSED. Choosing</text>
+      <text x="830" y="275" font-size="11.4" fill="#2f4f47">thresholds up front is guesswork, and a breaker that opens on healthy traffic causes the outage it was added to prevent.</text>
+    </g>
+
+    <!-- ===== BAND A2 : CallNotPermitted ===== -->
+    <rect x="1712" y="6" width="1600" height="296" rx="10" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="1730" y="30" font-size="16.5" font-weight="700" fill="#be123c">HOW THE OPEN DECISION IS ACTUALLY MADE — the part that determines whether your configuration works</text>
+
+    <g font-size="11.6">
+      <rect x="1730" y="44" width="300" height="112" rx="7" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+      <text x="1880" y="64" font-size="12.6" font-weight="700" fill="#be123c" text-anchor="middle">1 · Record the outcome</text>
+      <text x="1744" y="84" fill="#42507a">Every call lands in the sliding window as</text>
+      <text x="1744" y="100" fill="#42507a">success, failure, or slow — and slow counts</text>
+      <text x="1744" y="116" fill="#42507a">even when it succeeded.</text>
+      <text x="1744" y="136" fill="#7f2b2b">ignoreExceptions are recorded as neither.</text>
+      <text x="1744" y="151" fill="#6b7391">They do not enter the window at all.</text>
+
+      <rect x="2046" y="44" width="300" height="112" rx="7" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2196" y="64" font-size="12.6" font-weight="700" fill="#be123c" text-anchor="middle">2 · Check the gate</text>
+      <text x="2060" y="84" fill="#42507a">Are there at least</text>
+      <text x="2060" y="100" font-family="Menlo,monospace" font-size="11" fill="#1f2a63">minimumNumberOfCalls</text>
+      <text x="2060" y="116" fill="#42507a">recorded in the window?</text>
+      <text x="2060" y="136" font-weight="700" fill="#b91c1c">If not, the breaker cannot open —</text>
+      <text x="2060" y="151" fill="#7f2b2b">no matter how many calls fail.</text>
+
+      <rect x="2362" y="44" width="300" height="112" rx="7" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2512" y="64" font-size="12.6" font-weight="700" fill="#be123c" text-anchor="middle">3 · Compute the rates</text>
+      <text x="2376" y="84" fill="#42507a">failureRate = failed / recorded</text>
+      <text x="2376" y="100" fill="#42507a">slowCallRate = slow / recorded</text>
+      <text x="2376" y="118" fill="#42507a">Both are <tspan font-weight="700">percentages</tspan>, both are</text>
+      <text x="2376" y="134" fill="#42507a">evaluated, and either one alone</text>
+      <text x="2376" y="150" fill="#42507a">is enough to trip the breaker.</text>
+
+      <rect x="2678" y="44" width="616" height="112" rx="7" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2986" y="64" font-size="12.6" font-weight="700" fill="#be123c" text-anchor="middle">4 · Open, and reject with CallNotPermittedException</text>
+      <text x="2692" y="84" fill="#42507a">While OPEN, calls never reach the downstream service. The breaker throws</text>
+      <text x="2692" y="100" font-family="Menlo,monospace" font-size="11" fill="#1f2a63">CallNotPermittedException</text>
+      <text x="2895" y="100" fill="#42507a">immediately — this is the &ldquo;fail fast&rdquo;.</text>
+      <text x="2692" y="120" fill="#42507a">Your fallback receives that exception, so it can distinguish &ldquo;the circuit is open&rdquo;</text>
+      <text x="2692" y="136" fill="#42507a">from &ldquo;the call itself failed&rdquo; and respond differently to each.</text>
+      <text x="2692" y="152" fill="#7f2b2b">Catching it blindly and returning a generic error throws that distinction away.</text>
+    </g>
+
+    <rect x="1730" y="166" width="932" height="126" rx="7" fill="#fff7ea" stroke="#e9b669" stroke-width="1.8"/>
+    <text x="1746" y="186" font-size="12.6" font-weight="700" fill="#a35c00">THE LOW-TRAFFIC BLIND SPOT — the most common reason a breaker &ldquo;does not work&rdquo;</text>
+    <text x="1746" y="207" font-size="11.6" fill="#7a3d06">With <tspan font-family="Menlo,monospace" font-size="11">minimumNumberOfCalls: 20</tspan> on an endpoint serving two calls a minute, the downstream service can be</text>
+    <text x="1746" y="224" font-size="11.6" fill="#7a3d06">completely down for ten minutes before the breaker is even permitted to evaluate. Every one of those calls waits for a timeout.</text>
+    <text x="1746" y="246" font-size="11.6" fill="#7a3d06">A COUNT_BASED window makes this worse: the window has no notion of time, so twenty calls spread over an hour are treated</text>
+    <text x="1746" y="262" font-size="11.6" fill="#7a3d06">exactly like twenty calls in one second, and stale failures keep influencing the decision long after the service recovered.</text>
+    <text x="1746" y="284" font-size="11.6" font-weight="700" fill="#b91c1c">On low-traffic endpoints use TIME_BASED, and lean on the TimeLimiter — a timeout is what protects you before the breaker can.</text>
+
+    <rect x="2678" y="166" width="616" height="126" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="2694" y="186" font-size="12.6" font-weight="700" fill="#047857">STATE IS PER JVM — there is no cluster-wide circuit</text>
+    <text x="2694" y="207" font-size="11.6" fill="#2f4f47">Each pod keeps its own window and its own state. With twenty replicas you</text>
+    <text x="2694" y="223" font-size="11.6" fill="#2f4f47">have twenty independent breakers that open at different moments.</text>
+    <text x="2694" y="244" font-size="11.6" fill="#2f4f47">Consequences: <tspan font-weight="700">divide</tspan> traffic by replica count when sizing</text>
+    <text x="2694" y="260" font-size="11.6" font-family="Menlo,monospace" fill="#1f2a63">minimumNumberOfCalls</text>
+    <text x="2874" y="260" font-size="11.6" fill="#2f4f47">; expect a partial, staggered open; and</text>
+    <text x="2694" y="278" font-size="11.6" fill="#2f4f47">never read one pod&rsquo;s state as the system&rsquo;s. Aggregate the metric across pods.</text>
+
+    <!-- ===== BAND B : ASPECT ORDER ===== -->
+    <rect x="8" y="310" width="3304" height="180" rx="10" fill="#f5f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="334" font-size="16.5" font-weight="700" fill="#7c2d92">DECORATOR ORDER — fixed by default, and it changes the meaning of your configuration. Read it outside-in.</text>
+
+    <g font-size="11.6">
+      <rect x="26" y="346" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="124" y="368" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">Retry</text>
+      <text x="124" y="388" fill="#42507a" text-anchor="middle">outermost</text>
+      <text x="124" y="406" fill="#6b7391" text-anchor="middle">re-runs everything</text>
+      <text x="124" y="422" fill="#6b7391" text-anchor="middle">inside it</text>
+
+      <rect x="252" y="346" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="350" y="368" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">CircuitBreaker</text>
+      <text x="350" y="388" fill="#42507a" text-anchor="middle">sees every attempt</text>
+      <text x="350" y="406" fill="#6b7391" text-anchor="middle">3 retries = 3 entries</text>
+      <text x="350" y="422" fill="#6b7391" text-anchor="middle">in the window</text>
+
+      <rect x="478" y="346" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="576" y="368" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">RateLimiter</text>
+      <text x="576" y="388" fill="#42507a" text-anchor="middle">throttles attempts</text>
+      <text x="576" y="406" fill="#6b7391" text-anchor="middle">retries consume</text>
+      <text x="576" y="422" fill="#6b7391" text-anchor="middle">permits too</text>
+
+      <rect x="704" y="346" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="802" y="368" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">TimeLimiter</text>
+      <text x="802" y="388" fill="#42507a" text-anchor="middle">per attempt</text>
+      <text x="802" y="406" fill="#6b7391" text-anchor="middle">not per request —</text>
+      <text x="802" y="422" fill="#6b7391" text-anchor="middle">budget accordingly</text>
+
+      <rect x="930" y="346" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="1028" y="368" font-size="13" font-weight="700" fill="#7c2d92" text-anchor="middle">Bulkhead</text>
+      <text x="1028" y="388" fill="#42507a" text-anchor="middle">innermost</text>
+      <text x="1028" y="406" fill="#6b7391" text-anchor="middle">closest to the call,</text>
+      <text x="1028" y="422" fill="#6b7391" text-anchor="middle">caps concurrency</text>
+
+      <rect x="1156" y="346" width="180" height="86" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="1246" y="368" font-size="13" font-weight="700" fill="#1e3a8a" text-anchor="middle">your method</text>
+      <text x="1246" y="390" fill="#42507a" text-anchor="middle">the remote call</text>
+      <text x="1246" y="412" fill="#6b7391" text-anchor="middle">finally happens here</text>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2.6" fill="none" marker-end="url(#p)">
+      <path d="M222,389 L246,389"/><path d="M448,389 L472,389"/><path d="M674,389 L698,389"/>
+      <path d="M900,389 L924,389"/><path d="M1126,389 L1150,389"/>
+    </g>
+
+    <rect x="1356" y="346" width="700" height="130" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+    <text x="1372" y="366" font-size="12.6" font-weight="700" fill="#7c2d92">Retry ( CircuitBreaker ( RateLimiter ( TimeLimiter ( Bulkhead ( Function ) ) ) ) )</text>
+    <text x="1372" y="388" font-size="11.6" fill="#42507a">This is the default and it is deliberate. Because the breaker sits <tspan font-style="italic">inside</tspan> Retry, every</text>
+    <text x="1372" y="404" font-size="11.6" fill="#42507a">retry attempt is recorded separately — so three attempts against a dead service push</text>
+    <text x="1372" y="420" font-size="11.6" fill="#42507a">three failures into the window, and the breaker trips roughly three times sooner than</text>
+    <text x="1372" y="436" font-size="11.6" fill="#42507a">a naive reading of your threshold suggests. Account for it when you size the window.</text>
+    <text x="1372" y="458" font-size="11.6" fill="#42507a">Once the breaker is OPEN, Retry keeps retrying but every attempt fails instantly with</text>
+    <text x="1372" y="472" font-size="11.6" font-family="Menlo,monospace" fill="#7f2b2b">CallNotPermittedException</text>
+    <text x="1590" y="472" font-size="11.6" fill="#42507a"> — cheap, but still three attempts. Exclude it from retry.</text>
+
+    <rect x="2072" y="346" width="600" height="130" rx="7" fill="#fff7ea" stroke="#e9b669" stroke-width="1.8"/>
+    <text x="2088" y="366" font-size="12.6" font-weight="700" fill="#a35c00">Changing the order</text>
+    <text x="2088" y="388" font-size="11.6" fill="#7a3d06">Set it explicitly per aspect. Higher value = higher priority = further out:</text>
+    <text x="2088" y="410" font-size="11.2" font-family="Menlo,monospace" fill="#1f2a63">resilience4j.retry.retryAspectOrder</text>
+    <text x="2088" y="426" font-size="11.2" font-family="Menlo,monospace" fill="#1f2a63">resilience4j.circuitbreaker.circuitBreakerAspectOrder</text>
+    <text x="2088" y="442" font-size="11.2" font-family="Menlo,monospace" fill="#1f2a63">resilience4j.ratelimiter.rateLimiterAspectOrder</text>
+    <text x="2088" y="458" font-size="11.2" font-family="Menlo,monospace" fill="#1f2a63">resilience4j.timelimiter.timeLimiterAspectOrder</text>
+    <text x="2088" y="472" font-size="11.2" font-family="Menlo,monospace" fill="#1f2a63">resilience4j.bulkhead.bulkheadAspectOrder</text>
+
+    <rect x="2688" y="346" width="606" height="130" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="2704" y="366" font-size="12.6" font-weight="700" fill="#b91c1c">A timeout <tspan font-style="italic">outside</tspan> retry is a different system</text>
+    <text x="2704" y="388" font-size="11.6" fill="#7f2b2b">If you want one deadline for the whole request including all retries, the</text>
+    <text x="2704" y="404" font-size="11.6" fill="#7f2b2b">default order will not give it to you — TimeLimiter is inside Retry, so it</text>
+    <text x="2704" y="420" font-size="11.6" fill="#7f2b2b">bounds each attempt and the total is roughly attempts × timeout + backoff.</text>
+    <text x="2704" y="442" font-size="11.6" fill="#7f2b2b">Either raise <tspan font-family="Menlo,monospace" font-size="11">timeLimiterAspectOrder</tspan> above retry&rsquo;s, or enforce the</text>
+    <text x="2704" y="458" font-size="11.6" fill="#7f2b2b">overall deadline upstream at the gateway. Decide which you mean —</text>
+    <text x="2704" y="474" font-size="11.6" font-weight="700" fill="#b91c1c">most teams say &ldquo;3s timeout&rdquo; and ship a 10s worst case.</text>
+
+    <!-- ===== BAND C : PRODUCTION FLOW ===== -->
+    <rect x="8" y="498" width="3304" height="242" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="26" y="522" font-size="16.5" font-weight="700" fill="#047857">WHERE EACH PATTERN BELONGS — every one solves a different failure, and they are not substitutes for one another</text>
+
+    <g font-size="11.4">
+      <rect x="26" y="536" width="170" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="111" y="558" font-size="12.4" font-weight="700" fill="#047857" text-anchor="middle">Clients</text>
+      <text x="111" y="578" fill="#2f4f47" text-anchor="middle">web · mobile</text>
+      <text x="111" y="595" fill="#2f4f47" text-anchor="middle">partner APIs</text>
+      <text x="111" y="613" fill="#6b7391" text-anchor="middle">no resilience here</text>
+
+      <rect x="212" y="536" width="200" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="312" y="558" font-size="12.4" font-weight="700" fill="#047857" text-anchor="middle">API gateway</text>
+      <text x="312" y="578" fill="#2f4f47" text-anchor="middle">authn · global rate limit</text>
+      <text x="312" y="595" fill="#2f4f47" text-anchor="middle">overall request deadline</text>
+      <text x="312" y="613" fill="#b45309" text-anchor="middle">the only true end-to-end budget</text>
+
+      <rect x="428" y="536" width="694" height="88" rx="7" fill="#f7f8fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="444" y="556" font-size="12.4" font-weight="700" fill="#7c2d92">Order Service — resilience applied per downstream dependency, never once per service</text>
+      <g font-size="10.8" text-anchor="middle">
+        <rect x="444" y="566" width="126" height="48" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+        <text x="507" y="584" font-size="11.4" font-weight="700" fill="#7c2d92">Bulkhead</text>
+        <text x="507" y="602" fill="#6b7391">caps concurrency</text>
+        <rect x="580" y="566" width="126" height="48" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+        <text x="643" y="584" font-size="11.4" font-weight="700" fill="#7c2d92">TimeLimiter</text>
+        <text x="643" y="602" fill="#6b7391">bounds one attempt</text>
+        <rect x="716" y="566" width="126" height="48" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+        <text x="779" y="584" font-size="11.4" font-weight="700" fill="#7c2d92">RateLimiter</text>
+        <text x="779" y="602" fill="#6b7391">protects the callee</text>
+        <rect x="852" y="566" width="126" height="48" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+        <text x="915" y="584" font-size="11.4" font-weight="700" fill="#7c2d92">CircuitBreaker</text>
+        <text x="915" y="602" fill="#6b7391">stops the bleeding</text>
+        <rect x="988" y="566" width="120" height="48" rx="5" fill="#fff" stroke="#7c2d92" stroke-width="1.5"/>
+        <text x="1048" y="584" font-size="11.4" font-weight="700" fill="#7c2d92">Retry</text>
+        <text x="1048" y="602" fill="#6b7391">transient only</text>
+      </g>
+
+      <rect x="1138" y="536" width="180" height="88" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1228" y="558" font-size="12.4" font-weight="700" fill="#be123c" text-anchor="middle">Payment Service</text>
+      <text x="1228" y="578" fill="#7f2b2b" text-anchor="middle">slow or failing</text>
+      <text x="1228" y="596" fill="#6b7391" text-anchor="middle">its own breaker per</text>
+      <text x="1228" y="612" fill="#6b7391" text-anchor="middle">dependency, not shared</text>
+
+      <rect x="1334" y="536" width="250" height="88" rx="7" fill="#fff7ea" stroke="#e9b669" stroke-width="1.8"/>
+      <text x="1459" y="558" font-size="12.4" font-weight="700" fill="#a35c00" text-anchor="middle">Fallback / degradation</text>
+      <text x="1348" y="578" fill="#7a3d06">cached value · queue for later ·</text>
+      <text x="1348" y="595" fill="#7a3d06">default response · partial page</text>
+      <text x="1348" y="613" fill="#b91c1c">never a second remote call</text>
+    </g>
+    <g stroke="#047857" stroke-width="2.4" fill="none" marker-end="url(#g)">
+      <path d="M196,580 L206,580"/><path d="M412,580 L422,580"/><path d="M1122,580 L1132,580"/>
+    </g>
+    <g stroke="#be123c" stroke-width="2.4" fill="none" marker-end="url(#r)"><path d="M1318,580 L1328,580"/></g>
+
+    <rect x="1600" y="536" width="836" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="1616" y="556" font-size="12.6" font-weight="700" fill="#047857">ONE BREAKER PER DEPENDENCY — the most common configuration mistake</text>
+    <text x="1616" y="576" font-size="11.6" fill="#2f4f47">A breaker named after your own service (&ldquo;orderService&rdquo;) pools unrelated downstreams into one window. Payments</text>
+    <text x="1616" y="592" font-size="11.6" fill="#2f4f47">going down then opens the circuit for inventory, and a healthy dependency is cut off by a sick neighbour.</text>
+    <text x="1616" y="614" font-size="11.6" font-weight="700" fill="#047857">Name the instance after what you are calling — paymentService, inventoryService — and give each its own thresholds.</text>
+
+    <rect x="2452" y="536" width="842" height="88" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.8"/>
+    <text x="2468" y="556" font-size="12.6" font-weight="700" fill="#1d4ed8">RETRY IS ONLY SAFE ON IDEMPOTENT OPERATIONS</text>
+    <text x="2468" y="576" font-size="11.6" fill="#1e3a5f">A timeout does not mean the call did not happen. The request may have been received, processed and the response lost.</text>
+    <text x="2468" y="592" font-size="11.6" fill="#1e3a5f">Retrying a payment in that situation charges the customer twice, and no circuit breaker setting prevents it.</text>
+    <text x="2468" y="614" font-size="11.6" font-weight="700" fill="#1d4ed8">Reads: retry freely. Writes: only with a server-enforced idempotency key. Otherwise do not retry at all.</text>
+
+    <rect x="26" y="636" width="3268" height="96" rx="7" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="42" y="656" font-size="13.2" font-weight="700" fill="#047857">WHAT EACH PATTERN ACTUALLY PROTECTS — pick by failure mode, not by habit</text>
+    <text x="42" y="678" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#1e3a8a">TimeLimiter</tspan> bounds a single call so one slow dependency cannot hold a thread. &nbsp;<tspan font-weight="700" fill="#1e3a8a">Retry</tspan> converts transient faults into successes, and amplifies load during real outages. &nbsp;<tspan font-weight="700" fill="#1e3a8a">CircuitBreaker</tspan> stops calling a dependency that is already failing, protecting <tspan font-style="italic">you</tspan> from waiting and <tspan font-style="italic">them</tspan> from being hammered.</text>
+    <text x="42" y="700" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#1e3a8a">Bulkhead</tspan> caps how much of your thread or connection pool one dependency may consume, so its failure cannot starve the rest of the service. &nbsp;<tspan font-weight="700" fill="#1e3a8a">RateLimiter</tspan> protects the <tspan font-style="italic">callee</tspan> from you — a quota you honour, not a failure you react to.</text>
+    <text x="42" y="722" font-size="11.8" font-weight="700" fill="#be123c">The failure they exist to prevent is the cascade: a slow dependency exhausts your threads, your service stops responding, and its callers fail in turn. Timeouts alone do not stop that — a timeout still consumes the thread for its full duration.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 2. CONFIGURATION ============ -->
+<div class="panel c1 span2">
+  <div class="phead">2 &nbsp;· &nbsp;CONFIGURATION REFERENCE <span class="sub">every property that matters, what it means, and the value that is wrong more often than it is right</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.02fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="code" style="margin-top:0"><span class="c"># Maven — Spring Boot 3.x uses the boot3 starter (Jakarta namespace)</span>
+<span class="a">&lt;dependency&gt;</span>
+  <span class="a">&lt;groupId&gt;</span>io.github.resilience4j<span class="a">&lt;/groupId&gt;</span>
+  <span class="a">&lt;artifactId&gt;</span>resilience4j-spring-boot3<span class="a">&lt;/artifactId&gt;</span>
+<span class="a">&lt;/dependency&gt;</span>
+<span class="c"># plus spring-boot-starter-aop  — the annotations are AOP-driven</span>
+<span class="c"># plus spring-boot-starter-actuator + micrometer-registry-prometheus</span>
+
+<span class="c"># application.yml</span>
+<span class="k">resilience4j</span>:
+  <span class="k">circuitbreaker</span>:
+    <span class="k">instances</span>:
+      <span class="k">paymentService</span>:                <span class="c"># name the DEPENDENCY</span>
+        <span class="k">slidingWindowType</span>: <span class="v">COUNT_BASED</span>
+        <span class="k">slidingWindowSize</span>: <span class="v">100</span>          <span class="c"># calls (COUNT) / seconds (TIME)</span>
+        <span class="k">minimumNumberOfCalls</span>: <span class="v">20</span>        <span class="c"># gate before any evaluation</span>
+        <span class="k">failureRateThreshold</span>: <span class="v">50</span>        <span class="c"># PERCENT, not a count</span>
+        <span class="k">slowCallRateThreshold</span>: <span class="v">100</span>      <span class="c"># PERCENT</span>
+        <span class="k">slowCallDurationThreshold</span>: <span class="v">2s</span>
+        <span class="k">waitDurationInOpenState</span>: <span class="v">30s</span>
+        <span class="k">permittedNumberOfCallsInHalfOpenState</span>: <span class="v">5</span>
+        <span class="k">automaticTransitionFromOpenToHalfOpenEnabled</span>: <span class="v">true</span>
+        <span class="k">recordExceptions</span>:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        <span class="k">ignoreExceptions</span>:                 <span class="c"># wins over recordExceptions</span>
+          - com.example.BusinessException
+
+  <span class="k">retry</span>:
+    <span class="k">instances</span>:
+      <span class="k">paymentService</span>:
+        <span class="k">maxAttempts</span>: <span class="v">3</span>                   <span class="c"># total, not additional</span>
+        <span class="k">waitDuration</span>: <span class="v">200ms</span>
+        <span class="k">enableExponentialBackoff</span>: <span class="v">true</span>
+        <span class="k">exponentialBackoffMultiplier</span>: <span class="v">2</span>
+        <span class="k">enableRandomizedWait</span>: <span class="v">true</span>       <span class="c"># jitter — stops retry storms</span>
+        <span class="k">randomizedWaitFactor</span>: <span class="v">0.5</span>
+        <span class="k">retryExceptions</span>:
+          - java.io.IOException
+        <span class="k">ignoreExceptions</span>:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+
+  <span class="k">timelimiter</span>:
+    <span class="k">instances</span>:
+      <span class="k">paymentService</span>:
+        <span class="k">timeoutDuration</span>: <span class="v">3s</span>
+        <span class="k">cancelRunningFuture</span>: <span class="v">true</span></div>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:196px">Property</th><th>What it means, and the mistake to avoid</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">slidingWindowType</td><td><b>COUNT_BASED</b> — the last N <i>calls</i>. <b>TIME_BASED</b> — the last N <i>seconds</i>. They are not interchangeable, and the size unit changes meaning with the type.</td></tr>
+          <tr><td class="mono">slidingWindowSize</td><td>Calls under COUNT_BASED; <b>seconds</b> under TIME_BASED. Describing it as &ldquo;number of calls&rdquo; is only half right and produces badly-tuned time windows.</td></tr>
+          <tr><td class="mono">minimumNumberOfCalls</td><td>The breaker cannot open below this, however bad things are. Size it against <i>per-pod</i> traffic, not total.</td></tr>
+          <tr><td class="mono">failureRateThreshold</td><td>Percentage of recorded calls that failed. Default 50. A rate — never a raw count.</td></tr>
+          <tr><td class="mono">slowCallDurationThreshold</td><td>Above this a call counts as slow <b>even when it succeeds</b>. This is what catches a degrading dependency before it starts erroring.</td></tr>
+          <tr><td class="mono">slowCallRateThreshold</td><td>Percentage of slow calls that trips the breaker. Leave at 100 until you have measured, then lower it deliberately.</td></tr>
+          <tr><td class="mono">waitDurationInOpenState</td><td>How long OPEN lasts before probes are allowed. Too short and you hammer a recovering service; too long and you stay degraded after it healed.</td></tr>
+          <tr><td class="mono">permittedNumberOfCalls<br>InHalfOpenState</td><td>Probes allowed in HALF_OPEN. All must succeed to close. Keep it small — these calls hit a service you believe is broken.</td></tr>
+          <tr><td class="mono">automaticTransitionFrom<br>OpenToHalfOpenEnabled</td><td><b>false</b> (default): the move to HALF_OPEN happens lazily, on the next incoming call — so a completely idle breaker stays OPEN indefinitely. <b>true</b>: a scheduler thread does it on time.</td></tr>
+          <tr><td class="mono">recordExceptions</td><td>Only these count as failures. Everything else is a success. Setting it and forgetting one exception type silently disables the breaker for that path.</td></tr>
+          <tr><td class="mono">ignoreExceptions</td><td>Neither success nor failure — excluded from the window entirely. <b>Takes precedence</b> over recordExceptions. This is where 4xx business errors belong.</td></tr>
+          <tr><td class="mono">maxAttempts</td><td>Total attempts including the first. <span class="mono">3</span> means one call plus two retries, not four calls.</td></tr>
+          <tr><td class="mono">enableRandomizedWait</td><td>Jitter. Without it, every instance retries on the same schedule and you rebuild the thundering herd you were avoiding.</td></tr>
+          <tr><td class="mono">timeoutDuration</td><td>Bounds <b>one attempt</b> under the default aspect order, not the whole retried request.</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. STATES ============ -->
+<div class="panel c2">
+  <div class="phead">3 &nbsp;· &nbsp;THE SIX STATES <span class="sub">three normal, three operational</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:118px">State</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b style="color:#047857">CLOSED</b></td><td>Calls pass through. Outcomes are recorded in the sliding window. The normal, healthy state.</td></tr>
+        <tr><td><b style="color:#be123c">OPEN</b></td><td>Calls are rejected immediately with <span class="mono">CallNotPermittedException</span>. Nothing reaches the downstream service. This is the fail-fast that protects both sides.</td></tr>
+        <tr><td><b style="color:#b45309">HALF_OPEN</b></td><td>A limited number of probe calls are permitted. All succeed → CLOSED and the window resets. Any breach → straight back to OPEN.</td></tr>
+        <tr><td><b style="color:#334155">FORCED_OPEN</b></td><td>Always denies. No events, no metrics beyond the transition. Your operational kill switch.</td></tr>
+        <tr><td><b style="color:#334155">DISABLED</b></td><td>Always allows. No events, no metrics beyond the transition. Bypass without a code change.</td></tr>
+        <tr><td><b style="color:#334155">METRICS_ONLY</b></td><td>Behaves like CLOSED and records everything, but <b>never opens</b>, whatever the thresholds say.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>METRICS_ONLY is the one worth learning.</b> It lets you run a new breaker against real
+      production traffic and observe the failure rate it <i>would</i> have tripped on, without any risk of it tripping. Tune from
+      that data, then switch to CLOSED. Guessing thresholds up front is how breakers end up causing outages instead of containing them.</div>
+    <div class="h3">Driving state from code</div>
+    <div class="code"><span class="a">CircuitBreaker</span> cb = registry.circuitBreaker(<span class="v">"paymentService"</span>);
+
+cb.transitionToForcedOpenState();   <span class="c">// kill switch on</span>
+cb.transitionToClosedState();       <span class="c">// back to normal</span>
+cb.transitionToDisabledState();     <span class="c">// bypass entirely</span>
+
+<span class="a">State</span> s = cb.getState();
+<span class="a">Metrics</span> m = cb.getMetrics();
+<span class="a">float</span> rate = m.getFailureRate();   <span class="c">// -1 until the gate is met</span></div>
+    <div class="h3">What triggers each transition</div>
+    <table>
+      <thead><tr><th style="width:150px">Transition</th><th>Trigger, and what happens to the window</th></tr></thead>
+      <tbody>
+        <tr><td>CLOSED → OPEN</td><td>A rate threshold is breached with the gate met. The window is retained but no longer consulted while open.</td></tr>
+        <tr><td>OPEN → HALF_OPEN</td><td><span class="mono">waitDurationInOpenState</span> elapses — on the next call, or on a scheduler thread if automatic transition is enabled.</td></tr>
+        <tr><td>HALF_OPEN → CLOSED</td><td>The permitted probe calls all complete within thresholds. <b>The window is reset</b>, so the breaker starts clean rather than re-tripping on old failures.</td></tr>
+        <tr><td>HALF_OPEN → OPEN</td><td>Any probe breaches a threshold. The wait duration starts again from zero.</td></tr>
+        <tr><td>any → FORCED_OPEN<br>any → DISABLED</td><td>Only through the API or configuration. Never automatic — these are operator decisions.</td></tr>
+        <tr><td>reset()</td><td>Returns to CLOSED and clears all recorded outcomes and metrics.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>HALF_OPEN uses its own small window.</b> It is not the main sliding window — it admits
+      exactly <span class="mono">permittedNumberOfCallsInHalfOpenState</span> calls and judges on those alone. Setting it high
+      means sending a lot of traffic at a service you already believe is broken.</div>
+    <div class="callout r"><b>A returned failure rate of <span class="mono">-1</span> is not an error.</b> It means
+      fewer than <span class="mono">minimumNumberOfCalls</span> have been recorded, so no rate exists yet. Alerting on
+      &ldquo;failure rate &gt; 0&rdquo; without excluding <span class="mono">-1</span> produces a permanently firing alert on every
+      low-traffic endpoint.</div>
+  </div>
+</div>
+
+<!-- ============ 4. SLIDING WINDOW ============ -->
+<div class="panel c8">
+  <div class="phead">4 &nbsp;· &nbsp;THE SLIDING WINDOW <span class="sub">choose deliberately</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:96px"></th><th>COUNT_BASED</th><th>TIME_BASED</th></tr></thead>
+      <tbody>
+        <tr><td><b>Size unit</b></td><td>The last N calls</td><td>The last N <b>seconds</b></td></tr>
+        <tr><td><b>Memory</b></td><td>Fixed ring of N outcomes</td><td>Partial aggregates per second</td></tr>
+        <tr><td><b>Under high traffic</b></td><td>Reacts fast; the window covers a short real interval</td><td>Aggregates a lot of calls; smooth and stable</td></tr>
+        <tr><td><b>Under low traffic</b></td><td><b>Poor.</b> The window has no notion of time, so failures from an hour ago still count</td><td><b>Correct.</b> Old outcomes age out whether or not new calls arrive</td></tr>
+        <tr><td><b>Use when</b></td><td>Steady, high call volume</td><td>Bursty or low volume — and most real endpoints</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The trap in COUNT_BASED.</b> The window is a ring of the last N outcomes with no
+      expiry. On an endpoint doing a handful of calls a minute, a burst of failures at 09:00 is still in the window at 10:00 and can
+      trip the breaker on a service that recovered fifty minutes ago. Time-based windows do not have this failure mode.</div>
+    <div class="h3">Sizing that holds up</div>
+    <ul>
+      <li><b>Start from per-pod traffic.</b> Twenty replicas sharing 1,000 rpm see 50 rpm each — the breaker only ever sees its own slice.</li>
+      <li><b><span class="mono">minimumNumberOfCalls</span> ≤ <span class="mono">slidingWindowSize</span></b>, and both reachable within a window under normal load. If the gate cannot be met, the breaker is decorative.</li>
+      <li><b>Window long enough to be statistically meaningful</b>, short enough to react — tens of seconds is a common landing point, not minutes.</li>
+      <li><b>Set <span class="mono">slowCallDurationThreshold</span> from your p99</b>, not from the timeout. Slow calls are the early warning; errors are the late one.</li>
+    </ul>
+    <div class="h3">A worked example</div>
+    <div class="code"><span class="c"># 1,200 rpm to paymentService, 20 pods</span>
+per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
+
+<span class="c"># TIME_BASED window of 60s therefore holds ~60 calls per pod</span>
+<span class="k">slidingWindowType</span>: TIME_BASED
+<span class="k">slidingWindowSize</span>: <span class="v">60</span>        <span class="c"># SECONDS, not calls</span>
+<span class="k">minimumNumberOfCalls</span>: <span class="v">20</span>     <span class="c"># met in ~20s per pod — reachable</span>
+
+<span class="c"># with retry outside the breaker, a dead dependency</span>
+<span class="c"># contributes ~3 failures per request, so the gate is</span>
+<span class="c"># met roughly 3x faster during a real outage</span>
+
+<span class="r"># the same config as COUNT_BASED would be wrong:</span>
+<span class="r"># slidingWindowSize: 60 = the last 60 CALLS = 60 seconds</span>
+<span class="r"># at peak, but a full hour at 1 rpm overnight</span></div>
+    <div class="callout g"><b>Rule of thumb.</b> If you cannot state how many calls per minute one pod makes to this
+      dependency, you cannot size the window — and every value in the configuration is a guess.</div>
+  </div>
+</div>
+
+<!-- ============ 5. CODE ============ -->
+<div class="panel c4 span2">
+  <div class="phead">5 &nbsp;· &nbsp;WORKING CODE <span class="sub">the synchronous form, the asynchronous form, and the annotation combination that silently does nothing</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The combination that does not work.</b>
+        <span class="mono">@TimeLimiter</span> requires the method to return a <span class="mono">CompletionStage</span>.
+        Placed on a method returning a plain value it cannot bound anything — the blocking work is already finished before the
+        timeout could be scheduled. The application starts, the annotation is present, and no timeout is ever applied.</div>
+      <div class="code"><span class="c">// DOES NOT WORK — TimeLimiter has nothing to bound</span>
+<span class="a">@CircuitBreaker</span>(name = <span class="v">"paymentService"</span>, fallbackMethod = <span class="v">"fb"</span>)
+<span class="a">@TimeLimiter</span>(name = <span class="v">"paymentService"</span>)
+<span class="a">@Retry</span>(name = <span class="v">"paymentService"</span>)
+<span class="r">public PaymentResponse pay(PaymentRequest req) {</span>
+    <span class="r">return client.pay(req);        // blocking</span>
+<span class="r">}</span>
+
+<span class="c">// ALSO A NO-OP — the blocking call runs before the future exists</span>
+<span class="r">return CompletableFuture.completedFuture(client.pay(req));</div>
+      <div class="h3">Synchronous — drop the TimeLimiter, set the client timeout</div>
+      <div class="code"><span class="a">@Service</span>
+<span class="k">public class</span> <span class="a">PaymentClient</span> {
+
+    <span class="k">private final</span> <span class="a">PaymentServiceClient</span> client;
+
+    <span class="a">@CircuitBreaker</span>(name = <span class="v">"paymentService"</span>, fallbackMethod = <span class="v">"fb"</span>)
+    <span class="a">@Retry</span>(name = <span class="v">"paymentService"</span>)
+    <span class="k">public</span> <span class="a">PaymentResponse</span> pay(<span class="a">PaymentRequest</span> req) {
+        <span class="k">return</span> client.pay(req);
+    }
+
+    <span class="c">// most specific match wins — the breaker being open is</span>
+    <span class="c">// a different situation from the call having failed</span>
+    <span class="k">private</span> <span class="a">PaymentResponse</span> fb(<span class="a">PaymentRequest</span> r, <span class="a">CallNotPermittedException</span> e) {
+        <span class="k">return</span> <span class="a">PaymentResponse</span>.unavailable(<span class="v">"circuit open"</span>);
+    }
+
+    <span class="k">private</span> <span class="a">PaymentResponse</span> fb(<span class="a">PaymentRequest</span> r, <span class="a">Throwable</span> t) {
+        <span class="k">return</span> <span class="a">PaymentResponse</span>.degraded();
+    }
+}</div>
+      <div class="callout"><b>Without a TimeLimiter, the timeout must come from the client.</b> Set connect and read
+        timeouts on the <span class="mono">RestClient</span>, <span class="mono">WebClient</span> or HTTP client itself. A
+        synchronous call with no client timeout can block a request thread indefinitely, and the breaker will not save you —
+        it only reacts <i>after</i> calls complete or fail.</div>
+    </div>
+    <div>
+      <div class="h3">Asynchronous — the only form where <span class="mono">@TimeLimiter</span> works</div>
+      <div class="code"><span class="a">@CircuitBreaker</span>(name = <span class="v">"paymentService"</span>, fallbackMethod = <span class="v">"fb"</span>)
+<span class="a">@Retry</span>(name = <span class="v">"paymentService"</span>)
+<span class="a">@TimeLimiter</span>(name = <span class="v">"paymentService"</span>)
+<span class="k">public</span> <span class="a">CompletableFuture</span>&lt;<span class="a">PaymentResponse</span>&gt; pay(<span class="a">PaymentRequest</span> req) {
+    <span class="c">// supplyAsync, so the work runs on another thread and</span>
+    <span class="c">// the TimeLimiter can actually interrupt the wait</span>
+    <span class="k">return</span> <span class="a">CompletableFuture</span>.supplyAsync(() -&gt; client.pay(req), ioPool);
+}
+
+<span class="c">// fallback must return the same type</span>
+<span class="k">private</span> <span class="a">CompletableFuture</span>&lt;<span class="a">PaymentResponse</span>&gt; fb(<span class="a">PaymentRequest</span> r, <span class="a">Throwable</span> t) {
+    <span class="k">return</span> <span class="a">CompletableFuture</span>.completedFuture(<span class="a">PaymentResponse</span>.degraded());
+}</div>
+      <div class="callout r"><b><span class="mono">cancelRunningFuture: true</span> does not stop the work.</b> It
+        completes your future exceptionally, but the thread doing the blocking I/O keeps running until the underlying socket
+        timeout fires. Without a client-level read timeout you leak the thread even though the caller gave up — which is exactly
+        the pool exhaustion the bulkhead exists to prevent.</div>
+      <div class="h3">Fallback rules, in order of how often they are broken</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Same class</b></td><td>Resilience4j resolves the method on the same bean. A fallback in a helper class is never found.</td></tr>
+          <tr><td><b>Same return type</b></td><td>Including the wrapper — <span class="mono">CompletableFuture&lt;T&gt;</span> in, <span class="mono">CompletableFuture&lt;T&gt;</span> out.</td></tr>
+          <tr><td><b>Same args + Throwable</b></td><td>The exception parameter is last. Overload it by exception type; the most specific match is used.</td></tr>
+          <tr><td><b>Fails at runtime</b></td><td>A signature mismatch is not a compile error. It surfaces as an exception the first time the fallback is needed — in production, during an incident.</td></tr>
+          <tr><td><b>Must not call out</b></td><td>A fallback that makes another remote call has no protection of its own and fails when everything else is already failing.</td></tr>
+          <tr><td><b>Must be fast</b></td><td>It runs on the caller&rsquo;s thread while the system is degraded. Cache lookups and constants only.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout p"><b>Self-invocation does not work.</b> These annotations are AOP proxies. Calling
+        <span class="mono">this.pay(...)</span> from another method in the same class bypasses the proxy entirely, so no breaker,
+        no retry, no fallback. It is the most common reason a correctly-configured breaker never triggers.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. ASPECT ORDER ============ -->
+<div class="panel c3">
+  <div class="phead">6 &nbsp;· &nbsp;COMPOSITION <span class="sub">order changes meaning</span></div>
+  <div class="pbody">
+    <div class="callout p" style="margin-top:0"><b>The default, outside-in.</b><br>
+      <span class="mono">Retry ( CircuitBreaker ( RateLimiter ( TimeLimiter ( Bulkhead ( Function ) ) ) ) )</span></div>
+    <div class="h3">What follows from it</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>Retries are recorded</b></td><td>The breaker is inside Retry, so each attempt is a separate entry in the window. Three attempts against a dead service contribute three failures, and the breaker trips sooner than the threshold alone implies.</td></tr>
+        <tr><td><b>Timeout is per attempt</b></td><td>Not per request. Worst case ≈ attempts × timeout + backoff. A &ldquo;3 second timeout&rdquo; with 3 attempts is a 9-second-plus request.</td></tr>
+        <tr><td><b>Open still costs retries</b></td><td>Retry sits outside, so it keeps retrying while the breaker rejects instantly. Cheap, but pointless — add <span class="mono">CallNotPermittedException</span> to the retry's <span class="mono">ignoreExceptions</span>.</td></tr>
+        <tr><td><b>Bulkhead is innermost</b></td><td>It caps concurrency on the actual call, which is what you want — but it means rejected-by-bulkhead is seen by the breaker as a failure unless you exclude it.</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Changing it</div>
+    <div class="code"><span class="c"># higher value = higher priority = further OUT</span>
+<span class="k">resilience4j</span>:
+  <span class="k">timelimiter</span>:
+    <span class="k">timeLimiterAspectOrder</span>: <span class="v">4</span>   <span class="c"># now outside retry</span>
+  <span class="k">retry</span>:
+    <span class="k">retryAspectOrder</span>: <span class="v">3</span>        <span class="c"># one overall deadline</span></div>
+    <div class="callout"><b>Decide what your timeout means.</b> A per-attempt timeout bounds each try and lets the
+      total grow. A per-request deadline bounds the user&rsquo;s wait and may cut a retry short. Both are defensible; shipping one
+      while believing you have the other is not.</div>
+    <div class="h3">Two bulkheads, and only one of them is the default</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>Semaphore</b><br><span style="color:#6b7391">the default for <span class="mono">@Bulkhead</span></span></td><td>Caps concurrent calls with a counter. No extra threads, so the caller&rsquo;s thread still blocks for the duration of the call.</td></tr>
+        <tr><td><b>Fixed thread pool</b><br><span style="color:#6b7391"><span class="mono">@Bulkhead(type = THREADPOOL)</span></span></td><td>Runs the call on its own bounded pool with a queue, so a slow dependency cannot consume request threads. <b>Requires a <span class="mono">CompletableFuture</span> return type</b>, exactly like <span class="mono">@TimeLimiter</span>.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The safest default is to enforce the overall deadline upstream</b> — at the gateway or
+      the caller — and leave the aspect order alone. It survives configuration drift and applies to every path, including the ones
+      nobody annotated.</div>
+  </div>
+</div>
+
+<!-- ============ 7. FALLBACKS ============ -->
+<div class="panel c5">
+  <div class="phead">7 &nbsp;· &nbsp;FALLBACKS &amp; DEGRADATION <span class="sub">what to return</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>A fallback is a product decision wearing a technical costume.</b>
+      &ldquo;Return an empty list&rdquo; is a choice that someone will see in the UI. Decide it with whoever owns that screen, not in
+      the pull request.</div>
+    <table>
+      <thead><tr><th style="width:132px">Strategy</th><th>When it is right</th></tr></thead>
+      <tbody>
+        <tr><td><b>Cached value</b></td><td>The data changes slowly and stale is better than absent — pricing, catalogue, configuration. Return the age with it.</td></tr>
+        <tr><td><b>Default response</b></td><td>A safe neutral exists: empty recommendations, standard shipping estimate, no promotions.</td></tr>
+        <tr><td><b>Queue and process later</b></td><td>The write can be deferred and the caller told so. Needs an idempotency key and a way to report the outcome.</td></tr>
+        <tr><td><b>Partial response</b></td><td>Render the page without the failing component rather than failing the whole page.</td></tr>
+        <tr><td><b>Fail explicitly</b></td><td>Payments, balances, anything where a wrong answer is worse than no answer. <b>Often the correct choice</b> — a fallback is not always an improvement.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Distinguish the two failure situations.</b> <span class="mono">CallNotPermittedException</span>
+      means the circuit is open — the dependency is known bad and you should degrade immediately. Any other throwable means this
+      particular call failed and the dependency may still be healthy. They deserve different messages and often different actions.</div>
+    <div class="callout r"><b>Silent fallbacks hide outages.</b> If a fallback returns a plausible response and
+      nothing is emitted, your dashboards stay green through a total dependency failure. Every fallback invocation must increment a
+      metric and be visible on the same dashboard as the breaker state.</div>
+    <div class="h3">Signature, and the overload that earns its keep</div>
+    <div class="code"><span class="c">// circuit is open — the dependency is known bad</span>
+<span class="k">private</span> <span class="a">Quote</span> fb(<span class="a">Request</span> r, <span class="a">CallNotPermittedException</span> e) {
+    fallbackCounter.increment(<span class="v">"circuit_open"</span>);
+    <span class="k">return</span> cache.lastKnown(r).orElseGet(<span class="a">Quote</span>::unavailable);
+}
+
+<span class="c">// this call failed — the dependency may still be fine</span>
+<span class="k">private</span> <span class="a">Quote</span> fb(<span class="a">Request</span> r, <span class="a">Throwable</span> t) {
+    fallbackCounter.increment(<span class="v">"call_failed"</span>);
+    <span class="k">return</span> <span class="a">Quote</span>.unavailable();
+}</div>
+    <div class="callout g"><b>Test the fallback path as a first-class scenario.</b> It runs rarely, under stress, and
+      is usually the least-exercised code in the service. Force the breaker open in an integration test and assert on what the
+      customer actually receives.</div>
+  </div>
+</div>
+
+<!-- ============ 8. RETRY ============ -->
+<div class="panel c6">
+  <div class="phead">8 &nbsp;· &nbsp;RETRY <span class="sub">the pattern most likely to cause the outage</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Retry amplifies load exactly when the system is least able to
+      take it.</b> Three attempts per request means a struggling dependency receives three times the traffic at the moment it is
+      already failing. The circuit breaker exists partly to stop this.</div>
+    <div class="h3">Before enabling it, answer these</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>Is it idempotent?</b></td><td>A timeout does not mean the call did not happen — the work may have completed and the response been lost. Retrying a charge in that state bills twice.</td></tr>
+        <tr><td><b>Is the fault transient?</b></td><td>Connection reset, timeout, 503 — yes. 400, 401, 404, 422 — never. Retrying a deterministic failure is pure waste.</td></tr>
+        <tr><td><b>Is there jitter?</b></td><td>Without randomisation every instance retries in lockstep and you rebuild the thundering herd.</td></tr>
+        <tr><td><b>What is the budget?</b></td><td>attempts × timeout + backoff must fit inside the caller&rsquo;s deadline, or you produce a slow failure instead of a fast one.</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Configuration that behaves</div>
+    <div class="code"><span class="k">maxAttempts</span>: <span class="v">3</span>                  <span class="c"># total: 1 call + 2 retries</span>
+<span class="k">waitDuration</span>: <span class="v">200ms</span>
+<span class="k">enableExponentialBackoff</span>: <span class="v">true</span>
+<span class="k">exponentialBackoffMultiplier</span>: <span class="v">2</span>   <span class="c"># 200ms, 400ms</span>
+<span class="k">enableRandomizedWait</span>: <span class="v">true</span>
+<span class="k">randomizedWaitFactor</span>: <span class="v">0.5</span>
+<span class="k">retryExceptions</span>:
+  - java.io.IOException
+<span class="k">ignoreExceptions</span>:
+  - <span class="c">…CallNotPermittedException</span>   <span class="c"># do not retry an open circuit</span></div>
+    <div class="callout"><b>Two or three attempts, not five.</b> Beyond a small number the marginal success rate is
+      negligible and the load amplification is not. If two retries do not fix it, the dependency is not having a blip.</div>
+    <div class="callout g"><b>Retries at every layer multiply.</b> Gateway retries × service retries × client retries
+      is 27 requests from three levels of three. Decide which single layer owns retry, and turn it off everywhere else.</div>
+  </div>
+</div>
+
+<!-- ============ 9. OPERATING ============ -->
+<div class="panel c7 span2">
+  <div class="phead">9 &nbsp;· &nbsp;OPERATING IT <span class="sub">rollout, tuning and the runtime controls that matter during an incident</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Rolling out a new breaker</div>
+      <table>
+        <thead><tr><th style="width:74px">Step</th><th>What you do</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td>Set the client-level connect and read timeouts first. Without them nothing else helps, because the breaker only reacts to completed calls.</td></tr>
+          <tr><td><b>2</b></td><td>Deploy in <b>METRICS_ONLY</b>. It records everything and cannot open.</td></tr>
+          <tr><td><b>3</b></td><td>Watch for a full traffic cycle — a week, including the weekly peak and any batch window.</td></tr>
+          <tr><td><b>4</b></td><td>Set <span class="mono">slowCallDurationThreshold</span> from the observed p99, and the rate thresholds from what actually happened during real incidents.</td></tr>
+          <tr><td><b>5</b></td><td>Switch to CLOSED. Alert on state transitions from day one.</td></tr>
+          <tr><td><b>6</b></td><td>Run a game day: make the dependency fail and confirm the breaker opens, the fallback fires and the dashboards show it.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Thresholds guessed at design time are usually wrong in both directions.</b> Too
+        sensitive and the breaker opens during normal variance, turning a slow dependency into a hard outage. Too lax and it never
+        opens, so the cascade it was added to prevent happens anyway with extra configuration on top.</div>
+      <div class="h3">Actuator surface</div>
+      <div class="code"><span class="c"># health, state and event history</span>
+GET /actuator/health              <span class="c"># circuitBreakers section</span>
+GET /actuator/circuitbreakers     <span class="c"># current state per instance</span>
+GET /actuator/circuitbreakerevents
+GET /actuator/circuitbreakerevents/{name}/{type}
+GET /actuator/metrics/resilience4j.circuitbreaker.calls
+
+<span class="c"># the event stream is a ring buffer, not a log —</span>
+<span class="c"># size it, and ship transitions to your log pipeline too</span>
+<span class="k">resilience4j.circuitbreaker.configs.default.eventConsumerBufferSize</span>: <span class="v">100</span></div>
+    </div>
+    <div>
+      <div class="h3">Reacting to transitions in code</div>
+      <div class="code">cb.getEventPublisher()
+  .onStateTransition(e -&gt; log.warn(<span class="v">"{} {} -&gt; {}"</span>,
+       e.getCircuitBreakerName(),
+       e.getStateTransition().getFromState(),
+       e.getStateTransition().getToState()))
+  .onCallNotPermitted(e -&gt; rejected.increment())
+  .onError(e -&gt; log.debug(<span class="v">"failed after {}"</span>, e.getElapsedDuration()));</div>
+      <div class="callout"><b>Emit a transition event, not just a gauge.</b> A breaker that opens and closes between
+        two metric scrapes is invisible on a dashboard but very visible to customers. The event stream catches what sampling misses.</div>
+      <div class="h3">During an incident</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Dependency known bad</b></td><td><span class="mono">transitionToForcedOpenState()</span> — stop calling it entirely, serve fallbacks, and stop the noise while you work.</td></tr>
+          <tr><td><b>Breaker misfiring</b></td><td><span class="mono">transitionToDisabledState()</span> — bypass it without a deploy, then fix the thresholds properly afterwards.</td></tr>
+          <tr><td><b>Dependency recovered</b></td><td><span class="mono">transitionToClosedState()</span> — resets the window rather than waiting out the open period.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Expose these deliberately.</b> A guarded admin endpoint that can force a named breaker
+        open is one of the highest-value operational tools you can ship — and one of the cheapest. Authorise it properly and audit
+        every use; it can also take a healthy dependency offline.</div>
+      <div class="callout p"><b>Remember the state is per pod.</b> Forcing a breaker open through one instance&rsquo;s
+        endpoint affects only that instance. Drive it from configuration or a control plane if you need it fleet-wide, and never
+        conclude &ldquo;the circuit is closed&rdquo; from a single pod&rsquo;s response.</div>
+      <div class="h3">Share configuration, override per dependency</div>
+      <div class="code"><span class="k">resilience4j.circuitbreaker</span>:
+  <span class="k">configs</span>:
+    <span class="k">default</span>:                       <span class="c"># applies to every instance</span>
+      <span class="k">slidingWindowType</span>: TIME_BASED
+      <span class="k">slidingWindowSize</span>: <span class="v">60</span>
+      <span class="k">failureRateThreshold</span>: <span class="v">50</span>
+  <span class="k">instances</span>:
+    <span class="k">paymentService</span>:
+      <span class="k">baseConfig</span>: <span class="v">default</span>          <span class="c"># inherit, then override</span>
+      <span class="k">waitDurationInOpenState</span>: <span class="v">60s</span>  <span class="c"># payments recover slowly</span></div>
+      <div class="callout r"><b>Alert on the transition, not the state gauge.</b> Alerting on
+        <span class="mono">state == OPEN</span> misses fast flapping and fires continuously during a long outage. Alert on the
+        rate of transitions, and separately on sustained time in OPEN.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 10. METRICS ============ -->
+<div class="panel c2">
+  <div class="phead">10 &nbsp;· &nbsp;METRICS <span class="sub">the real names</span></div>
+  <div class="pbody">
+    <div style="font-size:13.4px;line-height:1.46">Resilience4j publishes Micrometer metrics automatically. Micrometer uses dot
+      notation internally; the Prometheus registry converts dots to underscores, which is why the exported names differ from the
+      ones in the Java API.</div>
+    <div class="code"><span class="c"># exported to Prometheus</span>
+<span class="k">resilience4j_circuitbreaker_state</span>
+  <span class="c">tags: name, state    # one series per state, value 0/1</span>
+
+<span class="k">resilience4j_circuitbreaker_calls_seconds_count</span>
+<span class="k">resilience4j_circuitbreaker_calls_seconds_sum</span>
+<span class="k">resilience4j_circuitbreaker_calls_seconds_max</span>
+  <span class="c">tags: name, kind=successful|failed  # it is a TIMER,</span>
+  <span class="c"># so you get latency and counts from the same metric</span>
+
+<span class="k">resilience4j_circuitbreaker_not_permitted_calls_total</span>
+  <span class="c">tags: name, kind=not_permitted   # rejected while OPEN</span>
+
+<span class="k">resilience4j_circuitbreaker_buffered_calls</span>
+  <span class="c">tags: name, kind    # what is in the window right now</span>
+
+<span class="k">resilience4j_circuitbreaker_slow_calls</span>
+<span class="k">resilience4j_circuitbreaker_failure_rate</span>
+<span class="k">resilience4j_circuitbreaker_slow_call_rate</span></div>
+    <div class="callout r"><b>There is no <span class="mono">..._failures_total</span> counter.</b> Failures come from
+      the <span class="mono">calls</span> timer filtered by <span class="mono">kind="failed"</span>. Dashboards written against a
+      guessed metric name render empty panels and are usually only discovered during the incident they were built for — confirm
+      every name against <span class="mono">/actuator/prometheus</span> before you rely on it.</div>
+    <div class="h3">Four panels worth having</div>
+    <ul>
+      <li><b>State over time</b>, per instance — as a discrete band, so flapping is visible rather than averaged away.</li>
+      <li><b>Failure rate against the configured threshold</b>, so you can see how close to tripping you normally run.</li>
+      <li><b>Not-permitted call rate</b> — this is customer impact. It counts requests that never reached the dependency.</li>
+      <li><b>Fallback invocations</b>, from your own counter. Resilience4j does not publish one, and without it a silent fallback keeps the dashboard green.</li>
+    </ul>
+    <div class="h3">Queries that answer the real questions</div>
+    <div class="code"><span class="c"># is any instance open right now?</span>
+max <span class="k">by</span>(name) (resilience4j_circuitbreaker_state{state=<span class="v">"open"</span>})
+
+<span class="c"># customer impact: calls rejected without reaching the service</span>
+sum <span class="k">by</span>(name) (rate(
+  resilience4j_circuitbreaker_not_permitted_calls_total[<span class="v">5m</span>]))
+
+<span class="c"># failure ratio — from the calls TIMER, not a failures counter</span>
+sum(rate(resilience4j_circuitbreaker_calls_seconds_count{
+      kind=<span class="v">"failed"</span>}[<span class="v">5m</span>])) <span class="k">by</span>(name)
+/ sum(rate(resilience4j_circuitbreaker_calls_seconds_count[<span class="v">5m</span>])) <span class="k">by</span>(name)</div>
+    <div class="callout g"><b>Aggregate across pods, and also break down by pod.</b> The aggregate tells you whether
+      the dependency is failing; the breakdown tells you whether it is one bad instance — which is a completely different incident.</div>
+  </div>
+</div>
+
+<!-- ============ 11. TESTING ============ -->
+<div class="panel c8">
+  <div class="phead">11 &nbsp;· &nbsp;TESTING <span class="sub">it is untested until you have opened it</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>An unopened breaker is unverified configuration.</b> Nearly every
+      failure mode on this sheet — a missing fallback signature, a no-op TimeLimiter, a gate that can never be met, self-invocation
+      bypassing the proxy — is invisible until the breaker actually trips.</div>
+    <div class="h3">Drive the state directly</div>
+    <div class="code"><span class="a">@Test</span>
+<span class="k">void</span> servesFallbackWhenCircuitIsOpen() {
+    <span class="a">CircuitBreaker</span> cb = registry.circuitBreaker(<span class="v">"paymentService"</span>);
+    cb.transitionToOpenState();
+
+    <span class="a">PaymentResponse</span> r = paymentClient.pay(request);
+
+    assertThat(r.status()).isEqualTo(<span class="v">"UNAVAILABLE"</span>);
+    assertThat(cb.getState()).isEqualTo(<span class="a">State</span>.OPEN);
+}</div>
+    <div class="h3">A test for each of these</div>
+    <ul>
+      <li><b>Fallback signature resolves</b> — for every overload, including the <span class="mono">CallNotPermittedException</span> one. A mismatch is a runtime failure, not a compile error.</li>
+      <li><b>The breaker actually opens</b> under the configured rate, using a stub that fails deterministically.</li>
+      <li><b>HALF_OPEN closes on success and reopens on failure</b> — the transition most often left unverified.</li>
+      <li><b>The timeout fires</b>, with a stub that sleeps past the threshold. This is what catches a no-op TimeLimiter.</li>
+      <li><b>Retry does not multiply a non-idempotent write</b> — assert the number of calls the stub received.</li>
+      <li><b>Business exceptions do not open the circuit</b> — an <span class="mono">ignoreExceptions</span> regression is silent otherwise.</li>
+    </ul>
+    <div class="callout"><b>Use a separate test profile with small numbers.</b>
+      <span class="mono">minimumNumberOfCalls: 2</span>, a short wait duration, automatic transition enabled. Testing against
+      production values makes tests slow, flaky, and quietly disabled.</div>
+    <div class="callout g"><b>Then verify it once in a real environment.</b> A game day against a genuinely
+      unavailable dependency is the only thing that exercises the timeouts, the pools, the dashboards and the alerts together —
+      which is the combination that actually fails.</div>
+  </div>
+</div>
+
+<!-- ============ 12. TRAPS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">12 &nbsp;· &nbsp;TRAPS THAT BITE IN PRODUCTION <span class="sub">configurations that look correct, compile, deploy cleanly — and do nothing, or the wrong thing</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">Trap</th><th>What actually happens</th><th style="width:180px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b><span class="mono">@TimeLimiter</span> on a sync method</b></td><td>It requires a <span class="mono">CompletionStage</span>. On a method returning a plain value there is nothing to bound, and no timeout is applied at all.</td><td>Return <span class="mono">CompletableFuture</span> via <span class="mono">supplyAsync</span>, or drop the annotation and set client timeouts.</td></tr>
+          <tr><td><b><span class="mono">completedFuture</span> wrapper</b></td><td>Looks async, is not. The blocking call runs to completion before the future exists, so the TimeLimiter has already lost.</td><td><span class="mono">supplyAsync(() -&gt; call(), pool)</span>, on a pool you control.</td></tr>
+          <tr><td><b>Self-invocation</b></td><td>AOP proxies are bypassed on internal calls, so no breaker, retry or fallback applies. Everything looks configured and nothing is active.</td><td>Call through an injected bean, or restructure so the entry point is external.</td></tr>
+          <tr><td><b>Assuming a failure count</b></td><td><span class="mono">failureRateThreshold</span> is a percentage. Setting it to 5 expecting &ldquo;5 failures&rdquo; opens the circuit at a 5% failure rate.</td><td>Read it as a rate, and set the count expectation via the window and the gate.</td></tr>
+          <tr><td><b>Unreachable gate</b></td><td>On low traffic <span class="mono">minimumNumberOfCalls</span> is never met, so the breaker cannot open however bad things get.</td><td>Size against per-pod traffic, use TIME_BASED, and rely on timeouts.</td></tr>
+          <tr><td><b>Breaker named after your own service</b></td><td>All downstreams share one window, so one sick dependency opens the circuit for healthy ones.</td><td>One instance per dependency, named after the callee.</td></tr>
+          <tr><td><b>Business errors recorded</b></td><td>Validation failures and 404s count as failures, so a burst of bad client input trips a breaker on a perfectly healthy service.</td><td>Put them in <span class="mono">ignoreExceptions</span>, which takes precedence.</td></tr>
+          <tr><td><b>Fallback signature mismatch</b></td><td>Not a compile error. It fails the first time the fallback is needed — during the incident it was written for.</td><td>A test per overload, asserting the returned value.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">Trap</th><th>What actually happens</th><th style="width:180px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Fallback makes a remote call</b></td><td>It runs when the system is already degraded, has no protection of its own, and fails or hangs — converting a graceful degradation into a second outage.</td><td>Cache, constant or queue only. Nothing over the network.</td></tr>
+          <tr><td><b>Silent fallback</b></td><td>A plausible response is returned, no metric moves, and dashboards stay green through a total dependency failure.</td><td>Increment a counter on every fallback and alert on its rate.</td></tr>
+          <tr><td><b>Retrying an open circuit</b></td><td>Retry sits outside the breaker, so it keeps attempting and each fails instantly. Harmless in cost, but it distorts your retry metrics.</td><td>Add <span class="mono">CallNotPermittedException</span> to the retry's <span class="mono">ignoreExceptions</span>.</td></tr>
+          <tr><td><b>Retrying non-idempotent writes</b></td><td>A timeout does not prove the call did not land. The customer is charged twice and no breaker setting prevents it.</td><td>Server-enforced idempotency key, or no retry on writes.</td></tr>
+          <tr><td><b>Retries at every layer</b></td><td>Gateway × service × client compounds multiplicatively — three levels of three attempts is 27 requests at a dependency that is already failing.</td><td>One layer owns retry. Disable it everywhere else, explicitly.</td></tr>
+          <tr><td><b>No client-level timeout</b></td><td>The breaker only reacts to calls that complete or fail. A call that hangs forever holds a thread forever, and the window never fills.</td><td>Connect and read timeouts on every HTTP client, always.</td></tr>
+          <tr><td><b>Expecting a cluster-wide circuit</b></td><td>State is per JVM. Twenty pods means twenty breakers opening at twenty different moments, and one pod's state tells you nothing about the fleet.</td><td>Aggregate metrics across pods; size thresholds per pod.</td></tr>
+          <tr><td><b>Dashboards on guessed metric names</b></td><td><span class="mono">..._failures_total</span> does not exist. The panel renders empty and nobody notices until an incident.</td><td>Copy names from <span class="mono">/actuator/prometheus</span> on a running instance.</td></tr>
+          <tr><td><b>Never opened in a test</b></td><td>Every trap above stays invisible until the breaker trips for the first time in production.</td><td><span class="mono">transitionToOpenState()</span> in tests, plus a game day.</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before a breaker sits between your service and a dependency that pays the bills</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Connect and read timeouts set on the HTTP client</b> — before any annotation</div>
+      <div>&#9744; <b>One breaker instance per dependency</b>, named after the callee</div>
+      <div>&#9744; <b>Thresholds derived from measured traffic</b>, not chosen at design time</div>
+      <div>&#9744; <b>Rolled out in METRICS_ONLY first</b> for a full traffic cycle</div>
+      <div>&#9744; <b>Window sized against per-pod traffic</b>, not fleet totals</div>
+      <div>&#9744; <b><span class="mono">minimumNumberOfCalls</span> reachable</b> under normal load</div>
+      <div>&#9744; <b>TIME_BASED chosen</b> for low-traffic or bursty endpoints</div>
+      <div>&#9744; <b><span class="mono">slowCallDurationThreshold</span> set from p99</b>, not from the timeout</div>
+      <div>&#9744; <b><span class="mono">failureRateThreshold</span> understood as a percentage</b></div>
+      <div>&#9744; <b>Business and validation errors in <span class="mono">ignoreExceptions</span></b></div>
+      <div>&#9744; <b><span class="mono">recordExceptions</span> reviewed</b> — every genuine failure type is listed</div>
+      <div>&#9744; <b><span class="mono">automaticTransitionFromOpenToHalfOpenEnabled</span> chosen deliberately</b></div>
+      <div>&#9744; <b><span class="mono">@TimeLimiter</span> only on <span class="mono">CompletionStage</span>-returning methods</b></div>
+      <div>&#9744; <b>No <span class="mono">completedFuture</span> wrapper</b> around a blocking call</div>
+      <div>&#9744; <b>No self-invocation</b> — every annotated method is entered through the proxy</div>
+      <div>&#9744; <b>Aspect order understood</b>; timeout meaning stated as per-attempt or per-request</div>
+      <div>&#9744; <b>Overall request deadline enforced somewhere</b>, usually upstream</div>
+      <div>&#9744; <b><span class="mono">CallNotPermittedException</span> excluded from retry</b></div>
+      <div>&#9744; <b>Retry only on idempotent operations</b>, or with a server-enforced key</div>
+      <div>&#9744; <b>Exactly one layer owns retry</b>; disabled explicitly elsewhere</div>
+      <div>&#9744; <b>Jitter enabled</b> on retry backoff</div>
+      <div>&#9744; <b>Retry budget fits</b> inside the caller's deadline</div>
+      <div>&#9744; <b>Fallback in the same class</b>, same return type, args + Throwable</div>
+      <div>&#9744; <b>Fallback overloaded</b> for <span class="mono">CallNotPermittedException</span> separately</div>
+      <div>&#9744; <b>Fallback makes no remote call</b> and is fast</div>
+      <div>&#9744; <b>Fallback content agreed</b> with whoever owns the user-facing behaviour</div>
+      <div>&#9744; <b>Every fallback increments a counter</b> — no silent degradation</div>
+      <div>&#9744; <b>Bulkhead sized</b> so one dependency cannot exhaust the pool</div>
+      <div>&#9744; <b>Metric names copied from <span class="mono">/actuator/prometheus</span></b>, not guessed</div>
+      <div>&#9744; <b>Dashboard shows state, failure rate, not-permitted rate, fallback rate</b></div>
+      <div>&#9744; <b>Metrics aggregated across pods</b> and broken down by pod</div>
+      <div>&#9744; <b>Alert on state transitions</b>, not only on the state gauge</div>
+      <div>&#9744; <b>Failure rate of <span class="mono">-1</span> excluded</b> from alerting</div>
+      <div>&#9744; <b>State transitions logged</b>, not only held in the event ring buffer</div>
+      <div>&#9744; <b>Test proves the breaker opens</b> at the configured rate</div>
+      <div>&#9744; <b>Test proves HALF_OPEN closes and reopens</b></div>
+      <div>&#9744; <b>Test proves the timeout fires</b> — catches a no-op TimeLimiter</div>
+      <div>&#9744; <b>Test proves business exceptions do not open</b> the circuit</div>
+      <div>&#9744; <b>Separate test profile</b> with small windows and short waits</div>
+      <div>&#9744; <b>Forced-open kill switch exists</b>, authorised and audited</div>
+      <div>&#9744; <b>Runbook</b> for open circuit, misfiring breaker, and recovery</div>
+      <div>&#9744; <b>Game day run</b> against a genuinely unavailable dependency</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>make the dependency fail, and watch what the customer
+      receives.</b> If you have never seen your own breaker open, you have configuration — not resilience.</div>
+  </div>
+</div>
+
+</div>
