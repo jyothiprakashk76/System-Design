@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>RAG Explained by Jyothi Prakash Kalmanje</title>
 <style>
-  @page { size: 3400px 4254px; margin: 0; }
+  @page { size: 3400px 4739px; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { width:3400px; height:4254px; background:#eceef5;
+  body { width:3400px; height:4739px; background:#eceef5;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#10142b;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:4254px; padding:26px; display:grid;
+  .sheet { width:3400px; height:4709px; padding:26px; display:grid;
     grid-template-columns:1500px 896px 908px;
-    grid-template-rows:120px 800px 700px 700px 600px 720px 430px;
+    grid-template-rows:120px 754px 800px 707px 641px 380px 735px 366px;
     gap:22px; }
   .span2a{grid-column:1/span 2} .span2b{grid-column:2/span 2} .span3{grid-column:1/span 3}
 
@@ -76,9 +76,107 @@
     <span style="font-size:16px;color:#7a86bb">Architecture · retrieval quality · evaluation · security · operations</span></div>
 </div>
 
+<!-- ============ 1. INTRODUCTION ============ -->
+<div class="panel span3">
+  <div class="phead">1 &nbsp;·&nbsp; WHAT RAG IS, AND WHY IT EXISTS
+    <span class="sub">start here — the problem before the architecture</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.06fr 1fr 1fr;gap:20px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:15px;line-height:1.5"><b>Retrieval-Augmented Generation</b> — before answering, the system
+        <b>searches your own documents</b>, puts the passages it finds into the prompt, and asks the model to answer
+        <b>from that evidence</b> rather than from memory.</div>
+      <div class="callout" style="background:#eef1fb;border-color:#a9b4e6"><b>One sentence:</b> RAG turns a
+        closed-book exam into an open-book one. The model stops recalling and starts reading.</div>
+      <div class="h3">The four steps</div>
+      <table>
+        <tbody>
+          <tr><td style="width:34px"><b>1</b></td><td><b>Index</b> — split your documents into passages, embed them, store them in a searchable index. Done once, ahead of time.</td></tr>
+          <tr><td><b>2</b></td><td><b>Retrieve</b> — at question time, find the passages most likely to contain the answer.</td></tr>
+          <tr><td><b>3</b></td><td><b>Augment</b> — place those passages into the prompt alongside the question.</td></tr>
+          <tr><td><b>4</b></td><td><b>Generate</b> — the model answers using the supplied text, and cites which passage it used.</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Concretely</div>
+      <div class="code"><span style="color:#6f86a8">// question the model was never trained on</span>
+<span style="color:#ffc857">Q:</span> "How many annual leave days do I carry over?"
+
+<span style="color:#6f86a8">// 1-2 · retrieve from the HR handbook index</span>
+<span style="color:#8fe3c6">→ hr-policy-2026.pdf p.14, chunk 3  (score 0.89)</span>
+<span style="color:#8fe3c6">→ leave-faq.md  section "Carry-over"    (score 0.81)</span>
+
+<span style="color:#6f86a8">// 3 · augment</span>
+<span style="color:#ffc857">PROMPT:</span> "Answer using only the context below.
+         Cite the source. If the context does not
+         contain the answer, say you do not know.
+         CONTEXT: &lt;the two passages&gt;
+         QUESTION: How many days do I carry over?"
+
+<span style="color:#6f86a8">// 4 · generate</span>
+<span style="color:#8fe3c6">A:</span> "Up to 5 days, and they expire on 31 March.
+   [hr-policy-2026.pdf, p.14]"</div>
+    </div>
+    <div>
+      <div class="h3">The problem it solves</div>
+      <div style="font-size:14.6px;line-height:1.5">A language model knows only what was in its training data, frozen at a
+        point in time. That leaves five gaps, and RAG addresses each one directly.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:180px">What a model alone cannot do</th><th>What retrieval changes</th></tr></thead>
+        <tbody>
+          <tr><td><b>Know anything after its training cutoff</b></td><td>The index is updated whenever the source changes — no retraining involved</td></tr>
+          <tr><td><b>Know your private or internal data</b></td><td>Your contracts, tickets, wiki and code were never public, and never will be in a public model</td></tr>
+          <tr><td><b>Say where an answer came from</b></td><td>The retrieved passage <i>is</i> the citation, so the claim can be checked</td></tr>
+          <tr><td><b>Reliably admit it does not know</b></td><td>With nothing retrieved, the system can refuse instead of inventing a plausible answer</td></tr>
+          <tr><td><b>Respect who may see what</b></td><td>Retrieval is filtered by the user's permissions before anything reaches the prompt</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The honest framing.</b> RAG does not make a model truthful. It makes the model's
+        answer <b>traceable to a source you control</b> — which is what lets you detect when it is wrong, and is why
+        regulated and internal-knowledge use cases adopted it first.</div>
+      <div class="h3">What it is not</div>
+      <ul>
+        <li><b>Not a hallucination cure.</b> A model can still misread or over-generalise a correct passage.</li>
+        <li><b>Not search.</b> Search returns documents to a human; RAG returns an answer built from them.</li>
+        <li><b>Not a database.</b> It finds relevant text, not exact rows — do not ask it to sum a column.</li>
+        <li><b>Not automatic.</b> Answer quality is set by retrieval quality, and retrieval is the hard part.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">When it is the right tool</div>
+      <table>
+        <thead><tr><th style="width:112px">Signal</th><th>Why RAG fits</th></tr></thead>
+        <tbody>
+          <tr><td><b>Corpus changes</b></td><td>Policies, prices, documentation, tickets — anything you would otherwise retrain for</td></tr>
+          <tr><td><b>Answers must be cited</b></td><td>Support, legal, compliance, medical, finance</td></tr>
+          <tr><td><b>Data is private</b></td><td>Internal knowledge that cannot leave your boundary</td></tr>
+          <tr><td><b>Per-user visibility</b></td><td>One model, retrieval filtered per user or tenant</td></tr>
+          <tr><td><b>Corpus is large</b></td><td>Far more text than any prompt could hold</td></tr>
+          <tr><td><b>Answers are extractive</b></td><td>The answer exists in a document, and needs finding rather than reasoning out</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">When it is the wrong tool</div>
+      <table>
+        <thead><tr><th style="width:112px">Situation</th><th>Use instead</th></tr></thead>
+        <tbody>
+          <tr><td><b>Aggregation and maths</b></td><td>&ldquo;Total revenue by region&rdquo; is SQL, not retrieval</td></tr>
+          <tr><td><b>Small stable corpus</b></td><td>If it fits in the prompt and rarely changes, just include it</td></tr>
+          <tr><td><b>Behaviour, tone, format</b></td><td>Fine-tuning — see panel 3</td></tr>
+          <tr><td><b>Real-time transactional state</b></td><td>Call the API; an index is always slightly stale</td></tr>
+          <tr><td><b>Multi-hop reasoning</b></td><td>An agent that retrieves repeatedly, not one retrieval pass</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="background:#edfcf4;border-color:#6fd8ae"><b>The first question to ask.</b> Where does
+        the answer live today? If a person would find it by opening a document, RAG fits. If they would run a query, write a
+        report, or make a judgement call, it does not — and no amount of retrieval tuning will change that.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. PRODUCTION PIPELINE ============ -->
 <div class="panel span2a">
-  <div class="phead">1 &nbsp;· &nbsp;THE PRODUCTION RAG PIPELINE
+  <div class="phead">2 &nbsp;· &nbsp;THE PRODUCTION RAG PIPELINE
     <span class="sub">every stage that a demo skips</span></div>
   <div class="pbody" style="padding:6px 10px">
   <svg viewBox="0 0 2380 720" width="2380" height="720">
@@ -265,7 +363,7 @@
 
 <!-- ============ 2. WHAT RAG IS ============ -->
 <div class="panel">
-  <div class="phead">2 &nbsp;· &nbsp;FUNDAMENTALS <span class="sub">what is actually happening</span></div>
+  <div class="phead">3 &nbsp;· &nbsp;FUNDAMENTALS <span class="sub">what is actually happening</span></div>
   <div class="pbody">
     <div style="font-size:14.6px;line-height:1.5">
       RAG gives a language model access to information it was never trained on. Instead of answering from
@@ -313,7 +411,7 @@
 
 <!-- ============ 3. CHUNKING ============ -->
 <div class="panel">
-  <div class="phead">3 &nbsp;· &nbsp;CHUNKING <span class="sub">decided before everything else</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;CHUNKING <span class="sub">decided before everything else</span></div>
   <div class="pbody">
     <table class="tight">
       <thead><tr><th style="width:31%">Strategy</th><th>When it is the right choice</th></tr></thead>
@@ -351,7 +449,7 @@
 
 <!-- ============ 4. HYBRID ============ -->
 <div class="panel">
-  <div class="phead">4 &nbsp;· &nbsp;HYBRID RETRIEVAL <span class="sub">dense + sparse</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;HYBRID RETRIEVAL <span class="sub">dense + sparse</span></div>
   <div class="pbody">
     <table class="tight">
       <thead><tr><th style="width:22%"></th><th style="width:39%">Dense (vector)</th><th>Sparse (BM25)</th></tr></thead>
@@ -390,7 +488,7 @@ score(d) = Σ  1 / (<span class="k">k</span> + rank<span class="m">_i</span>(d))
 
 <!-- ============ 5. RERANKING ============ -->
 <div class="panel">
-  <div class="phead">5 &nbsp;· &nbsp;RERANKING <span class="sub">the highest-return addition</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;RERANKING <span class="sub">the highest-return addition</span></div>
   <div class="pbody">
     <table class="tight">
       <thead><tr><th style="width:26%"></th><th style="width:37%">Bi-encoder (retrieval)</th><th>Cross-encoder (rerank)</th></tr></thead>
@@ -432,7 +530,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 6. INDEX INTERNALS ============ -->
 <div class="panel">
-  <div class="phead">6 &nbsp;· &nbsp;VECTOR INDEX INTERNALS <span class="sub">what the knobs actually do</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;VECTOR INDEX INTERNALS <span class="sub">what the knobs actually do</span></div>
   <div class="pbody">
     <table class="tight">
       <thead><tr><th style="width:20%">Index</th><th style="width:36%">How it works</th><th>Character</th></tr></thead>
@@ -481,7 +579,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 7. EVALUATION ============ -->
 <div class="panel span2b">
-  <div class="phead">7 &nbsp;· &nbsp;EVALUATION
+  <div class="phead">8 &nbsp;· &nbsp;EVALUATION
     <span class="sub">the discipline that turns a demo into a system</span></div>
   <div class="pbody">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
@@ -558,7 +656,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 8. PATTERNS ============ -->
 <div class="panel span3">
-  <div class="phead">8 &nbsp;· &nbsp;THE PATTERN LADDER
+  <div class="phead">9 &nbsp;· &nbsp;THE PATTERN LADDER
     <span class="sub">each rung answers a specific failure of the one below it — climb only when measurement says to</span></div>
   <div class="pbody" style="padding:12px 14px">
     <div class="grid10">
@@ -621,7 +719,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 9. LATENCY & COST ============ -->
 <div class="panel">
-  <div class="phead">9 &nbsp;· &nbsp;LATENCY &amp; COST <span class="sub">budget it per stage</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;LATENCY &amp; COST <span class="sub">budget it per stage</span></div>
   <div class="pbody">
     <div class="h3">Where the time goes</div>
     <table class="tight">
@@ -665,7 +763,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 10. SECURITY ============ -->
 <div class="panel">
-  <div class="phead">10 &nbsp;· &nbsp;SECURITY &amp; TENANCY <span class="sub">where RAG leaks</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;SECURITY &amp; TENANCY <span class="sub">where RAG leaks</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>Enforce permissions inside the retrieval filter.</b> Attach
       ACL and tenant metadata to every chunk and apply it as a pre-filter. Retrieving broadly and discarding
@@ -708,7 +806,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 11. OPERATIONS ============ -->
 <div class="panel">
-  <div class="phead">11 &nbsp;· &nbsp;RUNNING IT <span class="sub">freshness and observability</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;RUNNING IT <span class="sub">freshness and observability</span></div>
   <div class="pbody">
     <div class="h3">Keeping the index current</div>
     <table class="tight">
@@ -752,7 +850,7 @@ context    = ranked[:<span class="k">3..10</span>]                     <span cla
 
 <!-- ============ 12. CHECKLIST ============ -->
 <div class="panel span3">
-  <div class="phead">12 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST
+  <div class="phead">13 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST
     <span class="sub">what to confirm before this carries real traffic</span></div>
   <div class="pbody">
     <div class="chk">

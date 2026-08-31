@@ -37,7 +37,7 @@ expanded card per branch — and an end-to-end operations guide.
 
 | | Poster | Covers |
 |---|---|---|
-| 📚 | **[RAG Explained](RAG/)** | The production RAG pipeline: chunking, hybrid retrieval and reciprocal rank fusion, reranking, vector index internals, evaluation, a pattern ladder from simple to advanced, latency and cost, and security and multi-tenancy. |
+| 📚 | **[RAG Explained](RAG/)** | Opens with what RAG is and why it exists — the four steps, a worked example, the problems it solves, and when it is the wrong tool. Then the production pipeline: chunking, hybrid retrieval and reciprocal rank fusion, reranking, vector index internals, evaluation, a pattern ladder from simple to advanced, latency and cost, and security and multi-tenancy. |
 | 🧩 | **[AI Engineering Projects](AI_Engineer_Projects/)** | A portfolio built as five sequenced projects — production RAG, local inference, observability, fine-tuning, real-time voice — with evaluation as the spine, repository standards, what fails review, and acceptance criteria. |
 | 🎛️ | **[Production Multimodal Agent Architecture](Multimodal_Agent_Architecture/)** | A multimodal agent worked through motor claim triage: multimodal ingestion, agent loop control, guardrails, threat model, hallucination control, token and cost engineering, accuracy and evaluation, and graceful degradation. |
 | 🏦 | **[Real Agentic AI — Banking Customer Service](Real_Agentic_AI_Banking_Customer_Service/)** | Taking an agentic assistant from demo to production inside a bank: multi-agent design, MCP, delegated authorization, memory, hybrid LLM and data residency, prompt injection, evaluation, observability, cost, and seventeen production gaps. |
