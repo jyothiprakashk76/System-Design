@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Production Multimodal Agent Architecture — by Jyothi Prakash Kalmanje</title>
 <style>
-  @page { size: 3400px 4242px; margin: 0; }
+  @page { size: 3400px 4797px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:4242px; background:#edeff6;
+  body { width:3400px; height:4797px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:4242px; padding:26px; display:grid;
+  .sheet { width:3400px; height:4767px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 860px 720px 750px 820px 390px 400px;
+    grid-template-rows:118px 599px 844px 735px 750px 821px 294px 400px;
     gap:22px; }
   .span2{grid-column:1/span 2} .span3{grid-column:1/span 3}
 
@@ -65,9 +65,87 @@
     <span style="font-size:14.5px;color:#6d7aae">Worked example: insurance claim triage — images, documents, voice, policy data</span></div>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A MULTIMODAL AGENT IS, AND WHY PRODUCTION IS DIFFERENT
+    <span class="sub">start here — the definitions, then why the demo version does not survive contact with real users</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Two words, two ideas</div>
+      <table>
+        <tbody>
+          <tr><td style="width:104px"><b>Agent</b></td><td>A model in a <b>loop</b> with <b>tools</b>. It decides what to do next, calls something, reads the result, and repeats until the task is done or a limit stops it. A single prompt-and-response is not an agent.</td></tr>
+          <tr><td><b>Multimodal</b></td><td>The inputs are not only text — photographs, scanned documents, audio, video frames, tables. The model interprets them directly rather than through a separate pipeline of extractors.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>Put together:</b> a system that accepts whatever a user actually sends — a photo, a
+        PDF, a voice note, a sentence — decides what to do about it, and uses tools to act, without a human scripting the steps.</div>
+      <div class="h3">What it replaces</div>
+      <ul>
+        <li><b>Fixed pipelines</b> — OCR, then a classifier, then rules, then a form. Each stage brittle, each new document type a project.</li>
+        <li><b>Human triage</b> of unstructured input that arrives faster than people can read it.</li>
+        <li><b>Rigid intake forms</b> that force the user to translate their situation into your schema before you will accept it.</li>
+      </ul>
+      <div class="h3">The loop, concretely</div>
+      <div class="code"><span class="c">// one turn</span>
+input   photo + "my car was hit in a car park"
+   ↓
+<span class="k">reason</span>  what is this, what is missing, what next
+   ↓
+<span class="k">tool</span>    vision.assess(photo) → panel, severity
+<span class="k">tool</span>    policy.lookup(ctx)  → cover, excess
+   ↓
+<span class="k">reason</span>  enough to decide? if not, loop
+   ↓
+output  a decision, an explanation, a citation
+        <span class="r">bounded by a step and token limit</span></div>
+    </div>
+    <div>
+      <div class="h3">Why a demo is not a system</div>
+      <div style="font-size:13.6px;line-height:1.48">A working demo shows the loop succeeding on inputs you chose. Production
+        is everything that happens when the input, the model or a dependency does not cooperate.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:140px">In a demo</th><th>In production</th></tr></thead>
+        <tbody>
+          <tr><td>Clean, well-lit, relevant images</td><td>Blurred, rotated, wrong subject, ten photos of the same dent, a screenshot of a screenshot</td></tr>
+          <tr><td>The model behaves</td><td>It hallucinates a detail, or reads text embedded in the image as an instruction</td></tr>
+          <tr><td>The loop terminates</td><td>It oscillates between two tools until something stops it</td></tr>
+          <tr><td>Cost is invisible</td><td>Images are expensive, and cost scales with steps &times; context</td></tr>
+          <tr><td>One user</td><td>Concurrency, rate limits, provider outages, and a queue</td></tr>
+          <tr><td>Accuracy is anecdotal</td><td>You need a number, per intent, that gates every release</td></tr>
+          <tr><td>Nothing is at stake</td><td>The output triggers a payment, a rejection, or a promise to a customer</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The gap is not model quality.</b> It is bounding, verifying and observing what the
+        model does — which is engineering work, and is most of what the rest of this sheet is about.</div>
+    </div>
+    <div>
+      <div class="h3">What has to be added</div>
+      <table>
+        <thead><tr><th style="width:126px">Concern</th><th>Why it is not optional</th></tr></thead>
+        <tbody>
+          <tr><td><b>Loop control</b></td><td>Step, tool-call, token and wall-clock caps. An unbounded loop is both a cost and an availability incident.</td></tr>
+          <tr><td><b>Guardrails</b></td><td>On input, on tool results, and on output. Every one is a separate check with a different job.</td></tr>
+          <tr><td><b>Injection defence</b></td><td>Text inside an uploaded image or document is untrusted input that reaches the model through an entirely legitimate path.</td></tr>
+          <tr><td><b>Grounding</b></td><td>Answers tied to retrieved or tool-returned evidence, with a citation, so a claim can be checked.</td></tr>
+          <tr><td><b>Human in the loop</b></td><td>For anything irreversible. The agent proposes; a person decides.</td></tr>
+          <tr><td><b>Evaluation</b></td><td>A gate that blocks release on regression, not a dashboard nobody opens.</td></tr>
+          <tr><td><b>Observability</b></td><td>The full trajectory, or you cannot answer why it did that.</td></tr>
+          <tr><td><b>Cost accounting</b></td><td>Per turn, per intent, with a circuit breaker on spend rate.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>When an agent is the right shape.</b> Input is genuinely unstructured, the steps
+        vary by case, and a human would otherwise read and judge. If the sequence is fixed and known, a deterministic
+        workflow with a model at one or two steps is cheaper, faster and far easier to test.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ================= REFERENCE ARCHITECTURE ================= -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
     <span class="sub">every control plane a production agent needs — nothing here is optional at scale</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 770" width="3320" height="770">
@@ -283,7 +361,7 @@
 
 <!-- ================= WORKED EXAMPLE ================= -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;WORKED EXAMPLE — MOTOR CLAIM TRIAGE
+  <div class="phead">3 &nbsp;· &nbsp;WORKED EXAMPLE — MOTOR CLAIM TRIAGE
     <span class="sub">one request, traced end to end, with every control firing</span></div>
   <div class="pbody">
     <div style="display:grid;grid-template-columns:1.06fr 1fr;gap:16px;height:100%">
@@ -376,7 +454,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= MULTIMODAL INGESTION ================= -->
 <div class="panel c2">
-  <div class="phead">3 &nbsp;· &nbsp;MULTIMODAL INGESTION <span class="sub">each modality, its own risks</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;MULTIMODAL INGESTION <span class="sub">each modality, its own risks</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:20%">Modality</th><th style="width:40%">Processing</th><th>Primary risk</th></tr></thead>
@@ -417,7 +495,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= AGENT LOOP ================= -->
 <div class="panel c3">
-  <div class="phead">4 &nbsp;· &nbsp;AGENT LOOP CONTROL <span class="sub">bounding a non-deterministic process</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;AGENT LOOP CONTROL <span class="sub">bounding a non-deterministic process</span></div>
   <div class="pbody">
     <div class="h3">Every loop needs five hard limits <span class="tag2 heur">SET TO YOUR CONTEXT</span></div>
     <table>
@@ -466,7 +544,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= GUARDRAILS ================= -->
 <div class="panel c5">
-  <div class="phead">5 &nbsp;· &nbsp;GUARDRAILS <span class="sub">defence in depth, failing closed</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;GUARDRAILS <span class="sub">defence in depth, failing closed</span></div>
   <div class="pbody">
     <div class="h3">Three layers, three different jobs</div>
     <table>
@@ -515,7 +593,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= SECURITY ================= -->
 <div class="panel c4">
-  <div class="phead">6 &nbsp;· &nbsp;SECURITY &amp; THREAT MODEL <span class="sub">the agent is a privileged actor</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;SECURITY &amp; THREAT MODEL <span class="sub">the agent is a privileged actor</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:28%">Threat</th><th style="width:36%">Vector</th><th>Mitigation</th></tr></thead>
@@ -553,7 +631,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= HALLUCINATION ================= -->
 <div class="panel c7">
-  <div class="phead">7 &nbsp;· &nbsp;HALLUCINATION CONTROL <span class="sub">layered, because no single control suffices</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;HALLUCINATION CONTROL <span class="sub">layered, because no single control suffices</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:26%">Layer</th><th style="width:38%">Mechanism</th><th>Catches</th></tr></thead>
@@ -593,7 +671,7 @@ draft = llm(evidence_bundle)  <span class="c">| 4.2k in / 380 out</span></div>
 
 <!-- ================= TOKENS ================= -->
 <div class="panel c4">
-  <div class="phead">8 &nbsp;· &nbsp;TOKEN &amp; COST ENGINEERING <span class="sub">where agent spend actually goes</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;TOKEN &amp; COST ENGINEERING <span class="sub">where agent spend actually goes</span></div>
   <div class="pbody">
     <div class="h3">The compounding problem <span class="tag2 fact">MECHANISM</span></div>
     <div class="code"><span class="c"># naive loop: full history re-sent every step</span>
@@ -644,7 +722,7 @@ step n:  ctx + <span class="v">compact_state</span>   <span class="c">→ roughl
 
 <!-- ================= ACCURACY ================= -->
 <div class="panel c6">
-  <div class="phead">9 &nbsp;· &nbsp;ACCURACY &amp; EVALUATION <span class="sub">score the path, not just the answer</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;ACCURACY &amp; EVALUATION <span class="sub">score the path, not just the answer</span></div>
   <div class="pbody">
     <div class="h3">Four levels, measured separately</div>
     <table>
@@ -689,7 +767,7 @@ step n:  ctx + <span class="v">compact_state</span>   <span class="c">→ roughl
 
 <!-- ================= FAILURE ================= -->
 <div class="panel c5 span3">
-  <div class="phead">10 &nbsp;· &nbsp;FAILURE MODES &amp; GRACEFUL DEGRADATION
+  <div class="phead">11 &nbsp;· &nbsp;FAILURE MODES &amp; GRACEFUL DEGRADATION
     <span class="sub">what the system does when each dependency fails — decided at design time, not at 3am</span></div>
   <div class="pbody">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
@@ -724,7 +802,7 @@ step n:  ctx + <span class="v">compact_state</span>   <span class="c">→ roughl
 
 <!-- ================= CHECKLIST ================= -->
 <div class="panel c0 span3">
-  <div class="phead">11 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST
+  <div class="phead">12 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST
     <span class="sub">confirm before an agent takes a consequential action unsupervised</span></div>
   <div class="pbody">
     <div class="chk">

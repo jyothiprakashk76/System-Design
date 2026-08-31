@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Deployment Architecture &amp; End-to-End Operations Guide</title>
 <style>
-  @page { size: 3400px 5293px; margin: 0; }
+  @page { size: 3400px 5890px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:5293px; background:#edeff6;
+  body { width:3400px; height:5890px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:5263px; padding:26px; display:grid;
+  .sheet { width:3400px; height:5860px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 822px 764px 716px 565px 812px 815px 445px;
+    grid-template-rows:118px 575px 822px 764px 716px 565px 812px 815px 445px;
     gap:22px; }
   .span2{grid-column:span 2} .span3{grid-column:1/-1}
 
@@ -62,9 +62,80 @@
     <span style="font-size:13.6px;color:#6d80b6;font-weight:500">architecture · pipeline · migrations · zero-downtime · rollback · HA/DR · vulnerabilities · checklist</span></div>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT DEPLOYMENT ARCHITECTURE IS, AND WHY IT IS DESIGNED RATHER THAN ARRANGED
+    <span class="sub">start here — what the term covers, what a deployment actually risks, and how to size the process to the system</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">Deployment architecture is <b>how a system is arranged at runtime and
+        how change reaches it</b>: which components exist, which boundaries separate them, where state lives, and by what
+        process a code change becomes running behaviour without breaking anything.</div>
+      <div class="callout b"><b>Two halves, and both are the subject.</b> The <b>runtime picture</b> — tiers,
+        boundaries, data stores. And the <b>change picture</b> — pipeline, migrations, strategy, rollback. Most diagrams
+        show only the first, which is why they cannot answer &ldquo;what happens when we ship on Friday?&rdquo;</div>
+      <div class="h3">What a deployment actually risks</div>
+      <ul>
+        <li><b>Availability</b> — dropped connections, restart loops, a full pool during the roll</li>
+        <li><b>Correctness</b> — old and new versions running together against one database</li>
+        <li><b>Data</b> — a migration that cannot be reversed</li>
+        <li><b>Security</b> — a new dependency, a widened permission, an exposed endpoint</li>
+        <li><b>Cost</b> — a change in instance size or scaling behaviour</li>
+        <li><b>Trust</b> — the second failed release in a week changes how the team behaves</li>
+      </ul>
+      <div class="callout r"><b>Only the first is usually planned for.</b> The rest are discovered, and typically in
+        that order.</div>
+    </div>
+    <div>
+      <div class="h3">Why frequent deployment is safer, not riskier</div>
+      <div style="font-size:13.6px;line-height:1.48">The instinct is that shipping less often is safer. The evidence points
+        the other way, and the reason is mechanical rather than cultural.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:150px">Infrequent, large releases</th><th>Frequent, small releases</th></tr></thead>
+        <tbody>
+          <tr><td>Many changes at once, so a failure is hard to attribute</td><td>One change, so the cause is obvious</td></tr>
+          <tr><td>Rollback reverts everything, including what worked</td><td>Rollback reverts one thing</td></tr>
+          <tr><td>The process is rehearsed rarely, so it is unreliable when used</td><td>Rehearsed constantly, so it is boring</td></tr>
+          <tr><td>Long-lived branches, painful merges</td><td>Short branches, trivial merges</td></tr>
+          <tr><td>Fear leads to fewer releases, which makes them larger</td><td>Confidence compounds in the other direction</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The four measures to hold yourself to.</b> Deployment frequency, lead time for
+        changes, change failure rate, and time to restore service. Throughput and stability improve together in practice —
+        they are not a trade-off, and a process change that moves none of the four was decoration.</div>
+      <div class="callout"><b>Time to restore beats time between failures.</b> A team that reverts in two minutes can
+        take risks a team needing a two-hour restore cannot. Speed of recovery is what permits frequent release.</div>
+    </div>
+    <div>
+      <div class="h3">Tier the system before designing the process</div>
+      <div style="font-size:13.6px;line-height:1.48">The most expensive mistake in this whole guide is applying a
+        Tier-1 process to a Tier-3 system. Decide the tier first; everything downstream follows.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:82px">Tier</th><th>Characteristic</th><th style="width:120px">Process</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 · Critical</b></td><td>Revenue or safety impact within minutes; regulated</td><td>Canary with automated analysis, DR drills, change records, tight RTO/RPO</td></tr>
+          <tr><td><b>2 · High</b></td><td>Customer-facing, degradation is visible and costly</td><td>Blue/green or canary, automated rollback, SLOs, on-call</td></tr>
+          <tr><td><b>3 · Standard</b></td><td>Internal or non-critical; a short outage is tolerable</td><td>Rolling, automated tests, basic monitoring</td></tr>
+          <tr><td><b>4 · Low</b></td><td>Batch, tooling, experiments</td><td>Recreate. Do not over-engineer it</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Approval gates and change boards on an internal reporting tool</b> slow everything
+        and teach people to route around the process — which then makes the Tier-1 controls weaker too, because the habit
+        of bypassing is already formed.</div>
+      <div class="h3">How to read the rest of this sheet</div>
+      <div style="font-size:13.4px;line-height:1.46">Panels 2 and 3 are the change picture. Panels 4 to 8 are how a release
+        is made safe. Panels 9 to 12 are what you decide per system and how you operate it. Panel 13 is the checklist to run
+        against a real deployment.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. ARCHITECTURE ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;REFERENCE DEPLOYMENT ARCHITECTURE
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE DEPLOYMENT ARCHITECTURE
     <span class="sub">drawn as trust and network boundaries, because that is what actually constrains a deployment — not the box names</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 748" width="3320" height="748">
@@ -391,7 +462,7 @@
 
 <!-- ============ 2. PIPELINE ============ -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;THE DEPLOYMENT PIPELINE, STAGE BY STAGE
+  <div class="phead">3 &nbsp;· &nbsp;THE DEPLOYMENT PIPELINE, STAGE BY STAGE
     <span class="sub">what runs where, what it catches, and what it cannot catch at that point</span></div>
   <div class="pbody">
     <table>
@@ -433,7 +504,7 @@
 
 <!-- ============ 3. ENVIRONMENTS ============ -->
 <div class="panel c2">
-  <div class="phead">3 &nbsp;· &nbsp;ENVIRONMENTS &amp; PROMOTION <span class="sub">parity is the point</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;ENVIRONMENTS &amp; PROMOTION <span class="sub">parity is the point</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:104px">Environment</th><th>Purpose, and what must match production</th></tr></thead>
@@ -475,7 +546,7 @@
 
 <!-- ============ 4. STRATEGIES ============ -->
 <div class="panel c5">
-  <div class="phead">4 &nbsp;· &nbsp;DEPLOYMENT STRATEGIES <span class="sub">and what each costs</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;DEPLOYMENT STRATEGIES <span class="sub">and what each costs</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:98px">Strategy</th><th>Behaviour · cost · when to choose it</th></tr></thead>
@@ -513,7 +584,7 @@
 
 <!-- ============ 5. MIGRATIONS ============ -->
 <div class="panel c4 span2">
-  <div class="phead">5 &nbsp;· &nbsp;DATABASE &amp; DATA MIGRATIONS
+  <div class="phead">6 &nbsp;· &nbsp;DATABASE &amp; DATA MIGRATIONS
     <span class="sub">the part of a deployment that cannot be undone by redeploying the previous image — and the most common omission in a deployment guide</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
@@ -579,7 +650,7 @@
 
 <!-- ============ 6. ZERO DOWNTIME ============ -->
 <div class="panel c8">
-  <div class="phead">6 &nbsp;· &nbsp;ZERO-DOWNTIME MECHANICS <span class="sub">what makes a roll actually safe</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;ZERO-DOWNTIME MECHANICS <span class="sub">what makes a roll actually safe</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">A deployment strategy only delivers zero downtime if each instance can be
       removed and replaced without dropping work. That is a property of the <b>application</b>, not of the pipeline.</div>
@@ -610,7 +681,7 @@
 
 <!-- ============ 7. ROLLBACK ============ -->
 <div class="panel c5">
-  <div class="phead">7 &nbsp;· &nbsp;ROLLBACK &amp; RECOVERY <span class="sub">decided before, not during</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;ROLLBACK &amp; RECOVERY <span class="sub">decided before, not during</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>&ldquo;We can roll back&rdquo; is a claim about the whole change, not
       the code.</b> Write down, before deploying, exactly what reverting undoes and what it does not.</div>
@@ -643,7 +714,7 @@
 
 <!-- ============ 8. CONFIG ============ -->
 <div class="panel c6">
-  <div class="phead">8 &nbsp;· &nbsp;CONFIGURATION &amp; SECRETS <span class="sub">as risky as code</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;CONFIGURATION &amp; SECRETS <span class="sub">as risky as code</span></div>
   <div class="pbody">
     <div class="h3">Configuration</div>
     <ul>
@@ -673,7 +744,7 @@
 
 <!-- ============ 9. CONSIDERATIONS ============ -->
 <div class="panel c7 span2">
-  <div class="phead">9 &nbsp;· &nbsp;WHAT TO DECIDE PER SYSTEM <span class="sub">not every system needs every control — match the investment to the criticality tier</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;WHAT TO DECIDE PER SYSTEM <span class="sub">not every system needs every control — match the investment to the criticality tier</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -722,7 +793,7 @@
 
 <!-- ============ 10. ESTIMATION ============ -->
 <div class="panel c2">
-  <div class="phead">10 &nbsp;· &nbsp;RESOURCE ESTIMATION <span class="sub">start with a baseline</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;RESOURCE ESTIMATION <span class="sub">start with a baseline</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:110px">Factor</th><th>What to derive from it</th></tr></thead>
@@ -769,7 +840,7 @@ in-flight  L = 350 × 0.2          =  <span class="v">70 concurrent</span>
 
 <!-- ============ 11. HA/DR ============ -->
 <div class="panel c3">
-  <div class="phead">11 &nbsp;· &nbsp;HA, DR &amp; BACKUP <span class="sub">three different problems</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;HA, DR &amp; BACKUP <span class="sub">three different problems</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:78px"></th><th>Protects against</th><th>Mechanism</th></tr></thead>
@@ -819,7 +890,7 @@ in-flight  L = 350 × 0.2          =  <span class="v">70 concurrent</span>
 
 <!-- ============ 12. VULNERABILITIES ============ -->
 <div class="panel c5 span2">
-  <div class="phead">12 &nbsp;· &nbsp;VULNERABILITY &amp; PATCH MANAGEMENT <span class="sub">the process, and why CVSS severity alone is the wrong thing to queue work by</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;VULNERABILITY &amp; PATCH MANAGEMENT <span class="sub">the process, and why CVSS severity alone is the wrong thing to queue work by</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -904,7 +975,7 @@ in-flight  L = 350 × 0.2          =  <span class="v">70 concurrent</span>
 
 <!-- ============ 13. CHECKLIST ============ -->
 <div class="panel c7 span3">
-  <div class="phead">13 &nbsp;· &nbsp;DEPLOYMENT CHECKLIST <span class="sub">before · during · after — and the standing controls that make each deployment routine</span></div>
+  <div class="phead">14 &nbsp;· &nbsp;DEPLOYMENT CHECKLIST <span class="sub">before · during · after — and the standing controls that make each deployment routine</span></div>
   <div class="pbody">
     <div class="chk">
       <div>&#9744; <b>Criticality tier agreed</b>, with RTO/RPO and approval depth following from it</div>

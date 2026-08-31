@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Columnar Databases — Architecture, Storage, Optimization &amp; Use Cases</title>
 <style>
-  @page { size: 3400px 4718px; margin: 0; }
+  @page { size: 3400px 5364px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:4718px; background:#edeff6;
+  body { width:3400px; height:5364px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:4718px; padding:26px; display:grid;
+  .sheet { width:3400px; height:5334px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 832px 734px 801px 563px 489px 577px 398px;
+    grid-template-rows:118px 594px 832px 734px 801px 563px 489px 577px 398px;
     gap:22px; }
   .span2{grid-column:span 2} .span3{grid-column:1/-1}
 
@@ -62,9 +62,86 @@
     <span style="font-size:13.6px;color:#6d80b6;font-weight:500">file anatomy · encodings · data skipping · vectorized execution · the write path · what actually makes it fast</span></div>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT COLUMNAR MEANS, AND WHY IT IS FASTER
+    <span class="sub">start here — one layout change, and everything else on this sheet follows from it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">A columnar database stores <b>all values of one column together</b>
+        on disk, instead of storing each row's fields together. Same data, same schema, same SQL — a different physical
+        arrangement of bytes.</div>
+      <div class="code"><span class="c">// the same three rows, two ways</span>
+
+<span class="c">ROW layout — records contiguous</span>
+[1,2026-05-01,US,120][2,2026-05-01,IN,200][3,...]
+<span class="c">   one row  = one read</span>
+<span class="c">   one column = touch every record</span>
+
+<span class="c">COLUMNAR layout — columns contiguous</span>
+id      [1,2,3]
+date    [2026-05-01,2026-05-01,2026-05-01]
+country [US,IN,UK]
+amount  [120,200,150]
+<span class="c">   one column = one sequential read</span>
+<span class="c">   one row    = one read per column</span></div>
+      <div class="callout b"><b>That is the whole idea.</b> Everything else on this sheet — encodings, compression,
+        data skipping, vectorized execution, the awkward write path — is a consequence of that one change.</div>
+    </div>
+    <div>
+      <div class="h3">Why it is faster for analytics</div>
+      <div style="font-size:13.6px;line-height:1.48">An analytical query typically reads <b>a few columns across very many
+        rows</b>: <span class="mono">SELECT country, SUM(amount) FROM sales</span> over a 200-column table. Two things follow.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:132px">Property</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 · Read less</b></td><td>Only the columns named are touched. On a 200-column table, a three-column query reads roughly three columns' worth of bytes — the other 197 are never fetched.</td></tr>
+          <tr><td><b>2 · Compress harder</b></td><td>Adjacent values share a type and often a range, so encodings have structure to exploit. In a row layout an integer sits beside a timestamp beside a string, and there is little to compress.</td></tr>
+          <tr><td><b>3 · Skip more</b></td><td>Per-block statistics let whole chunks be eliminated before reading — but only if the data was written in a useful order.</td></tr>
+          <tr><td><b>4 · Vectorize</b></td><td>A batch of one column is contiguous memory of one type, which is exactly what SIMD and CPU caches handle well.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The cost is the mirror image.</b> Reconstructing one whole row means touching every
+        column's storage, and writing one row means rewriting files. Columnar buys analytical throughput by giving up cheap
+        single-row access — that trade is the entire category.</div>
+    </div>
+    <div>
+      <div class="h3">When to choose it</div>
+      <table>
+        <thead><tr><th style="width:120px">Columnar fits</th><th>Row store fits</th></tr></thead>
+        <tbody>
+          <tr><td>Scan many rows, few columns</td><td>Fetch few rows, many columns</td></tr>
+          <tr><td>Aggregation and reporting</td><td>Point lookup by key</td></tr>
+          <tr><td>Append-mostly, batch loaded</td><td>Frequent single-row insert and update</td></tr>
+          <tr><td>Wide, denormalised tables</td><td>Highly normalised, join-heavy models</td></tr>
+          <tr><td>Analytics, BI, time series, logs</td><td>Transactions, serving APIs</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Access pattern decides this, not data size.</b> A ten-million-row table queried with
+        wide scans belongs in a columnar engine; a ten-billion-row table queried only by primary key does not. Ask what the
+        queries look like before asking how big the data is.</div>
+      <div class="h3">The vocabulary</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>OLTP / OLAP</b></td><td>Transaction processing versus analytical processing — the workload split this whole distinction serves</td></tr>
+          <tr><td><b>File format</b></td><td>Parquet, ORC — columnar bytes at rest, engine-independent</td></tr>
+          <tr><td><b>Table format</b></td><td>Iceberg, Delta, Hudi — a metadata layer that makes a set of files behave like a table</td></tr>
+          <tr><td><b>Engine</b></td><td>ClickHouse, Snowflake, BigQuery, DuckDB — what actually executes the query</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The usual answer is both.</b> An OLTP database owns the writes and point lookups;
+        changes flow into a columnar store that owns the analytics. Serving both from one engine is the decision most
+        often regretted.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. ARCHITECTURE ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
     <span class="sub">query path above · physical file anatomy in the middle · the write path below — which is the half that decides whether any of it stays fast</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 758" width="3320" height="758">
@@ -342,7 +419,7 @@
 
 <!-- ============ 2. FILE LAYOUT DETAIL ============ -->
 <div class="panel c4 span2">
-  <div class="phead">2 &nbsp;· &nbsp;INSIDE THE FILE <span class="sub">the four levels, what statistics live where, and which knob to turn when</span></div>
+  <div class="phead">3 &nbsp;· &nbsp;INSIDE THE FILE <span class="sub">the four levels, what statistics live where, and which knob to turn when</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -416,7 +493,7 @@
 
 <!-- ============ 3. ROW vs COLUMN ============ -->
 <div class="panel c1">
-  <div class="phead">3 &nbsp;· &nbsp;ROW vs COLUMNAR <span class="sub">the same data, laid out differently</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;ROW vs COLUMNAR <span class="sub">the same data, laid out differently</span></div>
   <div class="pbody">
     <div class="code" style="margin-top:0"><span class="c">// logical table</span>
  id | date       | country | amount
@@ -459,7 +536,7 @@ amount:  <span class="r">[120,200,150]</span>                       <span class=
 
 <!-- ============ 4. DATA SKIPPING ============ -->
 <div class="panel c5 span2">
-  <div class="phead">4 &nbsp;· &nbsp;DATA SKIPPING AND SORT ORDER <span class="sub">the largest single lever on columnar performance, and the one most often left untouched</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;DATA SKIPPING AND SORT ORDER <span class="sub">the largest single lever on columnar performance, and the one most often left untouched</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:18px;height:100%">
     <div>
@@ -536,7 +613,7 @@ RG3  min=2026-05-21  max=2026-05-31   <span class="k">→ skip</span>
 
 <!-- ============ 5. ENCODINGS ============ -->
 <div class="panel c2">
-  <div class="phead">5 &nbsp;· &nbsp;ENCODINGS <span class="sub">type-aware, applied per column</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;ENCODINGS <span class="sub">type-aware, applied per column</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:118px">Encoding</th><th>How it works, and when it pays</th></tr></thead>
@@ -576,7 +653,7 @@ sorted:     [<span class="k">0</span>×250k][<span class="k">1</span>×250k][<sp
 
 <!-- ============ 6. COMPRESSION ============ -->
 <div class="panel c8">
-  <div class="phead">6 &nbsp;· &nbsp;COMPRESSION CODECS <span class="sub">a separate stage</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;COMPRESSION CODECS <span class="sub">a separate stage</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>Encoding and compression are two different things, and listing them
       together is the most common conceptual error about columnar storage.</b> Encoding is <b>type-aware</b>: it understands that
@@ -610,7 +687,7 @@ page written to disk
 
 <!-- ============ 7. VECTORIZED EXECUTION ============ -->
 <div class="panel c3">
-  <div class="phead">7 &nbsp;· &nbsp;VECTORIZED EXECUTION <span class="sub">why the CPU keeps up</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;VECTORIZED EXECUTION <span class="sub">why the CPU keeps up</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">A classic engine processes one row at a time through a chain of operators —
       a virtual function call per row per operator. On a billion rows the interpretation overhead dwarfs the actual work. A
@@ -642,7 +719,7 @@ page written to disk
 
 <!-- ============ 8. PARTITIONING ============ -->
 <div class="panel c6">
-  <div class="phead">8 &nbsp;· &nbsp;PARTITIONING &amp; FILE LAYOUT <span class="sub">easy to get badly wrong</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;PARTITIONING &amp; FILE LAYOUT <span class="sub">easy to get badly wrong</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">Partitioning splits a table into directories by column value so whole
       directories can be eliminated. It is the coarsest and cheapest pruning available — and the most frequently over-applied.</div>
@@ -670,7 +747,7 @@ page written to disk
 
 <!-- ============ 9. USE CASES ============ -->
 <div class="panel c7 span2">
-  <div class="phead">9 &nbsp;· &nbsp;WHEN TO USE ONE, AND WHEN NOT TO <span class="sub">the boundary is access pattern, not data volume — small analytical tables still belong here</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;WHEN TO USE ONE, AND WHEN NOT TO <span class="sub">the boundary is access pattern, not data volume — small analytical tables still belong here</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -720,7 +797,7 @@ page written to disk
 
 <!-- ============ 10. LANDSCAPE ============ -->
 <div class="panel c2">
-  <div class="phead">10 &nbsp;· &nbsp;THE LANDSCAPE <span class="sub">four different things, often confused</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;THE LANDSCAPE <span class="sub">four different things, often confused</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:126px">Category</th><th>What it is · examples</th></tr></thead>
@@ -749,7 +826,7 @@ page written to disk
 
 <!-- ============ 11. QUERY FLOW ============ -->
 <div class="panel c1">
-  <div class="phead">11 &nbsp;· &nbsp;A QUERY, END TO END <span class="sub">where the bytes go</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;A QUERY, END TO END <span class="sub">where the bytes go</span></div>
   <div class="pbody">
     <div class="code" style="margin-top:0"><span class="k">SELECT</span> country, <span class="k">SUM</span>(amount)
 <span class="k">FROM</span>   sales
@@ -782,7 +859,7 @@ page written to disk
 
 <!-- ============ 12. TRAPS ============ -->
 <div class="panel c5 span2">
-  <div class="phead">12 &nbsp;· &nbsp;TRAPS THAT COST THE MOST <span class="sub">in roughly the order they are encountered — each one makes the system slow or expensive while looking correctly configured</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;TRAPS THAT COST THE MOST <span class="sub">in roughly the order they are encountered — each one makes the system slow or expensive while looking correctly configured</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -822,7 +899,7 @@ page written to disk
 
 <!-- ============ 13. CHECKLIST ============ -->
 <div class="panel c7 span3">
-  <div class="phead">13 &nbsp;· &nbsp;DESIGN &amp; OPERATIONS CHECKLIST <span class="sub">confirm before a columnar table carries a workload anyone depends on</span></div>
+  <div class="phead">14 &nbsp;· &nbsp;DESIGN &amp; OPERATIONS CHECKLIST <span class="sub">confirm before a columnar table carries a workload anyone depends on</span></div>
   <div class="pbody">
     <div class="chk">
       <div>&#9744; <b>Access pattern verified as scan-and-aggregate</b>, not point lookup</div>

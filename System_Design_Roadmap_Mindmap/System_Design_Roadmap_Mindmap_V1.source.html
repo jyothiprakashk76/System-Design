@@ -1,9 +1,9 @@
 <meta charset="utf-8">
 <title>System Design — Learning Roadmap</title>
 <style>
-  @page { size: 3400px 3362px; margin: 0; }
+  @page { size: 3400px 3859px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:3362px; background:#edeff6;
+  body { width:3400px; height:3859px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
   .sheet { width:3400px; padding:26px; }
@@ -45,6 +45,10 @@
   .d .ch{background:#be123c} .e .ch{background:#7c2d92} .f .ch{background:#0369a1}
   .x .ch{background:#334155} .y .ch{background:#155e75}
   .mono{font-family:Menlo,Consolas,monospace;font-size:11.6px}
+  table{border-collapse:collapse;width:100%;font-size:12.4px;margin-top:2px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:11.7px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top;line-height:1.4}
+  tbody tr:nth-child(even){background:#f7f8fd}
   svg{display:block}
 </style>
 
@@ -57,6 +61,79 @@
 </div>
 
 <!-- ================= THE MAP ================= -->
+<div class="map">
+  <div class="maphead">WHAT SYSTEM DESIGN IS, AND WHY LEARN IT<span class="s">start here — the definition, why it matters, and how to use this sheet</span></div>
+  <div style="padding:14px 18px">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+    <div>
+      <div class="cb"><div class="g">The definition</div>
+      <p style="font-size:13.6px;line-height:1.5"><b>System design</b> is deciding how the parts of a software system fit
+        together so that it meets its requirements <b>at the scale, latency and reliability it actually needs</b> — and
+        keeps meeting them as those change.</p>
+      <p style="font-size:13.6px;line-height:1.5">It is the layer above writing code and below business strategy: what
+        components exist, how they communicate, where state lives, what happens when a part fails, and what it costs.</p>
+      <div class="note"><b>The distinguishing skill is not knowing components.</b> It is choosing between them under
+        constraints you were given, and being able to say what each choice costs. Anyone can name a cache; the work is
+        knowing when adding one makes things worse.</div>
+      <div class="g">What a design has to answer</div>
+      <ul>
+        <li>What are the functional and non-functional requirements, stated in numbers?</li>
+        <li>What is the data model, and what are the access patterns?</li>
+        <li>Where is the bottleneck, and what happens when it is reached?</li>
+        <li>What fails, how is it detected, and what does the user see?</li>
+        <li>What does it cost, and how does that scale?</li>
+        <li>What would you revisit, and on what signal?</li>
+      </ul>
+      </div>
+    </div>
+    <div>
+      <div class="cb"><div class="g">Why learn it</div>
+      <ul>
+        <li><b>It is what seniority is measured by.</b> Beyond a certain level, the question stops being &ldquo;can you
+          implement this?&rdquo; and becomes &ldquo;should we build it this way?&rdquo;</li>
+        <li><b>The expensive mistakes are architectural.</b> A slow function is an afternoon; the wrong partition key, the
+          wrong consistency model or the wrong service boundary is a year.</li>
+        <li><b>It is the common language</b> between engineering, product and operations for discussing trade-offs.</li>
+        <li><b>It transfers.</b> Frameworks and cloud services change constantly; queueing, consistency, caching and
+          failure behaviour do not.</li>
+        <li><b>It is the interview.</b> For most senior roles the system design round carries more weight than the coding one.</li>
+      </ul>
+      <div class="note r"><b>The most common way people study this badly</b> is memorising reference architectures for
+        well-known products. Interviewers and real systems both change one constraint and watch what happens. Learn the
+        reasoning, and the architectures follow; learn the architectures, and nothing follows.</div>
+      <div class="g">The habit worth building first</div>
+      <p style="font-size:13.6px;line-height:1.5">For every technique on this sheet, learn it as a <b>pair</b>: what it
+        buys and what it costs. Sharding buys write throughput and costs joins and transactions. Caching buys latency and
+        costs correctness. Microservices buy independent deployment and cost you a distributed system to debug.</p>
+      </div>
+    </div>
+    <div>
+      <div class="cb"><div class="g">What this sheet is, and is not</div>
+      <table>
+        <thead><tr><th style="width:170px">It is</th><th>It is not</th></tr></thead>
+        <tbody>
+          <tr><td>A map of the territory, with what to learn in what order</td><td>A tutorial — each branch is a subject, not a lesson</td></tr>
+          <tr><td>A checklist for finding your own gaps</td><td>A list of answers to memorise</td></tr>
+          <tr><td>Vendor-neutral concepts</td><td>Tied to one cloud or stack</td></tr>
+          <tr><td>Ordered so each theme builds on the last</td><td>A strict sequence — themes B to F overlap in practice</td></tr>
+        </tbody>
+      </table>
+      <div class="g">How long this takes</div>
+      <p style="font-size:13.6px;line-height:1.5">Theme A is a few weeks of focused study. The rest is measured in years,
+        because most of it only lands once you have operated something that failed in that particular way. That is normal
+        and not a reason to defer starting.</p>
+      <div class="note g"><b>Where to begin if you are unsure.</b> Take one system you already work on. Draw it. Then
+        answer the six questions on the left about it. The branches where you cannot answer are your reading list, in
+        priority order — which is more useful than any generic sequence.</div>
+      <div class="note p"><b>A note on the interview framing.</b> These topics are heavily associated with hiring, and
+        that is a legitimate reason to learn them. But the reason they are asked is that they predict the work — designing
+        under constraint, and knowing what you gave up.</div>
+      </div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <div class="map">
   <div class="maphead">THE MAP
     <span class="s">learn left to right within a theme; themes can be taken in any order once the foundations are in place</span></div>

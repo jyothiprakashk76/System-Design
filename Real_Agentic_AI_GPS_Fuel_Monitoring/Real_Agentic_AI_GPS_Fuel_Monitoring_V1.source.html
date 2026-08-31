@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Real Agentic AI Example — GPS &amp; Fuel Monitoring Customer Service</title>
 <style>
-  @page { size: 3400px 5238px; margin: 0; }
+  @page { size: 3400px 5804px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:5238px; background:#edeff6;
+  body { width:3400px; height:5804px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:5238px; padding:26px; display:grid;
+  .sheet { width:3400px; height:5774px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 832px 664px 819px 593px 819px 719px 468px;
+    grid-template-rows:118px 514px 832px 664px 819px 593px 819px 719px 468px;
     gap:22px; }
   .span2{grid-column:span 2} .span3{grid-column:1/-1}
 
@@ -63,9 +63,81 @@
   <h1>REAL AGENTIC AI EXAMPLE — GPS &amp; FUEL MONITORING CUSTOMER SERVICE<span class="v">V1</span></h1>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT THIS SYSTEM IS, AND WHY TELEMATICS SUPPORT IS UNUSUAL
+    <span class="sub">start here — the domain, the questions customers actually ask, and why they are harder than they look</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1.05fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The domain in one paragraph</div>
+      <div style="font-size:13.6px;line-height:1.48">A GPS and fuel-monitoring platform fits tracking devices to vehicles.
+        Each unit reports position, ignition, battery voltage and fuel level over a cellular link, continuously. Fleet
+        operators use that to know where vehicles are, how they are driven, and whether fuel is being lost.</div>
+      <div class="h3">What an agentic support system is</div>
+      <div style="font-size:13.6px;line-height:1.48">A language model in a <b>loop</b> with <b>tools</b>: it interprets a
+        customer's question, calls tools to fetch what it needs, and explains the result — rather than a human opening four
+        consoles to answer the same question for the fortieth time that day.</div>
+      <div class="callout b"><b>Why support is the right first use case.</b> The questions repeat, the answers are
+        already in your data, and the volume is high enough that reducing it matters. Most tickets are diagnostic, not novel.</div>
+      <div class="h3">The questions that actually arrive</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>&ldquo;Vehicle X is offline&rdquo;</b></td><td>Highest volume by far. One word, at least six unrelated root causes</td></tr>
+          <tr><td><b>&ldquo;Was fuel stolen?&rdquo;</b></td><td>An accusation. Answering it wrongly is expensive either way</td></tr>
+          <tr><td><b>&ldquo;Where was it at 3pm?&rdquo;</b></td><td>Needs history, and raises who is entitled to see it</td></tr>
+          <tr><td><b>&ldquo;Why is mileage wrong?&rdquo;</b></td><td>Usually a source question — GPS distance versus CAN odometer</td></tr>
+          <tr><td><b>&ldquo;The alert is wrong&rdquo;</b></td><td>Threshold tuning, or a genuinely miscalibrated sensor</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Why this is harder than a typical support agent</div>
+      <table>
+        <thead><tr><th style="width:150px">Property</th><th>Consequence for the design</th></tr></thead>
+        <tbody>
+          <tr><td><b>Answers come from a stream, not a record</b></td><td>&ldquo;Why did it go offline yesterday?&rdquo; needs a time window, not a current reading. A request-response lookup cannot answer it at all</td></tr>
+          <tr><td><b>Raw telemetry is uninterpretable alone</b></td><td>12.1 volts is unremarkable on a 12 V system and a serious fault on a 24 V one. Numbers without their reference frame produce confident wrong answers</td></tr>
+          <tr><td><b>Customers own fleets, not devices</b></td><td>&ldquo;My truck&rdquo; against forty vehicles is ambiguous, and guessing means answering about the wrong asset</td></tr>
+          <tr><td><b>Some answers are accusations</b></td><td>Fuel theft implicates a named driver. This must be computed and evidenced, never inferred by a model</td></tr>
+          <tr><td><b>Some actions are safety-critical</b></td><td>Immobilising a vehicle is not a support action. It needs interlocks and a named human</td></tr>
+          <tr><td><b>Location is personal data</b></td><td>A driver's movement history is regulated, and role decides who may see whose</td></tr>
+          <tr><td><b>Devices are third-party and flaky</b></td><td>Mixed fleets, several vendors, differing fields and intervals, and outages you do not control</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The single most important design rule here.</b> The agent <b>interprets</b>; it never
+        <b>calculates</b>. Drain detection, consumption and threshold logic are deterministic problems with known edge cases.
+        A model asked to infer them from raw readings will be fluent and wrong.</div>
+    </div>
+    <div>
+      <div class="h3">What the agent is, and is not</div>
+      <table>
+        <thead><tr><th style="width:112px">It is</th><th>It is not</th></tr></thead>
+        <tbody>
+          <tr><td>An explanation layer over a data platform</td><td>The analytics itself</td></tr>
+          <tr><td>A router to the right evidence</td><td>A replacement for the pipeline that produces the evidence</td></tr>
+          <tr><td>A way to answer at 2am</td><td>An authority for irreversible actions</td></tr>
+          <tr><td>A first responder that escalates well</td><td>A substitute for a technician visit</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The consequence worth internalising early.</b> If the pipeline cannot tell a refuel
+        from a drain, no amount of prompt engineering lets the agent do it — it will simply express the uncertainty fluently.
+        Build the data platform first; the agent is then a small component with a well-defined job.</div>
+      <div class="h3">The privacy pattern used throughout</div>
+      <div style="font-size:13.6px;line-height:1.48">The model never receives a device id, VIN, phone number or account
+        number. It reasons over an opaque <b>handle</b> that the backend resolves — so nothing identifying reaches the model
+        provider, the prompt log, or a trace exporter.</div>
+      <div class="callout"><b>But note the limit, because it is the most common misreading.</b> Hiding the identifier
+        prevents <i>disclosure</i>. It does nothing about <i>action</i> — the handle still authorises tool calls. Bounding
+        what those tools may do is a separate control, and panel 3 covers it.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. REFERENCE ARCHITECTURE ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — PRIVACY-PRESERVING TELEMATICS SUPPORT AGENT
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — PRIVACY-PRESERVING TELEMATICS SUPPORT AGENT
     <span class="sub">support request path on top · control plane in the middle · telemetry ingestion below</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 758" width="3320" height="758">
@@ -418,7 +490,7 @@
 
 <!-- ============ 2. END TO END FLOW ============ -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;END-TO-END FLOW
+  <div class="phead">3 &nbsp;· &nbsp;END-TO-END FLOW
     <span class="sub">eighteen steps from customer question to audited answer · every one earns its place</span></div>
   <div class="pbody">
     <table>
@@ -449,7 +521,7 @@
 
 <!-- ============ 3. CONTEXT HANDLE ============ -->
 <div class="panel c5">
-  <div class="phead">3 &nbsp;· &nbsp;THE CONTEXT-HANDLE PATTERN <span class="sub">the good idea, and its limit</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;THE CONTEXT-HANDLE PATTERN <span class="sub">the good idea, and its limit</span></div>
   <div class="pbody">
     <div class="callout g" style="margin-top:0"><b>The pattern in one line.</b> The model reasons over an opaque handle instead of a device id, VIN, phone number
       or account number. Everything sensitive stays behind the backend, and the handle is the only thing that crosses.</div>
@@ -489,7 +561,7 @@
 
 <!-- ============ 4. AUTHORIZATION ============ -->
 <div class="panel c3">
-  <div class="phead">4 &nbsp;· &nbsp;WHO MAY DO WHAT <span class="sub">the confused deputy</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;WHO MAY DO WHAT <span class="sub">the confused deputy</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>The classic failure.</b> A trusted component holds broad authority and acts on
       instructions from a less trusted source. Here the MCP server is the deputy, it holds full backend access, and the instruction
@@ -534,7 +606,7 @@
 
 <!-- ============ 5. MCP TOOL CONTRACTS ============ -->
 <div class="panel c4 span2">
-  <div class="phead">5 &nbsp;· &nbsp;MCP TOOL CONTRACTS FOR TELEMATICS <span class="sub">the payload that looks safe, why it produces wrong answers, and the contract that works</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;MCP TOOL CONTRACTS FOR TELEMATICS <span class="sub">the payload that looks safe, why it produces wrong answers, and the contract that works</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -620,7 +692,7 @@
 
 <!-- ============ 6. DOMAIN SEMANTICS ============ -->
 <div class="panel c8">
-  <div class="phead">6 &nbsp;· &nbsp;DOMAIN SEMANTICS <span class="sub">what the model must be told</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;DOMAIN SEMANTICS <span class="sub">what the model must be told</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">A model has broad general knowledge and no knowledge of <i>this</i> fleet, <i>this</i>
       sensor or <i>this</i> installation. Raw telemetry is exactly the kind of input it will interpret confidently and incorrectly.</div>
@@ -649,7 +721,7 @@
 
 <!-- ============ 7. OFFLINE DIAGNOSIS ============ -->
 <div class="panel c6">
-  <div class="phead">7 &nbsp;· &nbsp;&ldquo;THE DEVICE IS OFFLINE&rdquo; <span class="sub">the highest-volume query</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;&ldquo;THE DEVICE IS OFFLINE&rdquo; <span class="sub">the highest-volume query</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">One customer word, several unrelated root causes, each with a different owner and
       a different resolution. This is the intent worth engineering hardest — and it is a <b>deterministic decision tree</b> the pipeline
@@ -681,7 +753,7 @@
 
 <!-- ============ 8. FUEL ANALYTICS ============ -->
 <div class="panel c2">
-  <div class="phead">8 &nbsp;· &nbsp;FUEL ANALYTICS <span class="sub">where confident wrong answers cost money</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;FUEL ANALYTICS <span class="sub">where confident wrong answers cost money</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>&ldquo;Was fuel stolen last night?&rdquo; is an accusation.</b> Answering it wrongly
       either lets a theft pass or points at an innocent driver. This is the single highest-stakes question in the domain, and it must
@@ -715,7 +787,7 @@
 
 <!-- ============ 9. GUARDRAILS ============ -->
 <div class="panel c5 span2">
-  <div class="phead">9 &nbsp;· &nbsp;INJECTION, GUARDRAILS AND SAFETY-CRITICAL ACTIONS <span class="sub">OWASP LLM01 is the top risk for LLM applications, and the one with no complete fix</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;INJECTION, GUARDRAILS AND SAFETY-CRITICAL ACTIONS <span class="sub">OWASP LLM01 is the top risk for LLM applications, and the one with no complete fix</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:18px;height:100%">
     <div>
@@ -789,7 +861,7 @@
 
 <!-- ============ 10. EVALUATION ============ -->
 <div class="panel c7">
-  <div class="phead">10 &nbsp;· &nbsp;EVALUATION <span class="sub">a release gate, not a dashboard</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;EVALUATION <span class="sub">a release gate, not a dashboard</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>Why it is not optional.</b> Editing one line of a prompt can change
       behaviour across every intent, and nothing fails. Without a gate, every prompt edit is an unreviewed production change to a
@@ -834,7 +906,7 @@
 
 <!-- ============ 11. FAILURE HANDLING ============ -->
 <div class="panel c6">
-  <div class="phead">11 &nbsp;· &nbsp;FAILURE HANDLING <span class="sub">everything here is someone else's uptime</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;FAILURE HANDLING <span class="sub">everything here is someone else's uptime</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:132px">Failure</th><th>Behaviour that is correct</th></tr></thead>
@@ -872,7 +944,7 @@
 
 <!-- ============ 12. REVIEW / GAPS ============ -->
 <div class="panel c5 span2">
-  <div class="phead">12 &nbsp;· &nbsp;DESIGN TRAPS AND THE CONTROLS THAT CLOSE THEM <span class="sub">eighteen ways an architecture like this goes wrong in production, and what each one needs</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;DESIGN TRAPS AND THE CONTROLS THAT CLOSE THEM <span class="sub">eighteen ways an architecture like this goes wrong in production, and what each one needs</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -916,7 +988,7 @@
 
 <!-- ============ 13. CHECKLIST ============ -->
 <div class="panel c7 span3">
-  <div class="phead">13 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before this agent faces a real fleet operator and a real vehicle</span></div>
+  <div class="phead">14 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before this agent faces a real fleet operator and a real vehicle</span></div>
   <div class="pbody">
     <div class="chk">
       <div>&#9744; <b>Handle bound</b> to tenant, user, role, asset set, tool scopes and a TTL</div>

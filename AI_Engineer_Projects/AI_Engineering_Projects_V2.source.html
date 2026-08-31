@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>AI Engineering Projects by Jyothi Prakash Kalmanje</title>
 <style>
-  @page { size: 3400px 3385px; margin: 0; }
+  @page { size: 3400px 3953px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:3385px; background:#edeff6;
+  body { width:3400px; height:3953px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:3385px; padding:26px; display:grid;
+  .sheet { width:3400px; height:3923px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 560px 850px 745px 610px 340px;
+    grid-template-rows:118px 538px 550px 845px 740px 612px 336px;
     gap:22px; }
   .span2{grid-column:1/span 2} .span3{grid-column:1/span 3}
 
@@ -65,6 +65,84 @@
   <h1>AI ENGINEERING PROJECTS <span class="by">by Jyothi Prakash Kalmanje</span><span class="v">V2</span></h1>
   <div class="tag">Architect's build guide — specifications, performance models, acceptance criteria<br>
     <span style="font-size:15px;color:#6f7cb0">Every tuning range is marked. Nothing is asserted that cannot be derived or cited.</span></div>
+</div>
+
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">WHAT AI ENGINEERING IS, AND WHY A PORTFOLIO IS THE PROOF
+    <span class="sub">start here — the discipline, how it differs from adjacent ones, and what a reviewer is actually looking for</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1.05fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">AI engineering is <b>building reliable software on top of models you
+        did not train</b>. The model is a component — probabilistic, externally versioned, expensive per call — and the work
+        is making a dependable system out of it.</div>
+      <div class="h3">How it differs from its neighbours</div>
+      <table>
+        <thead><tr><th style="width:126px">Discipline</th><th>Central question</th></tr></thead>
+        <tbody>
+          <tr><td><b>ML research</b></td><td>Can a model learn this at all? Produces architectures and papers.</td></tr>
+          <tr><td><b>ML engineering</b></td><td>How do we train, evaluate and serve <i>our own</i> model at scale? Features, pipelines, drift.</td></tr>
+          <tr><td><b>AI engineering</b></td><td>How do we build a product on an existing model, and know when it is wrong? Retrieval, tools, guardrails, evaluation, cost.</td></tr>
+          <tr><td><b>Software engineering</b></td><td>Everything the above still needs: APIs, state, deployment, observability.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>The distinction that matters in interviews.</b> You are not expected to invent
+        architectures. You are expected to make a non-deterministic component behave predictably enough to put in front of
+        users — and to prove it with numbers rather than demos.</div>
+      <div class="h3">What the work actually is</div>
+      <ul>
+        <li><b>Retrieval and context</b> — getting the right information into the prompt</li>
+        <li><b>Orchestration</b> — tools, loops, and when to stop</li>
+        <li><b>Evaluation</b> — the gate that makes iteration safe</li>
+        <li><b>Guardrails and security</b> — injection, leakage, excessive agency</li>
+        <li><b>Cost and latency</b> — engineering constraints, not afterthoughts</li>
+        <li><b>Operations</b> — tracing, versioning, rollback, on-call</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Why a portfolio, and not a certificate</div>
+      <div style="font-size:13.6px;line-height:1.48">The field moves faster than curricula, and almost everyone can now
+        produce a working demo. That makes demos worthless as evidence — and makes the parts nobody demos the only useful signal.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:158px">What everyone has</th><th>What almost nobody has</th></tr></thead>
+        <tbody>
+          <tr><td>A notebook that answers questions over a PDF</td><td>An evaluation set, a baseline, and a measured improvement over it</td></tr>
+          <tr><td>A screenshot of a good answer</td><td>The failure cases, documented, with what was done about them</td></tr>
+          <tr><td>&ldquo;It uses RAG&rdquo;</td><td>Retrieval recall measured separately from generation faithfulness</td></tr>
+          <tr><td>A deployed URL</td><td>Traces, latency percentiles and cost per request</td></tr>
+          <tr><td>A tutorial's architecture</td><td>A decision record explaining what was rejected, and why</td></tr>
+          <tr><td>A repository</td><td>A repository someone else can run in one command</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The uncomfortable part.</b> A reviewer spends a few minutes on a repository. They are
+        not reading your model code — they are looking for whether you know how to tell if it works. Evaluation is the
+        fastest signal of seniority in this field, and its absence is the fastest signal of the opposite.</div>
+    </div>
+    <div>
+      <div class="h3">How to use the projects on this sheet</div>
+      <ul>
+        <li><b>Depth over breadth.</b> Two projects taken to production quality beat six demos, every time.</li>
+        <li><b>Each one targets a distinct skill</b> — retrieval, self-hosting, observability, training, real-time. They are not variations of the same build.</li>
+        <li><b>Build them in order.</b> Later projects assume the evaluation and observability habits established earlier.</li>
+        <li><b>Measure before and after every change.</b> An improvement you cannot demonstrate is a preference.</li>
+        <li><b>Write down what failed.</b> The failure log is the most convincing document in the repository.</li>
+      </ul>
+      <div class="callout g"><b>Evaluation is the spine.</b> It is the difference between changing a prompt and
+        <i>improving</i> a system. Every project here is built around it, and it is the section reviewers reach for first.</div>
+      <div class="h3">What this is not</div>
+      <ul>
+        <li><b>Not a course.</b> No sequence of videos substitutes for shipping something and watching it fail.</li>
+        <li><b>Not model training.</b> One project touches fine-tuning; the discipline is mostly about systems around models.</li>
+        <li><b>Not framework knowledge.</b> Frameworks change yearly; retrieval quality, evaluation and cost control do not.</li>
+      </ul>
+      <div class="callout"><b>The test to apply to your own work.</b> Can you state, with a number, how good your
+        system is — and how you would know if a change made it worse? If not, that is the next thing to build, whatever else
+        is on the roadmap.</div>
+    </div>
+   </div>
+  </div>
 </div>
 
 <!-- ===== PORTFOLIO ARCHITECTURE ===== -->

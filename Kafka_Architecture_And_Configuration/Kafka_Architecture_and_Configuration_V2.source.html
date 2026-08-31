@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Kafka Architecture &amp; Configuration — by Jyothi Prakash Kalmanje</title>
 <style>
-  @page { size: 3400px 5760px; margin: 0; }
+  @page { size: 3400px 6448px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:5760px; background:#edeff6;
+  body { width:3400px; height:6448px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:5760px; padding:26px; display:grid;
+  .sheet { width:3400px; height:6418px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 785px 706px 645px 505px 525px 545px 670px 665px 346px;
+    grid-template-rows:118px 693px 783px 709px 620px 503px 524px 543px 672px 621px 360px;
     gap:22px; }
   .span2{grid-column:1/span 2} .span3{grid-column:1/span 3}
 
@@ -72,9 +72,90 @@
     KRaft is the production control plane from 3.3; ZooKeeper deprecated from 3.5, removed in 4.0. Verify against your broker version.</span></div>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT KAFKA IS, AND WHY IT EXISTS
+    <span class="sub">start here — the problem it was built for, before the configuration</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">Kafka is a <b>distributed, append-only, replicated commit log</b>.
+        Producers append records to the end of a log; consumers read forward from a position they choose and remember.
+        Nothing is removed when it is read.</div>
+      <div class="callout b"><b>The one distinction that matters:</b> a <b>queue</b> delivers a message, gets an
+        acknowledgement, and <b>deletes it</b>. A <b>log</b> appends records and <b>keeps them</b> for a retention period,
+        while each consumer tracks its own offset. Almost every design mistake with Kafka comes from treating it as a queue.</div>
+      <div class="h3">What follows from being a log</div>
+      <ul>
+        <li><b>Many independent consumers</b> read the same records without competing — each has its own offset.</li>
+        <li><b>Replay is ordinary.</b> Reset an offset and reprocess history; you are not recovering a deleted message.</li>
+        <li><b>Order is per partition</b>, never across a topic. This is the constraint everything else is designed around.</li>
+        <li><b>Consumers can be slow</b> or offline without blocking producers — the log is the buffer.</li>
+      </ul>
+      <div class="h3">Why it is fast</div>
+      <ul>
+        <li><b>Sequential writes</b> to an append-only file, not random updates.</li>
+        <li><b>Batching and compression</b> across many records rather than per message.</li>
+        <li><b>Consumers pull</b>, so a slow consumer never overwhelms itself.</li>
+        <li><b>Partitions parallelise</b> — throughput scales by adding partitions and consumers together.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">The problem it solves</div>
+      <div style="font-size:13.6px;line-height:1.48">Before a log, systems integrated point to point. Every new consumer of
+        an event meant a new connection into the producer, and each producer carried the delivery concerns of everyone
+        downstream.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:170px">Without a log</th><th>With a log</th></tr></thead>
+        <tbody>
+          <tr><td><b>N&times;M integrations</b> — every producer wired to every consumer</td><td>Producers write once; any number of consumers subscribe independently</td></tr>
+          <tr><td><b>Producer knows its consumers</b>, and changes when they change</td><td>Producers publish facts and do not know who reads them</td></tr>
+          <tr><td><b>A slow consumer applies backpressure</b> to the producer, or drops data</td><td>The log absorbs the difference; the consumer catches up later</td></tr>
+          <tr><td><b>No replay</b> — a bug means the data is gone</td><td>Reset the offset and reprocess from retained history</td></tr>
+          <tr><td><b>A new consumer needs a backfill project</b></td><td>A new consumer starts at the beginning of retention</td></tr>
+          <tr><td><b>Bursts must be handled live</b></td><td>Bursts are written to disk and drained at a sustainable rate</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Kafka is infrastructure for decoupling, not just messaging.</b> The durability and replay
+        are what let teams evolve producers and consumers on separate schedules — which is usually the real reason it is adopted.</div>
+    </div>
+    <div>
+      <div class="h3">The vocabulary, in one place</div>
+      <table>
+        <tbody>
+          <tr><td style="width:108px"><b>Topic</b></td><td>A named stream of records</td></tr>
+          <tr><td><b>Partition</b></td><td>An ordered, append-only shard of a topic. The unit of parallelism <i>and</i> of ordering</td></tr>
+          <tr><td><b>Offset</b></td><td>A record's position in a partition. Consumers store it; the broker does not track per-consumer state</td></tr>
+          <tr><td><b>Producer</b></td><td>Appends records, choosing a partition by key</td></tr>
+          <tr><td><b>Consumer group</b></td><td>Consumers sharing the work of a topic; each partition goes to exactly one member</td></tr>
+          <tr><td><b>Broker</b></td><td>A server holding partitions</td></tr>
+          <tr><td><b>Replica / ISR</b></td><td>Copies of a partition; the in-sync set is what durability is defined against</td></tr>
+          <tr><td><b>Retention</b></td><td>How long records are kept — by time, size, or compaction to the latest value per key</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">When it fits, and when it does not</div>
+      <table>
+        <thead><tr><th style="width:100px">Use it for</th><th>Use something else for</th></tr></thead>
+        <tbody>
+          <tr><td>Event streaming and integration between services</td><td><b>Task queues</b> with per-message ack and retry — a queue is simpler</td></tr>
+          <tr><td>Activity, metrics and log pipelines</td><td><b>Request/reply</b> — use RPC, not a log</td></tr>
+          <tr><td>Change data capture and replication</td><td><b>Low-volume messaging</b> — the operational cost is not repaid</td></tr>
+          <tr><td>Stream processing and materialised views</td><td><b>Strict global ordering</b> — it does not exist across partitions</td></tr>
+          <tr><td>Event sourcing and audit trails</td><td><b>Per-message priority or delay</b> — not what a log does</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Kafka is not free to run.</b> Brokers, storage, partition planning, consumer lag
+        monitoring and upgrades are ongoing work. Adopt it when decoupling, replay or throughput genuinely justify that —
+        not because it is the default answer to &ldquo;we need messaging&rdquo;.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ CLUSTER ARCHITECTURE ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;CLUSTER ARCHITECTURE
+  <div class="phead">2 &nbsp;· &nbsp;CLUSTER ARCHITECTURE
     <span class="sub">brokers, the controller quorum, partitions and the internal topics that make it work</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 710" width="3320" height="710">
@@ -236,7 +317,7 @@
 
 <!-- ============ THE LOG ============ -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;THE LOG — STORAGE MODEL
+  <div class="phead">3 &nbsp;· &nbsp;THE LOG — STORAGE MODEL
     <span class="sub">topic → partition → segment → record batch</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 2196 600" width="2196" height="600">
@@ -321,7 +402,7 @@
 
 <!-- ============ REPLICATION ============ -->
 <div class="panel c2">
-  <div class="phead">3 &nbsp;· &nbsp;REPLICATION &amp; ISR <span class="sub">how durability is actually achieved</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;REPLICATION &amp; ISR <span class="sub">how durability is actually achieved</span></div>
   <div class="pbody">
     <div class="h3">The mechanism</div>
     <ul>
@@ -372,7 +453,7 @@
 
 <!-- ============ WRITE / READ PATH ============ -->
 <div class="panel c3 span2">
-  <div class="phead">4 &nbsp;· &nbsp;WRITE PATH &amp; READ PATH
+  <div class="phead">5 &nbsp;· &nbsp;WRITE PATH &amp; READ PATH
     <span class="sub">what actually happens on send() and poll()</span></div>
   <div class="pbody">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%">
@@ -444,7 +525,7 @@
 
 <!-- ============ CONSUMER GROUPS ============ -->
 <div class="panel c5">
-  <div class="phead">5 &nbsp;· &nbsp;CONSUMER GROUPS <span class="sub">scaling and coordination</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;CONSUMER GROUPS <span class="sub">scaling and coordination</span></div>
   <div class="pbody">
     <div class="h3">The assignment rule</div>
     <ul>
@@ -488,7 +569,7 @@
 
 <!-- ============ DURABILITY MODEL ============ -->
 <div class="panel c0 span3">
-  <div class="phead">6 &nbsp;· &nbsp;THE DURABILITY MODEL
+  <div class="phead">7 &nbsp;· &nbsp;THE DURABILITY MODEL
     <span class="sub">three settings decide whether you can lose data — and they only work together</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 430" width="3320" height="430">
@@ -575,7 +656,7 @@
 
 <!-- ============ PRODUCER ============ -->
 <div class="panel c1">
-  <div class="phead">7 &nbsp;· &nbsp;PRODUCER CONFIG <span class="sub">client-side</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;PRODUCER CONFIG <span class="sub">client-side</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:33%">Parameter</th><th style="width:28%">Values</th><th>Effect</th></tr></thead>
@@ -606,7 +687,7 @@
 
 <!-- ============ CONSUMER ============ -->
 <div class="panel c2">
-  <div class="phead">8 &nbsp;· &nbsp;CONSUMER CONFIG <span class="sub">client-side</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;CONSUMER CONFIG <span class="sub">client-side</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:34%">Parameter</th><th style="width:27%">Values</th><th>Effect</th></tr></thead>
@@ -634,7 +715,7 @@
 
 <!-- ============ TOPIC / BROKER ============ -->
 <div class="panel c4">
-  <div class="phead">9 &nbsp;· &nbsp;TOPIC &amp; BROKER CONFIG <span class="sub">server-side</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;TOPIC &amp; BROKER CONFIG <span class="sub">server-side</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:33%">Parameter</th><th style="width:27%">Values</th><th>Effect</th></tr></thead>
@@ -664,7 +745,7 @@
 
 <!-- ============ PROFILE MATRIX ============ -->
 <div class="panel c4 span3">
-  <div class="phead">10 &nbsp;· &nbsp;CONFIGURATION PROFILES BY USE CASE
+  <div class="phead">11 &nbsp;· &nbsp;CONFIGURATION PROFILES BY USE CASE
     <span class="sub">the same parameters set six ways — start from the closest column, then load-test</span></div>
   <div class="pbody" style="padding:9px 12px">
     <table class="mx">
@@ -716,7 +797,7 @@
 
 <!-- ============ LIVENESS ============ -->
 <div class="panel c5">
-  <div class="phead">11 &nbsp;· &nbsp;GROUP LIVENESS <span class="sub">where consumers actually break</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;GROUP LIVENESS <span class="sub">where consumers actually break</span></div>
   <div class="pbody">
     <div class="h3">Two independent liveness checks</div>
     <table>
@@ -756,7 +837,7 @@
 
 <!-- ============ EOS ============ -->
 <div class="panel c6">
-  <div class="phead">12 &nbsp;· &nbsp;EXACTLY-ONCE <span class="sub">scope and cost</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;EXACTLY-ONCE <span class="sub">scope and cost</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:34%">Level</th><th>Guarantee</th></tr></thead>
@@ -800,7 +881,7 @@ producer.commitTransaction()
 
 <!-- ============ ANTI-PATTERNS ============ -->
 <div class="panel c5 span2">
-  <div class="phead">13 &nbsp;· &nbsp;MISCONFIGURATIONS THAT REACH PRODUCTION
+  <div class="phead">14 &nbsp;· &nbsp;MISCONFIGURATIONS THAT REACH PRODUCTION
     <span class="sub">each individually reasonable — wrong only in combination, and Kafka does not warn you</span></div>
   <div class="pbody">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%">
@@ -842,7 +923,7 @@ producer.commitTransaction()
 
 <!-- ============ SECURITY / SIZING ============ -->
 <div class="panel c1">
-  <div class="phead">14 &nbsp;· &nbsp;SECURITY, QUOTAS &amp; SIZING <span class="sub">access and capacity</span></div>
+  <div class="phead">15 &nbsp;· &nbsp;SECURITY, QUOTAS &amp; SIZING <span class="sub">access and capacity</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:36%">Parameter</th><th>Values</th></tr></thead>
@@ -883,7 +964,7 @@ bytes ≈ rate × avg_size × retention_s × RF
 
 <!-- ============ CHECKLIST ============ -->
 <div class="panel c0 span3">
-  <div class="phead">15 &nbsp;· &nbsp;PRE-PRODUCTION CHECKLIST
+  <div class="phead">16 &nbsp;· &nbsp;PRE-PRODUCTION CHECKLIST
     <span class="sub">confirm before a topic carries traffic you cannot afford to lose</span></div>
   <div class="pbody">
     <div class="chk">

@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Circuit Breaker Framework in Java — Resilience4j</title>
 <style>
-  @page { size: 3400px 5624px; margin: 0; }
+  @page { size: 3400px 6225px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:5624px; background:#edeff6;
+  body { width:3400px; height:6225px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:5624px; padding:26px; display:grid;
+  .sheet { width:3400px; height:6195px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 822px 905px 800px 741px 945px 638px 449px;
+    grid-template-rows:118px 549px 822px 905px 800px 741px 945px 638px 449px;
     gap:22px; }
   .span2{grid-column:span 2} .span3{grid-column:1/-1}
 
@@ -62,9 +62,83 @@
     <span style="font-size:14px;color:#6d80b6;font-weight:500">state machine · sliding windows · aspect order · fallbacks · metrics · testing · the traps that bite in production</span></div>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A CIRCUIT BREAKER IS, AND WHY YOU NEED ONE
+    <span class="sub">start here — the failure it prevents, before the configuration</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1.05fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">A circuit breaker is a <b>state machine wrapped around a remote
+        call</b>. It watches outcomes, and once a dependency is failing often enough it <b>stops calling it at all</b> for
+        a while — failing instantly instead of waiting.</div>
+      <div class="callout b"><b>The name is literal.</b> An electrical breaker trips to protect the circuit from a
+        fault downstream. This does the same: it stops your service from repeatedly reaching for something that is already
+        broken, and stops you from hammering a service that is trying to recover.</div>
+      <div class="h3">The three normal states</div>
+      <table>
+        <tbody>
+          <tr><td style="width:106px"><b style="color:#047857">CLOSED</b></td><td>Calls pass through. Outcomes are recorded. Normal operation.</td></tr>
+          <tr><td><b style="color:#be123c">OPEN</b></td><td>Calls are rejected immediately without touching the dependency. This is the &ldquo;fail fast&rdquo;.</td></tr>
+          <tr><td><b style="color:#b45309">HALF_OPEN</b></td><td>After a wait, a few probe calls are allowed. All succeed → closed. Any fails → open again.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>It protects both sides.</b> You stop burning threads waiting on something that will
+        not answer, and the struggling dependency stops receiving traffic it cannot serve — which is often what lets it recover.</div>
+    </div>
+    <div>
+      <div class="h3">The failure it exists to prevent</div>
+      <div style="font-size:13.6px;line-height:1.48">Cascading failure is not a dramatic event. It is a slow dependency
+        quietly consuming your capacity until you become the outage.</div>
+      <div class="code"><span class="c">// payment service degrades — responses now take 30s</span>
+
+<span class="k">1.</span> Order service calls payments. Each request holds
+   a thread for 30s instead of 200ms.
+
+<span class="k">2.</span> Threads are finite. At 200 threads and 30s each,
+   throughput collapses to ~7 requests/second.
+
+<span class="k">3.</span> The pool fills. <span class="r">Requests that never touch payments</span>
+   <span class="r">now queue behind those that do.</span>
+
+<span class="k">4.</span> Order service stops responding. Its callers begin
+   holding threads waiting on <span class="r">it</span>.
+
+<span class="k">5.</span> <span class="r">The outage is now the whole system, and payments</span>
+   <span class="r">was never fully down.</span></div>
+      <div class="callout r"><b>Note step 3.</b> The damage is not that payment calls fail — it is that a single slow
+        dependency takes down functionality that has nothing to do with it. That is what a breaker and a bulkhead exist to stop.</div>
+    </div>
+    <div>
+      <div class="h3">Why a timeout alone is not enough</div>
+      <ul>
+        <li><b>A timeout still costs you the wait.</b> A 3-second timeout on a dead dependency means every request burns a thread for 3 seconds before failing. At scale that is still pool exhaustion, just slower.</li>
+        <li><b>It has no memory.</b> The thousandth request pays the full timeout exactly like the first, even though the previous 999 all failed.</li>
+        <li><b>It keeps hammering</b> a service that is trying to recover.</li>
+        <li><b>It cannot degrade.</b> A breaker knows the dependency is down and can serve a fallback immediately.</li>
+      </ul>
+      <div class="callout"><b>You need both.</b> The timeout bounds a single call; the breaker bounds how many calls
+        you are willing to make once the pattern is obvious. Neither replaces the other, and a breaker with no client
+        timeout underneath it is ineffective.</div>
+      <div class="h3">Where it fits, and where it does not</div>
+      <table>
+        <thead><tr><th style="width:112px">Use it on</th><th>Do not use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Remote calls to another service</td><td><b>Business validation failures</b> — a 400 is a correct answer, not a fault</td></tr>
+          <tr><td>Database and cache access over a network</td><td><b>In-process calls</b> — there is no remote failure to contain</td></tr>
+          <tr><td>Third-party APIs you do not control</td><td><b>Anything you have no fallback for</b> — think first about what you serve when it opens</td></tr>
+          <tr><td>Anything with a plausible degraded response</td><td><b>A dependency that is genuinely mandatory</b> — failing fast is still failing</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. STATE MACHINE + STACK ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;STATE MACHINE, THE OPEN DECISION, AND THE RESILIENCE STACK
+  <div class="phead">2 &nbsp;· &nbsp;STATE MACHINE, THE OPEN DECISION, AND THE RESILIENCE STACK
     <span class="sub">six states, not three · the circuit opens on a <b>rate</b>, never on a count · and the decorator order is fixed unless you change it</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 748" width="3320" height="748">
@@ -352,7 +426,7 @@
 
 <!-- ============ 2. CONFIGURATION ============ -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;CONFIGURATION REFERENCE <span class="sub">every property that matters, what it means, and the value that is wrong more often than it is right</span></div>
+  <div class="phead">3 &nbsp;· &nbsp;CONFIGURATION REFERENCE <span class="sub">every property that matters, what it means, and the value that is wrong more often than it is right</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1.02fr 1fr;gap:18px;height:100%">
     <div>
@@ -431,7 +505,7 @@
 
 <!-- ============ 3. STATES ============ -->
 <div class="panel c2">
-  <div class="phead">3 &nbsp;· &nbsp;THE SIX STATES <span class="sub">three normal, three operational</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;THE SIX STATES <span class="sub">three normal, three operational</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:118px">State</th><th>Behaviour</th></tr></thead>
@@ -481,7 +555,7 @@ cb.transitionToDisabledState();     <span class="c">// bypass entirely</span>
 
 <!-- ============ 4. SLIDING WINDOW ============ -->
 <div class="panel c8">
-  <div class="phead">4 &nbsp;· &nbsp;THE SLIDING WINDOW <span class="sub">choose deliberately</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;THE SLIDING WINDOW <span class="sub">choose deliberately</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:96px"></th><th>COUNT_BASED</th><th>TIME_BASED</th></tr></thead>
@@ -526,7 +600,7 @@ per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
 
 <!-- ============ 5. CODE ============ -->
 <div class="panel c4 span2">
-  <div class="phead">5 &nbsp;· &nbsp;WORKING CODE <span class="sub">the synchronous form, the asynchronous form, and the annotation combination that silently does nothing</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;WORKING CODE <span class="sub">the synchronous form, the asynchronous form, and the annotation combination that silently does nothing</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -611,7 +685,7 @@ per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
 
 <!-- ============ 6. ASPECT ORDER ============ -->
 <div class="panel c3">
-  <div class="phead">6 &nbsp;· &nbsp;COMPOSITION <span class="sub">order changes meaning</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;COMPOSITION <span class="sub">order changes meaning</span></div>
   <div class="pbody">
     <div class="callout p" style="margin-top:0"><b>The default, outside-in.</b><br>
       <span class="mono">Retry ( CircuitBreaker ( RateLimiter ( TimeLimiter ( Bulkhead ( Function ) ) ) ) )</span></div>
@@ -649,7 +723,7 @@ per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
 
 <!-- ============ 7. FALLBACKS ============ -->
 <div class="panel c5">
-  <div class="phead">7 &nbsp;· &nbsp;FALLBACKS &amp; DEGRADATION <span class="sub">what to return</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;FALLBACKS &amp; DEGRADATION <span class="sub">what to return</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>A fallback is a product decision wearing a technical costume.</b>
       &ldquo;Return an empty list&rdquo; is a choice that someone will see in the UI. Decide it with whoever owns that screen, not in
@@ -690,7 +764,7 @@ per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
 
 <!-- ============ 8. RETRY ============ -->
 <div class="panel c6">
-  <div class="phead">8 &nbsp;· &nbsp;RETRY <span class="sub">the pattern most likely to cause the outage</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;RETRY <span class="sub">the pattern most likely to cause the outage</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>Retry amplifies load exactly when the system is least able to
       take it.</b> Three attempts per request means a struggling dependency receives three times the traffic at the moment it is
@@ -724,7 +798,7 @@ per-pod rate        = 1200 / 20   = <span class="v">60 rpm</span>  = 1 call/sec
 
 <!-- ============ 9. OPERATING ============ -->
 <div class="panel c7 span2">
-  <div class="phead">9 &nbsp;· &nbsp;OPERATING IT <span class="sub">rollout, tuning and the runtime controls that matter during an incident</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;OPERATING IT <span class="sub">rollout, tuning and the runtime controls that matter during an incident</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -801,7 +875,7 @@ GET /actuator/metrics/resilience4j.circuitbreaker.calls
 
 <!-- ============ 10. METRICS ============ -->
 <div class="panel c2">
-  <div class="phead">10 &nbsp;· &nbsp;METRICS <span class="sub">the real names</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;METRICS <span class="sub">the real names</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">Resilience4j publishes Micrometer metrics automatically. Micrometer uses dot
       notation internally; the Prometheus registry converts dots to underscores, which is why the exported names differ from the
@@ -855,7 +929,7 @@ sum(rate(resilience4j_circuitbreaker_calls_seconds_count{
 
 <!-- ============ 11. TESTING ============ -->
 <div class="panel c8">
-  <div class="phead">11 &nbsp;· &nbsp;TESTING <span class="sub">it is untested until you have opened it</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;TESTING <span class="sub">it is untested until you have opened it</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>An unopened breaker is unverified configuration.</b> Nearly every
       failure mode on this sheet — a missing fallback signature, a no-op TimeLimiter, a gate that can never be met, self-invocation
@@ -891,7 +965,7 @@ sum(rate(resilience4j_circuitbreaker_calls_seconds_count{
 
 <!-- ============ 12. TRAPS ============ -->
 <div class="panel c5 span2">
-  <div class="phead">12 &nbsp;· &nbsp;TRAPS THAT BITE IN PRODUCTION <span class="sub">configurations that look correct, compile, deploy cleanly — and do nothing, or the wrong thing</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;TRAPS THAT BITE IN PRODUCTION <span class="sub">configurations that look correct, compile, deploy cleanly — and do nothing, or the wrong thing</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -931,7 +1005,7 @@ sum(rate(resilience4j_circuitbreaker_calls_seconds_count{
 
 <!-- ============ 13. CHECKLIST ============ -->
 <div class="panel c7 span3">
-  <div class="phead">13 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before a breaker sits between your service and a dependency that pays the bills</span></div>
+  <div class="phead">14 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before a breaker sits between your service and a dependency that pays the bills</span></div>
   <div class="pbody">
     <div class="chk">
       <div>&#9744; <b>Connect and read timeouts set on the HTTP client</b> — before any annotation</div>

@@ -1,14 +1,14 @@
 <meta charset="utf-8">
 <title>Real Agentic AI Example — Banking Customer Service</title>
 <style>
-  @page { size: 3400px 5412px; margin: 0; }
+  @page { size: 3400px 5916px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:5412px; background:#edeff6;
+  body { width:3400px; height:5916px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
-  .sheet { width:3400px; height:5412px; padding:26px; display:grid;
+  .sheet { width:3400px; height:5886px; padding:26px; display:grid;
     grid-template-columns:1102px 1101px 1101px;
-    grid-template-rows:118px 822px 780px 690px 800px 660px 868px 468px;
+    grid-template-rows:118px 452px 822px 780px 690px 800px 660px 868px 468px;
     gap:22px; }
   .span2{grid-column:span 2} .span3{grid-column:1/-1}
 
@@ -61,9 +61,81 @@
   <h1>REAL AGENTIC AI EXAMPLE — BANKING CUSTOMER SERVICE<span class="v">V1</span></h1>
 </div>
 
+<!-- ============ INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT AN AGENTIC SYSTEM IS, AND WHY A BANK CHANGES THE DESIGN
+    <span class="sub">start here — the definitions, and the constraints that make this different from a chatbot</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.6px;line-height:1.48">An <b>agentic system</b> is a language model placed in a <b>loop</b>
+        with <b>tools</b>. It interprets a request, decides which tool to call, reads the result, and continues until the task
+        is complete. The difference from a chatbot is that it <b>acts</b>, not just answers.</div>
+      <div class="callout b"><b>That one word — acts — is the whole subject.</b> A chatbot that is wrong produces a bad
+        answer. An agent that is wrong moves money, blocks a card, or discloses another customer's data. Every control on
+        this sheet exists because of that difference.</div>
+      <div class="h3">The vocabulary</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Tool</b></td><td>A function the model may call — a balance lookup, a transfer, a ticket. The unit of capability and of risk</td></tr>
+          <tr><td><b>Coordinator</b></td><td>The agent that interprets intent and delegates to domain sub-agents</td></tr>
+          <tr><td><b>Sub-agent</b></td><td>A bounded agent for one domain, with its own tools and its own permissions</td></tr>
+          <tr><td><b>MCP</b></td><td>A standard protocol for exposing tools, so backends are integrated once rather than per framework</td></tr>
+          <tr><td><b>RAG</b></td><td>Retrieving policy and procedure documents so answers are grounded in your material, not the model's memory</td></tr>
+          <tr><td><b>Guardrail</b></td><td>A check on input, tool result or output that can reject the turn</td></tr>
+          <tr><td><b>Trajectory</b></td><td>The full sequence of reasoning and tool calls for one request — what you need to explain a decision</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Why this is worth doing</div>
+      <ul>
+        <li><b>Most contact-centre volume is repetitive</b> — balances, statements, card status, payment queries — and is answerable from systems the bank already has.</li>
+        <li><b>Customers expect immediacy</b>, at hours no staffed centre covers economically.</li>
+        <li><b>The knowledge already exists</b> in SOPs and product documentation; the difficulty is retrieving the right part quickly.</li>
+        <li><b>Handling time falls</b> when the routine cases stop reaching a human, leaving people for cases that need judgement.</li>
+      </ul>
+      <div class="h3">And why it is genuinely hard here</div>
+      <table>
+        <thead><tr><th style="width:132px">Constraint</th><th>What it forces</th></tr></thead>
+        <tbody>
+          <tr><td><b>Regulated</b></td><td>Every action auditable, years later, with the authority it was taken under</td></tr>
+          <tr><td><b>Irreversible actions</b></td><td>A transfer cannot be rolled back by redeploying. Deterministic policy plus a human, not model judgement</td></tr>
+          <tr><td><b>Strict data boundaries</b></td><td>Customer data cannot leave the bank; this shapes the model architecture itself</td></tr>
+          <tr><td><b>Per-customer entitlement</b></td><td>The agent must act as <i>this</i> customer, never with standing privilege of its own</td></tr>
+          <tr><td><b>Adversarial users</b></td><td>People actively try to make it do the wrong thing, and some are customers</td></tr>
+          <tr><td><b>Low tolerance for error</b></td><td>A fluent wrong answer about a charge is a complaint, and possibly a reportable event</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">The four questions this sheet answers</div>
+      <table>
+        <tbody>
+          <tr><td style="width:34px"><b>1</b></td><td><b>Who is asking, and what may they do?</b> Identity and delegated authorisation — the wall most demos never cross</td></tr>
+          <tr><td><b>2</b></td><td><b>What may the agent reach?</b> Tool scoping per intent, and least privilege per sub-agent</td></tr>
+          <tr><td><b>3</b></td><td><b>What stops it when it is wrong?</b> Guardrails, deterministic policy, human approval, bounded loops</td></tr>
+          <tr><td><b>4</b></td><td><b>How would you know?</b> Trajectory tracing, evaluation gates, cost accounting, audit</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>A useful way to read the rest of the sheet.</b> Take one customer request and follow it
+        through every hop, asking at each: whose authority does this carry, and what stops it if the model is wrong. Any hop
+        answering &ldquo;the system prompt tells it not to&rdquo; is not ready.</div>
+      <div class="callout g"><b>The proportion that surprises people.</b> Prompting and model choice are a small part
+        of this. Identity, state, queues, idempotency, tracing, evaluation and rollout are ordinary platform engineering —
+        which is why teams already running regulated distributed systems are further along than they expect.</div>
+      <div class="callout r"><b>Start narrow.</b> A read-only assistant over a few well-understood intents,
+        with citations and a clean handover to a human, delivers most of the value at a fraction of the risk. Expand once
+        the evaluation and observability are genuinely working.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <!-- ============ 1. REFERENCE ARCHITECTURE ============ -->
 <div class="panel c0 span3">
-  <div class="phead">1 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — AGENTIC SYSTEM INSIDE A BANK
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — AGENTIC SYSTEM INSIDE A BANK
     <span class="sub">synchronous request path on top · control plane in the middle · asynchronous write path below</span></div>
   <div class="pbody" style="padding:8px 12px">
   <svg viewBox="0 0 3320 748" width="3320" height="748">
@@ -384,7 +456,7 @@
 
 <!-- ============ 2. THE EVOLUTION ============ -->
 <div class="panel c1 span2">
-  <div class="phead">2 &nbsp;· &nbsp;THE EVOLUTION — THREE BOXES TO PRODUCTION
+  <div class="phead">3 &nbsp;· &nbsp;THE EVOLUTION — THREE BOXES TO PRODUCTION
     <span class="sub">the build sequence, stage by stage · every addition buys something and costs something</span></div>
   <div class="pbody">
     <table>
@@ -415,7 +487,7 @@
 
 <!-- ============ 3. MULTI-AGENT DESIGN ============ -->
 <div class="panel c2">
-  <div class="phead">3 &nbsp;· &nbsp;MULTI-AGENT DESIGN <span class="sub">and when not to</span></div>
+  <div class="phead">4 &nbsp;· &nbsp;MULTI-AGENT DESIGN <span class="sub">and when not to</span></div>
   <div class="pbody">
     <div class="h3">Why split at all</div>
     <table>
@@ -460,7 +532,7 @@
 
 <!-- ============ 4. IDENTITY ============ -->
 <div class="panel c5">
-  <div class="phead">4 &nbsp;· &nbsp;IDENTITY <span class="sub">the demo-to-production wall</span></div>
+  <div class="phead">5 &nbsp;· &nbsp;IDENTITY <span class="sub">the demo-to-production wall</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>They are not the same thing.</b> <b>Authentication</b> proves who is talking.
       <b>Authorization</b> decides what that person may do. A demo usually has neither; a bad production system has the first and
@@ -495,7 +567,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 5. MCP & TOOL LAYER ============ -->
 <div class="panel c4 span2">
-  <div class="phead">5 &nbsp;· &nbsp;MCP AND THE TOOL LAYER <span class="sub">what the protocol standardises, and what it deliberately leaves to you</span></div>
+  <div class="phead">6 &nbsp;· &nbsp;MCP AND THE TOOL LAYER <span class="sub">what the protocol standardises, and what it deliberately leaves to you</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -560,7 +632,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 6. MEMORY ============ -->
 <div class="panel c3">
-  <div class="phead">6 &nbsp;· &nbsp;MEMORY &amp; STATE <span class="sub">four kinds, four lifetimes</span></div>
+  <div class="phead">7 &nbsp;· &nbsp;MEMORY &amp; STATE <span class="sub">four kinds, four lifetimes</span></div>
   <div class="pbody">
     <table>
       <thead><tr><th style="width:112px">Kind</th><th style="width:118px">Lifetime</th><th>Holds</th></tr></thead>
@@ -606,7 +678,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 7. HYBRID LLM ============ -->
 <div class="panel c8">
-  <div class="phead">7 &nbsp;· &nbsp;HYBRID LLM &amp; DATA RESIDENCY <span class="sub">why PII never leaves</span></div>
+  <div class="phead">8 &nbsp;· &nbsp;HYBRID LLM &amp; DATA RESIDENCY <span class="sub">why PII never leaves</span></div>
   <div class="pbody">
     <div class="h3">The constraint is legal, not architectural</div>
     <table>
@@ -644,7 +716,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 8. COST ============ -->
 <div class="panel c6">
-  <div class="phead">8 &nbsp;· &nbsp;COST &amp; UNBOUNDED CONSUMPTION <span class="sub">the bill that tripled</span></div>
+  <div class="phead">9 &nbsp;· &nbsp;COST &amp; UNBOUNDED CONSUMPTION <span class="sub">the bill that tripled</span></div>
   <div class="pbody">
     <div class="h3">Why agentic cost is non-linear</div>
     <div style="font-size:13.4px;line-height:1.46">A chatbot costs one model call per turn. An agent costs one call <i>per step</i>, and each step
@@ -690,7 +762,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 9. PROMPT INJECTION ============ -->
 <div class="panel c5 span2">
-  <div class="phead">9 &nbsp;· &nbsp;PROMPT INJECTION &amp; GUARDRAILS <span class="sub">OWASP LLM01 — the top risk for LLM applications, and the one with no complete fix</span></div>
+  <div class="phead">10 &nbsp;· &nbsp;PROMPT INJECTION &amp; GUARDRAILS <span class="sub">OWASP LLM01 — the top risk for LLM applications, and the one with no complete fix</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:18px;height:100%">
     <div>
@@ -754,7 +826,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 10. EVALUATION ============ -->
 <div class="panel c2">
-  <div class="phead">10 &nbsp;· &nbsp;EVALUATION <span class="sub">a release gate, not a dashboard</span></div>
+  <div class="phead">11 &nbsp;· &nbsp;EVALUATION <span class="sub">a release gate, not a dashboard</span></div>
   <div class="pbody">
     <div class="callout r" style="margin-top:0"><b>The problem it solves.</b> In ordinary software, a change that breaks
       behaviour usually fails a test. Here, editing one line of a prompt can change behaviour across every intent, and nothing
@@ -791,7 +863,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 11. OBSERVABILITY ============ -->
 <div class="panel c7">
-  <div class="phead">11 &nbsp;· &nbsp;OBSERVABILITY <span class="sub">&ldquo;where did my system go wrong?&rdquo;</span></div>
+  <div class="phead">12 &nbsp;· &nbsp;OBSERVABILITY <span class="sub">&ldquo;where did my system go wrong?&rdquo;</span></div>
   <div class="pbody">
     <div style="font-size:13.4px;line-height:1.46">A failed agent turn is not a stack trace. It is a sequence of decisions, each
       plausible on its own. The only way to answer <i>why</i> is to have recorded the whole trajectory — so instrument from the first
@@ -839,7 +911,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 12. WHAT'S MISSING ============ -->
 <div class="panel c5 span2">
-  <div class="phead">12 &nbsp;· &nbsp;WHAT THE ARCHITECTURE STILL NEEDS <span class="sub">the additions beyond the core design — mostly unglamorous, and the actual difference between a good design and a running system</span></div>
+  <div class="phead">13 &nbsp;· &nbsp;WHAT THE ARCHITECTURE STILL NEEDS <span class="sub">the additions beyond the core design — mostly unglamorous, and the actual difference between a good design and a running system</span></div>
   <div class="pbody">
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
     <div>
@@ -882,7 +954,7 @@ tool.get_balance(account_id=<span class="v">llm_extracted_id</span>)
 
 <!-- ============ 13. CHECKLIST ============ -->
 <div class="panel c7 span3">
-  <div class="phead">13 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before an agentic system faces a real customer and real money</span></div>
+  <div class="phead">14 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before an agentic system faces a real customer and real money</span></div>
   <div class="pbody">
     <div class="chk">
       <div>&#9744; <b>No shared service account</b> — every tool call carries the user&rsquo;s identity</div>

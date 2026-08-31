@@ -1,9 +1,9 @@
 <meta charset="utf-8">
 <title>DevOps — Learning Roadmap</title>
 <style>
-  @page { size: 3400px 3720px; margin: 0; }
+  @page { size: 3400px 4167px; margin: 0; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { width:3400px; height:3720px; background:#edeff6;
+  body { width:3400px; height:4167px; background:#edeff6;
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
     -webkit-font-smoothing:antialiased; }
   .sheet { width:3400px; padding:26px; }
@@ -47,6 +47,10 @@
   .d .ch{background:#be123c} .e .ch{background:#7c2d92}
   .x .ch{background:#334155} .y .ch{background:#155e75}
   .mono{font-family:Menlo,Consolas,monospace;font-size:11.6px}
+  table{border-collapse:collapse;width:100%;font-size:12.4px;margin-top:2px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:11.7px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top;line-height:1.4}
+  tbody tr:nth-child(even){background:#f7f8fd}
   svg{display:block}
 </style>
 
@@ -59,6 +63,79 @@
 </div>
 
 <!-- ================= THE MAP ================= -->
+<div class="map">
+  <div class="maphead">WHAT DEVOPS IS, AND WHY IT EXISTS<span class="s">start here — the operating model, the problem it answered, and how progress is measured</span></div>
+  <div style="padding:14px 18px">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+    <div>
+      <div class="cb"><div class="g">The definition</div>
+      <p style="font-size:13.6px;line-height:1.5"><b>DevOps</b> is a way of working in which the people who build a system
+        also take responsibility for running it — supported by enough automation that releasing a change is routine rather
+        than an event.</p>
+      <p style="font-size:13.6px;line-height:1.5">It is an <b>operating model first and a toolchain second</b>. Every tool
+        on this sheet exists to shorten the loop between a change being written and that change being safely in production,
+        and to make the result visible enough to judge.</p>
+      <div class="note r"><b>What it is not.</b> Not a job title that owns the pipeline while developers throw code
+        over a wall. Not &ldquo;we use Kubernetes&rdquo;. Not a team sitting between development and operations — that is the
+        wall it was meant to remove, rebuilt with a new name.</div>
+      <div class="g">The problem it was a response to</div>
+      <ul>
+        <li>Developers rewarded for change, operations rewarded for stability — opposing incentives on one system</li>
+        <li>Releases batched into rare, large, high-risk events</li>
+        <li>Manual deployment steps, differing per environment and per person</li>
+        <li>Failures diagnosed by the team least familiar with the code</li>
+        <li>No shared measure of whether any of it was improving</li>
+      </ul>
+      </div>
+    </div>
+    <div>
+      <div class="cb"><div class="g">What good looks like, in numbers</div>
+      <p style="font-size:13.6px;line-height:1.5">The four DORA metrics are the industry's most widely used measure, and
+        the only honest way to say whether a change to how you work actually helped.</p>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Deployment frequency</b></td><td>How often you release to production</td></tr>
+          <tr><td><b>Lead time for changes</b></td><td>Commit to running in production</td></tr>
+          <tr><td><b>Change failure rate</b></td><td>Share of deployments causing a degradation</td></tr>
+          <tr><td><b>Time to restore service</b></td><td>How quickly you recover when one does</td></tr>
+        </tbody>
+      </table>
+      <div class="note g"><b>The first two are throughput, the last two stability.</b> The common assumption is that
+        you trade one for the other. In practice strong teams improve both together — because the same things that make
+        releases small and frequent also make them easy to diagnose and reverse.</div>
+      <div class="note"><b>Measure before you change anything.</b> Teams routinely adopt Kubernetes, a service mesh
+        and GitOps while still deploying monthly by hand, then conclude DevOps did not work. If a tool does not move one of
+        the four, it is overhead you have chosen to carry.</div>
+      </div>
+    </div>
+    <div>
+      <div class="cb"><div class="g">Who this is for</div>
+      <ul>
+        <li><b>Developers</b> taking on deployment and on-call for their own services</li>
+        <li><b>Sysadmins and operations engineers</b> moving from manual administration to code</li>
+        <li><b>Anyone joining a platform, SRE or infrastructure team</b> and needing the shape of the whole field</li>
+        <li><b>Engineers who can already use the tools</b> but want to know what they are for</li>
+      </ul>
+      <div class="g">How to work through it</div>
+      <table>
+        <tbody>
+          <tr><td style="width:34px"><b>1</b></td><td>Theme A first, properly. Most hard DevOps problems are Linux, networking or Git problems wearing a costume</td></tr>
+          <tr><td><b>2</b></td><td>B and C together — a pipeline and something for it to deploy onto, in one project</td></tr>
+          <tr><td><b>3</b></td><td>Automate one manual thing a week. The skill is noticing the toil, not knowing the tool</td></tr>
+          <tr><td><b>4</b></td><td>Then D, which is where the job actually happens: keeping a running system healthy</td></tr>
+        </tbody>
+      </table>
+      <div class="note p"><b>One cloud, deeply.</b> The concepts transfer between providers; the console screenshots
+        do not. Breadth across three clouds is far less useful than depth in one, and is easy to acquire later.</div>
+      <div class="note g"><b>The habit that matters most.</b> Every tool here is a trade-off, not a best practice.
+        Learn each as a pair — what it buys, and what it costs to operate — and you will make better choices than any
+        list of recommended tooling can give you.</div>
+      </div>
+    </div>
+   </div>
+  </div>
+</div>
+
 <div class="map">
   <div class="maphead">THE MAP
     <span class="s">work down a theme in order; themes B and C are best learned together, because a pipeline with nothing to deploy onto teaches you half the job</span></div>
