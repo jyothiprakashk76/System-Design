@@ -1,0 +1,762 @@
+<meta charset="utf-8">
+<title>System Design — Learning Roadmap</title>
+<style>
+  @page { size: 3400px 3362px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:3362px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; padding:26px; }
+
+  .title{background:#101a33;border-radius:12px;color:#fff;height:112px;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px;margin-bottom:22px}
+  .title h1{font-size:37px;letter-spacing:.9px;font-weight:700}
+  .title .sub{font-size:15.5px;color:#93a4d6;font-weight:600;text-align:right;line-height:1.45}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .map{background:#fff;border:2px solid #c7cbdd;border-radius:12px;margin-bottom:22px;overflow:hidden}
+  .maphead{background:#1f2a63;color:#fff;padding:10px 17px;font-size:22px;font-weight:700;
+           display:flex;justify-content:space-between;align-items:baseline}
+  .maphead .s{font-size:14px;font-weight:500;opacity:.82}
+
+  .cols{columns:4;column-gap:20px}
+  .card{break-inside:avoid;background:#fff;border:2px solid #c7cbdd;border-radius:10px;
+        overflow:hidden;margin-bottom:20px;display:inline-block;width:100%}
+  .ch{color:#fff;padding:7px 12px;font-size:15.5px;font-weight:700;letter-spacing:.2px;line-height:1.25}
+  .ch .n{display:inline-block;background:rgba(255,255,255,.24);border-radius:4px;
+         padding:0 7px;margin-right:7px;font-size:14px}
+  .cb{padding:9px 12px}
+  .cb ul{margin:0 0 0 15px;font-size:12.5px;line-height:1.42}
+  .cb li{margin-bottom:2.5px}
+  .cb .g{font-size:11.7px;font-weight:700;color:#1e3a8a;margin:7px 0 3px;letter-spacing:.2px;
+         text-transform:uppercase}
+  .cb .g:first-child{margin-top:0}
+  .cb p{font-size:12.4px;line-height:1.42;margin-bottom:4px}
+  .tag{font-size:11.4px;color:#6b7391}
+  .note{background:#fff7ea;border:1.4px solid #e9b669;border-radius:5px;padding:6px 8px;
+        font-size:11.8px;line-height:1.4;margin-top:7px}
+  .note b{color:#a35c00}
+  .note.g{background:#ecfdf5;border-color:#6ee7b7} .note.g b{color:#047857}
+  .note.r{background:#fef2f2;border-color:#e8a3a3} .note.r b{color:#b91c1c}
+  .note.p{background:#f5f0fd;border-color:#b39ae8} .note.p b{color:#6b21a8}
+
+  .a .ch{background:#1e3a8a} .b .ch{background:#b45309} .c .ch{background:#0f766e}
+  .d .ch{background:#be123c} .e .ch{background:#7c2d92} .f .ch{background:#0369a1}
+  .x .ch{background:#334155} .y .ch{background:#155e75}
+  .mono{font-family:Menlo,Consolas,monospace;font-size:11.6px}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>SYSTEM DESIGN — LEARNING ROADMAP<span class="v">V1</span></h1>
+  <div class="sub">20 branches, six themes, ordered so each one builds on the last<br>
+    <span style="font-size:13.6px;color:#6d80b6;font-weight:500">foundations · data · distributed core · traffic &amp; resilience · integration · cross-cutting</span></div>
+</div>
+
+<!-- ================= THE MAP ================= -->
+<div class="map">
+  <div class="maphead">THE MAP
+    <span class="s">learn left to right within a theme; themes can be taken in any order once the foundations are in place</span></div>
+  <svg viewBox="0 0 3320 600" width="3320" height="600">
+    <defs>
+      <marker id="d" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#94a3b8"/></marker>
+    </defs>
+
+    <!-- centre -->
+    <rect x="1400" y="18" width="520" height="96" rx="12" fill="#101a33"/>
+    <text x="1660" y="56" font-size="27" font-weight="700" fill="#fff" text-anchor="middle">SYSTEM DESIGN</text>
+    <text x="1660" y="84" font-size="16" fill="#93a4d6" text-anchor="middle">Learning Roadmap · 20 branches</text>
+    <text x="1660" y="103" font-size="13" fill="#6d80b6" text-anchor="middle">every branch below is expanded in a card on this sheet</text>
+
+    <!-- connectors -->
+    <g stroke="#94a3b8" stroke-width="2.2" fill="none">
+      <path d="M1660,114 L1660,140 L300,140 L300,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L844,140 L844,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L1388,140 L1388,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L1932,140 L1932,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L2476,140 L2476,168" marker-end="url(#d)"/>
+      <path d="M1660,114 L1660,140 L3020,140 L3020,168" marker-end="url(#d)"/>
+    </g>
+
+    <!-- theme A -->
+    <rect x="40" y="168" width="520" height="46" rx="8" fill="#1e3a8a"/>
+    <text x="300" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">A · FOUNDATIONS</text>
+    <g font-size="14.5">
+      <rect x="40" y="224" width="520" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="62" y="251" font-weight="700" fill="#1e3a8a">1</text><text x="92" y="251" fill="#1f2a63">Fundamentals &amp; goals</text>
+      <rect x="40" y="272" width="520" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="62" y="299" font-weight="700" fill="#1e3a8a">2</text><text x="92" y="299" fill="#1f2a63">Requirements &amp; estimation</text>
+      <rect x="40" y="320" width="520" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="62" y="347" font-weight="700" fill="#1e3a8a">3</text><text x="92" y="347" fill="#1f2a63">Networking &amp; protocols</text>
+      <rect x="40" y="368" width="520" height="42" rx="7" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="62" y="395" font-weight="700" fill="#1e3a8a">4</text><text x="92" y="395" fill="#1f2a63">API design</text>
+    </g>
+
+    <!-- theme B -->
+    <rect x="584" y="168" width="520" height="46" rx="8" fill="#b45309"/>
+    <text x="844" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">B · DATA</text>
+    <g font-size="14.5">
+      <rect x="584" y="224" width="520" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="606" y="251" font-weight="700" fill="#b45309">5</text><text x="636" y="251" fill="#7a3d06">Data stores by family</text>
+      <rect x="584" y="272" width="520" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="606" y="299" font-weight="700" fill="#b45309">6</text><text x="636" y="299" fill="#7a3d06">Storage engines &amp; indexing</text>
+      <rect x="584" y="320" width="520" height="42" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="606" y="347" font-weight="700" fill="#b45309">7</text><text x="636" y="347" fill="#7a3d06">Caching</text>
+    </g>
+
+    <!-- theme C -->
+    <rect x="1128" y="168" width="520" height="46" rx="8" fill="#0f766e"/>
+    <text x="1388" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">C · DISTRIBUTED CORE</text>
+    <g font-size="14.5">
+      <rect x="1128" y="224" width="520" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1150" y="251" font-weight="700" fill="#0f766e">8</text><text x="1180" y="251" fill="#2f4f47">Distributed fundamentals</text>
+      <rect x="1128" y="272" width="520" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1150" y="299" font-weight="700" fill="#0f766e">9</text><text x="1180" y="299" fill="#2f4f47">Consensus &amp; coordination</text>
+      <rect x="1128" y="320" width="520" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1150" y="347" font-weight="700" fill="#0f766e">10</text><text x="1188" y="347" fill="#2f4f47">Scaling &amp; distribution</text>
+      <rect x="1128" y="368" width="520" height="42" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1150" y="395" font-weight="700" fill="#0f766e">11</text><text x="1188" y="395" fill="#2f4f47">Partitioning &amp; consistent hashing</text>
+    </g>
+
+    <!-- theme D -->
+    <rect x="1672" y="168" width="520" height="46" rx="8" fill="#be123c"/>
+    <text x="1932" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">D · TRAFFIC &amp; RESILIENCE</text>
+    <g font-size="14.5">
+      <rect x="1672" y="224" width="520" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="1694" y="251" font-weight="700" fill="#be123c">12</text><text x="1732" y="251" fill="#7f2b2b">Load balancing, proxies, gateways</text>
+      <rect x="1672" y="272" width="520" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="1694" y="299" font-weight="700" fill="#be123c">13</text><text x="1732" y="299" fill="#7f2b2b">Resilience patterns</text>
+      <rect x="1672" y="320" width="520" height="42" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="1694" y="347" font-weight="700" fill="#be123c">14</text><text x="1732" y="347" fill="#7f2b2b">Architectural styles</text>
+    </g>
+
+    <!-- theme E -->
+    <rect x="2216" y="168" width="520" height="46" rx="8" fill="#7c2d92"/>
+    <text x="2476" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">E · INTEGRATION</text>
+    <g font-size="14.5">
+      <rect x="2216" y="224" width="520" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2238" y="251" font-weight="700" fill="#7c2d92">15</text><text x="2276" y="251" fill="#4b3a5e">Distributed transactions</text>
+      <rect x="2216" y="272" width="520" height="42" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2238" y="299" font-weight="700" fill="#7c2d92">16</text><text x="2276" y="299" fill="#4b3a5e">Messaging &amp; event streaming</text>
+    </g>
+
+    <!-- theme F -->
+    <rect x="2760" y="168" width="520" height="46" rx="8" fill="#0369a1"/>
+    <text x="3020" y="198" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">F · CROSS-CUTTING</text>
+    <g font-size="14.5">
+      <rect x="2760" y="224" width="520" height="42" rx="7" fill="#eff6ff" stroke="#0369a1" stroke-width="1.8"/>
+      <text x="2782" y="251" font-weight="700" fill="#0369a1">17</text><text x="2820" y="251" fill="#1e3a5f">IAM, authN &amp; authZ</text>
+      <rect x="2760" y="272" width="520" height="42" rx="7" fill="#eff6ff" stroke="#0369a1" stroke-width="1.8"/>
+      <text x="2782" y="299" font-weight="700" fill="#0369a1">18</text><text x="2820" y="299" fill="#1e3a5f">Observability &amp; operations</text>
+      <rect x="2760" y="320" width="520" height="42" rx="7" fill="#eff6ff" stroke="#0369a1" stroke-width="1.8"/>
+      <text x="2782" y="347" font-weight="700" fill="#0369a1">19</text><text x="2820" y="347" fill="#1e3a5f">Algorithms for system design</text>
+      <rect x="2760" y="368" width="520" height="42" rx="7" fill="#eff6ff" stroke="#0369a1" stroke-width="1.8"/>
+      <text x="2782" y="395" font-weight="700" fill="#0369a1">20</text><text x="2820" y="395" fill="#1e3a5f">Delivery, DR &amp; cost</text>
+    </g>
+
+    <!-- bottom strip -->
+    <rect x="40" y="428" width="1602" height="152" rx="9" fill="#f7f8fd" stroke="#c7cbdd" stroke-width="2"/>
+    <text x="58" y="452" font-size="15.5" font-weight="700" fill="#1f2a63">HOW TO USE THIS ROADMAP</text>
+    <g font-size="13.4" fill="#42507a">
+      <text x="58" y="477">1 · Learn theme A end to end first — everything after it assumes you can size a system and choose a protocol.</text>
+      <text x="58" y="499">2 · Take B and C together. Data models and distribution constraints only make sense against each other.</text>
+      <text x="58" y="521">3 · Build something small at each step. A branch you have not implemented is a branch you have read, not learned.</text>
+      <text x="58" y="543">4 · Then D, E and F, which are mostly about keeping a working system working under load and failure.</text>
+      <text x="58" y="568" font-weight="700" fill="#be123c">5 · Solve full design problems only after A–C. Doing them first teaches you the answers to specific questions rather than the reasoning.</text>
+    </g>
+
+    <rect x="1678" y="428" width="1602" height="152" rx="9" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1696" y="452" font-size="15.5" font-weight="700" fill="#b91c1c">THE HABIT THAT MATTERS MORE THAN THE LIST</text>
+    <g font-size="13.4" fill="#7f2b2b">
+      <text x="1696" y="477">Every item here is a trade-off, not a best practice. Sharding buys write throughput and costs you joins and transactions. Caching</text>
+      <text x="1696" y="499">buys latency and costs you correctness. Microservices buy independent deployment and cost you a distributed system to debug.</text>
+      <text x="1696" y="524" font-weight="700">Learn each topic as a pair: what it buys, and what it costs.</text>
+      <text x="2296" y="524">A candidate who names the cost is doing system design; one who names</text>
+      <text x="1696" y="546">only the benefit is reciting. The same is true on the job, where the cost arrives about six months after the benefit.</text>
+      <text x="1696" y="570">Nothing on this sheet is free, and no item is correct in every context — which is why the reasoning transfers and the list does not.</text>
+    </g>
+  </svg>
+</div>
+
+<!-- ================= CARDS ================= -->
+<div class="cols">
+
+<div class="card a"><div class="ch"><span class="n">1</span>FUNDAMENTALS &amp; GOALS</div><div class="cb">
+  <div class="g">The five properties</div>
+  <ul>
+    <li><b>Scalability</b> — handles growth in load, data or users</li>
+    <li><b>Availability</b> — fraction of time it serves requests</li>
+    <li><b>Reliability</b> — serves them <i>correctly</i>; not the same thing</li>
+    <li><b>Performance</b> — latency and throughput under load</li>
+    <li><b>Maintainability</b> — the one that decides your velocity in year two</li>
+  </ul>
+  <div class="g">Availability, as a number</div>
+  <ul>
+    <li>99% ≈ 3.65 days of downtime a year</li>
+    <li>99.9% ≈ 8.8 hours &nbsp;·&nbsp; 99.99% ≈ 53 minutes</li>
+    <li>99.999% ≈ 5 minutes — very expensive, rarely required</li>
+    <li>Serial dependencies <b>multiply</b>: five 99.9% services in a chain give ≈ 99.5%</li>
+  </ul>
+  <div class="g">Core reading</div>
+  <ul>
+    <li>Latency vs throughput vs concurrency</li>
+    <li>Little's Law — <span class="mono">L = λW</span></li>
+    <li>Why adding servers stops helping (contention and coherency)</li>
+  </ul>
+  <div class="note"><b>Availability ≠ reliability.</b> A service that returns wrong answers quickly is highly available
+    and completely unreliable. Interviews and incident reviews both punish conflating them.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">2</span>REQUIREMENTS &amp; ESTIMATION</div><div class="cb">
+  <div class="g">Clarify before designing</div>
+  <ul>
+    <li>Functional requirements — what it must do</li>
+    <li>Non-functional — scale, latency target, consistency, availability, retention, budget</li>
+    <li>Explicit out-of-scope, so the design has an edge</li>
+    <li>Who the users are, and the read:write ratio</li>
+  </ul>
+  <div class="g">Back-of-the-envelope</div>
+  <ul>
+    <li>DAU / MAU → requests per second, peak vs average</li>
+    <li>Peak is typically several times the mean — design for peak</li>
+    <li>Storage per record × records × replication × retention</li>
+    <li>Bandwidth, connection count, memory for cache working set</li>
+    <li>Powers of two, and rough latency numbers (memory vs SSD vs network vs cross-region)</li>
+  </ul>
+  <div class="g">Percentiles, not averages</div>
+  <ul>
+    <li>p50, p95, p99, p99.9 — the tail is what users feel</li>
+    <li>Fan-out amplifies tails: 100 parallel calls at p99 = 1s means most requests hit one</li>
+    <li>Averages hide bimodal behaviour completely</li>
+  </ul>
+  <div class="note g"><b>State assumptions out loud and write them down.</b> An estimate with a stated assumption
+    is engineering; a number with no assumption is a guess that someone will later treat as a requirement.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">3</span>NETWORKING &amp; PROTOCOLS</div><div class="cb">
+  <div class="g">Foundations</div>
+  <ul>
+    <li>TCP vs UDP — ordering and delivery vs latency</li>
+    <li>DNS resolution, TTL, and why deploys wait on it</li>
+    <li>TLS handshake cost, session resumption, mTLS</li>
+    <li>Latency budget: RTT, bandwidth-delay product, geography</li>
+  </ul>
+  <div class="g">HTTP versions</div>
+  <ul>
+    <li><b>HTTP/1.1</b> — one request per connection at a time, head-of-line blocking</li>
+    <li><b>HTTP/2</b> — multiplexed streams over one TCP connection; still TCP-level HOL blocking</li>
+    <li><b>HTTP/3 / QUIC</b> — over UDP, removes transport HOL blocking, faster connection setup</li>
+  </ul>
+  <div class="g">Real-time and streaming</div>
+  <ul>
+    <li>Short polling → long polling → SSE → WebSocket</li>
+    <li>Pick by direction: SSE is server→client only; WebSocket is bidirectional</li>
+    <li>Connection state is the cost — WebSockets make your servers stateful</li>
+    <li>gRPC / HTTP/2 for internal service-to-service</li>
+  </ul>
+  <div class="note r"><b>Absent from most roadmaps, and asked constantly.</b> &ldquo;How does the client learn about a
+    new message?&rdquo; is a protocol question, and polling, SSE and WebSockets give three different systems.</div>
+</div></div>
+
+<div class="card a"><div class="ch"><span class="n">4</span>API DESIGN</div><div class="cb">
+  <div class="g">Styles, and when each fits</div>
+  <ul>
+    <li><b>REST</b> — resource-oriented, cacheable, ubiquitous. The default for public APIs</li>
+    <li><b>GraphQL</b> — client picks the shape; solves over-fetching, costs you caching and query-cost control</li>
+    <li><b>gRPC</b> — binary, typed contracts, streaming. Strong for internal calls, awkward from browsers</li>
+    <li><b>Webhooks</b> — server-to-server push; needs retries, signing and idempotency</li>
+  </ul>
+  <div class="g">Contract concerns</div>
+  <ul>
+    <li>Versioning — path, header, or never break; pick one and hold it</li>
+    <li>Pagination — cursor over offset at scale</li>
+    <li>Idempotency keys on every unsafe retryable operation</li>
+    <li>Consistent error envelope and error codes</li>
+    <li>Rate limit headers, and what a 429 should tell the caller</li>
+    <li>Filtering, sorting, partial responses, bulk endpoints</li>
+  </ul>
+  <div class="note"><b>Backward compatibility is the whole discipline.</b> Adding a field is safe; removing one,
+    renaming one, or tightening validation is a breaking change even when the compiler stays quiet.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">5</span>DATA STORES BY FAMILY</div><div class="cb">
+  <div class="g">Families and representatives</div>
+  <ul>
+    <li><b>Relational</b> — PostgreSQL, MySQL, Oracle, SQL Server</li>
+    <li><b>Document</b> — MongoDB, Couchbase, DocumentDB</li>
+    <li><b>Key-value</b> — Redis, DynamoDB, Riak</li>
+    <li><b>Wide-column</b> — Cassandra, ScyllaDB, HBase, Bigtable</li>
+    <li><b>Columnar / analytics</b> — ClickHouse, Snowflake, BigQuery, Druid</li>
+    <li><b>Graph</b> — Neo4j, Amazon Neptune, JanusGraph</li>
+    <li><b>Time series</b> — InfluxDB, TimescaleDB, Prometheus</li>
+    <li><b>Search</b> — Elasticsearch, OpenSearch, Solr</li>
+    <li><b>NewSQL / distributed SQL</b> — CockroachDB, TiDB, YugabyteDB, Spanner</li>
+    <li><b>Vector</b> — pgvector, Pinecone, Weaviate, Milvus, Qdrant</li>
+    <li><b>Object storage</b> — S3, GCS, Azure Blob</li>
+    <li><b>Embedded</b> — SQLite, DuckDB, RocksDB</li>
+  </ul>
+  <div class="note g"><b>Vector stores are now a standard family</b>, not a niche. Any system with semantic search,
+    recommendations or retrieval-augmented generation needs one — and <span class="mono">pgvector</span> often removes the
+    need for a separate service entirely.</div>
+  <div class="note r"><b>Start relational.</b> Postgres handles documents, key-value, full-text, geospatial and
+    vectors competently. Adding a second store adds consistency, operations and failure modes — earn it with a measured
+    reason, not an anticipated one.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">6</span>STORAGE ENGINES &amp; INDEXING</div><div class="cb">
+  <div class="g">The two engine families</div>
+  <ul>
+    <li><b>B-tree</b> — update in place. Predictable reads, slower random writes. Postgres, MySQL/InnoDB</li>
+    <li><b>LSM tree</b> — append to a memtable, flush to sorted files, compact in background. Fast writes, read amplification, compaction cost. Cassandra, RocksDB, ScyllaDB</li>
+    <li>Read / write / space amplification — the three-way trade every engine picks a point on</li>
+  </ul>
+  <div class="g">Indexing</div>
+  <ul>
+    <li>Primary vs secondary; clustered vs non-clustered</li>
+    <li>Composite indexes and why <b>column order decides usability</b></li>
+    <li>Covering indexes — answer from the index, never touch the row</li>
+    <li>Partial and functional indexes</li>
+    <li>Inverted index for search; geospatial and vector indexes</li>
+    <li>Every index speeds reads and slows every write</li>
+  </ul>
+  <div class="note"><b>This branch explains the rest of the data section.</b> &ldquo;Why is Cassandra fast at
+    writes?&rdquo; and &ldquo;why does this query need a full scan?&rdquo; are both storage-engine questions, and neither is
+    answerable from a list of database names.</div>
+</div></div>
+
+<div class="card b"><div class="ch"><span class="n">7</span>CACHING</div><div class="cb">
+  <div class="g">Patterns</div>
+  <ul>
+    <li><b>Cache-aside</b> — app reads cache, misses, loads, populates. The default</li>
+    <li><b>Read-through</b> — cache loads on miss itself</li>
+    <li><b>Write-through</b> — write both, consistent, slower writes</li>
+    <li><b>Write-behind</b> — write cache, flush async. Fast, risks loss</li>
+    <li><b>Refresh-ahead</b> — refresh hot keys before expiry</li>
+  </ul>
+  <div class="g">Eviction &amp; invalidation</div>
+  <ul>
+    <li>LRU, LFU, FIFO, TTL, and random</li>
+    <li>Invalidation is the hard half — TTL, explicit, or event-driven</li>
+    <li>Versioned keys avoid deletion races</li>
+  </ul>
+  <div class="g">Failure modes</div>
+  <ul>
+    <li><b>Stampede / thundering herd</b> — many misses at once on expiry. Fix with jittered TTL, locks or early recompute</li>
+    <li><b>Hot key</b> — one key saturates one node</li>
+    <li><b>Penetration</b> — repeated misses for keys that do not exist; cache the negative</li>
+    <li><b>Cold start</b> after a restart or deploy</li>
+  </ul>
+  <div class="g">Where caches live</div>
+  <ul>
+    <li>Browser → CDN → gateway → application → distributed cache → database buffer pool</li>
+  </ul>
+  <div class="note r"><b>Deserves a full branch, not a footnote.</b> Caching is the most commonly deployed and
+    most commonly mis-configured technique in the whole roadmap — and every entry above is a real production incident class.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">8</span>DISTRIBUTED FUNDAMENTALS</div><div class="cb">
+  <div class="g">Theory you will actually use</div>
+  <ul>
+    <li><b>CAP</b> — under a partition, choose consistency or availability. Not a permanent choice of two from three</li>
+    <li><b>PACELC</b> — and when there is <i>no</i> partition, latency vs consistency. The more useful framing day to day</li>
+    <li><b>ACID vs BASE</b></li>
+    <li>Consistency models — strong, sequential, causal, eventual, read-your-writes, monotonic reads</li>
+  </ul>
+  <div class="g">What actually goes wrong</div>
+  <ul>
+    <li>Partial failure — the defining property of a distributed system</li>
+    <li>Network is unreliable, latency non-zero, topology changes — the eight fallacies</li>
+    <li>Timeouts, retries, and the retry storms they cause</li>
+    <li>Idempotency — the only thing that makes retries safe</li>
+    <li>Exactly-once delivery does not exist; at-least-once + idempotency does</li>
+    <li>Clock skew — never order events by wall clock across machines</li>
+    <li>Replication lag, stale reads, split-brain</li>
+    <li>Backpressure and head-of-line blocking</li>
+  </ul>
+  <div class="note p"><b>The single most useful sentence here:</b> a timeout tells you nothing about whether the
+    other side did the work. Every correctness argument in a distributed system starts from that.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">9</span>CONSENSUS &amp; COORDINATION</div><div class="cb">
+  <div class="g">Agreement</div>
+  <ul>
+    <li><b>Raft</b> — leader election, log replication, safety. Learn this one properly</li>
+    <li><b>Paxos / Multi-Paxos</b> — the ancestor; know the shape</li>
+    <li><b>ZAB</b> (ZooKeeper), and where etcd and Consul fit</li>
+    <li>Why consensus needs a majority, and why even-sized clusters are a mistake</li>
+  </ul>
+  <div class="g">Quorums</div>
+  <ul>
+    <li><span class="mono">R + W &gt; N</span> gives read-your-writes on a quorum store</li>
+    <li>Tunable consistency in Cassandra and DynamoDB</li>
+    <li>Hinted handoff, read repair, anti-entropy</li>
+  </ul>
+  <div class="g">Ordering &amp; coordination</div>
+  <ul>
+    <li>Lamport clocks, vector clocks, version vectors</li>
+    <li>Leader election and fencing tokens</li>
+    <li>Distributed locks — and why lock + timeout is not mutual exclusion</li>
+    <li>Failure detection: heartbeats, gossip, phi-accrual</li>
+    <li>CRDTs for conflict-free merges</li>
+  </ul>
+  <div class="note r"><b>A conspicuous gap in most roadmaps.</b> &ldquo;How does the cluster agree on a leader?&rdquo;
+    and &ldquo;what happens when the leader is only <i>partially</i> unreachable?&rdquo; are the questions that separate
+    familiarity from understanding.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">10</span>SCALING &amp; DISTRIBUTION</div><div class="cb">
+  <div class="g">Directions</div>
+  <ul>
+    <li>Vertical — simple, bounded, no distribution problems. Do this first</li>
+    <li>Horizontal — unbounded, and buys you every problem in theme C</li>
+    <li>Stateless services scale trivially; state is the actual problem</li>
+  </ul>
+  <div class="g">Replication</div>
+  <ul>
+    <li><b>Leader–follower</b> (formerly master–slave) — one writer, many readers</li>
+    <li><b>Multi-leader</b> — write anywhere, conflict resolution required</li>
+    <li><b>Leaderless</b> — quorum reads and writes</li>
+    <li>Synchronous vs asynchronous, and the replication lag it creates</li>
+    <li>Failover, promotion, and split-brain protection</li>
+  </ul>
+  <div class="g">Other levers</div>
+  <ul>
+    <li>Read replicas, CQRS-style read models, denormalisation</li>
+    <li>CDN and edge for static and cacheable content</li>
+    <li>Autoscaling — and why it never saves you from a cold cache</li>
+    <li>Multi-region: active-passive vs active-active, data residency</li>
+    <li>Cell-based architecture and shuffle sharding to bound blast radius</li>
+  </ul>
+  <div class="note"><b>Prefer leader–follower / primary–replica terminology.</b> It is both the industry standard
+    now and more precise about what the roles do.</div>
+</div></div>
+
+<div class="card c"><div class="ch"><span class="n">11</span>PARTITIONING &amp; CONSISTENT HASHING</div><div class="cb">
+  <div class="g">Partitioning strategies</div>
+  <ul>
+    <li><b>Range</b> — ordered scans work; hotspots on sequential keys</li>
+    <li><b>Hash</b> — even spread; range queries stop working</li>
+    <li><b>Directory</b> — flexible, adds a lookup and a dependency</li>
+    <li>Composite keys: partition key + sort key</li>
+  </ul>
+  <div class="g">Consistent hashing</div>
+  <ul>
+    <li>The hash ring, and why plain <span class="mono">hash % N</span> remaps almost everything on resize</li>
+    <li><b>Virtual nodes</b> — many points per physical node, for even distribution and smooth rebalancing</li>
+    <li>Adding and removing a node moves only that node's share</li>
+    <li>Used by Cassandra, DynamoDB, Memcached clients, and load balancers for sticky routing</li>
+    <li>Rendezvous hashing as a simpler alternative</li>
+  </ul>
+  <div class="g">What goes wrong</div>
+  <ul>
+    <li><b>Hot partition / celebrity key</b> — one key or tenant dominates. Salt it, or split it</li>
+    <li>Skew from a poorly chosen partition key is the most common scaling defect</li>
+    <li>Resharding a live system is difficult — choose the key as if you cannot change it</li>
+    <li>Cross-partition joins and transactions are what you gave up</li>
+  </ul>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">12</span>LOAD BALANCING, PROXIES &amp; GATEWAYS</div><div class="cb">
+  <div class="g">Three roles, often confused</div>
+  <ul>
+    <li><b>Reverse proxy</b> — sits in front of servers: TLS termination, compression, caching, static content. NGINX, HAProxy, Traefik, Envoy</li>
+    <li><b>API gateway</b> — a reverse proxy plus API concerns: authN/authZ, rate limiting, quotas, request transformation, protocol translation, aggregation, per-consumer metering. Kong, Apigee, AWS API Gateway, Tyk</li>
+    <li><b>Service mesh</b> — proxies beside <i>every</i> service for east-west traffic: mTLS, retries, circuit breaking, traffic splitting, telemetry. Istio, Linkerd</li>
+    <li><b>Forward proxy</b> — sits in front of clients; controls egress</li>
+  </ul>
+  <div class="g">Load balancing</div>
+  <ul>
+    <li><b>L4</b> — transport level, fast, protocol-blind. <b>L7</b> — understands HTTP, can route on path, header, cookie</li>
+    <li>Algorithms: round robin, weighted, least connections, least response time, consistent hashing</li>
+    <li>Health checks, connection draining, sticky sessions and why to avoid them</li>
+    <li>Global load balancing: DNS, anycast, GeoDNS</li>
+  </ul>
+  <div class="note g"><b>North-south vs east-west.</b> Gateways handle traffic entering the system; a mesh handles
+    traffic between services. Choosing between them is a category error — most large systems run both.</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">13</span>RESILIENCE PATTERNS</div><div class="cb">
+  <div class="g">Stop a failure spreading</div>
+  <ul>
+    <li><b>Timeout</b> — bound every remote call, always. Nothing else works without it</li>
+    <li><b>Retry with exponential backoff + jitter</b> — jitter is not optional; without it every client retries in lockstep</li>
+    <li><b>Circuit breaker</b> — stop calling a dependency that is already failing</li>
+    <li><b>Bulkhead</b> — isolate pools so one dependency cannot exhaust all threads or connections</li>
+    <li><b>Rate limiting &amp; throttling</b> — protect the callee</li>
+    <li><b>Load shedding</b> — reject early under overload rather than degrading for everyone</li>
+    <li><b>Graceful degradation</b> — serve less rather than nothing</li>
+    <li><b>Fallback</b> — cached, default, or queued; never a second remote call</li>
+    <li><b>Idempotency</b> — what makes every retry above safe</li>
+    <li><b>Health checks</b> — liveness must not fail because a dependency is down</li>
+  </ul>
+  <div class="note r"><b>These are not GoF design patterns and should not be listed beside Singleton and Factory.</b>
+    Those describe object construction and collaboration inside one process; these describe how a system behaves when a
+    remote dependency fails. Different problem, different scale, different chapter.</div>
+</div></div>
+
+<div class="card d"><div class="ch"><span class="n">14</span>ARCHITECTURAL STYLES</div><div class="cb">
+  <div class="g">System-level styles</div>
+  <ul>
+    <li><b>Monolith</b> — one deployable. Simplest, and correct far more often than its reputation suggests</li>
+    <li><b>Modular monolith</b> — enforced internal boundaries, one deployment. Usually the right next step</li>
+    <li><b>Microservices</b> — independent deployment and scaling, at the cost of a distributed system</li>
+    <li><b>Service-oriented</b>, <b>event-driven</b>, <b>serverless</b></li>
+    <li><b>Layered</b>, <b>hexagonal / ports and adapters</b>, <b>clean architecture</b></li>
+    <li><b>CQRS</b> — separate read and write models</li>
+    <li><b>Pipes and filters</b>, <b>actor model</b>, <b>cell-based</b></li>
+  </ul>
+  <div class="g">Supporting patterns</div>
+  <ul>
+    <li><b>BFF</b> — a backend per client type</li>
+    <li><b>Sidecar / ambassador</b></li>
+    <li><b>Strangler fig</b> — the standard way to replace a legacy system incrementally</li>
+    <li><b>API composition</b> and <b>service discovery</b></li>
+    <li>Database per service, and the joins you lose</li>
+  </ul>
+  <div class="note"><b>Conway's Law is a design constraint, not a joke.</b> Systems reflect the communication
+    structure of the teams that build them, so a service boundary that cuts across a team boundary will be fought
+    continuously until one of them moves.</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">15</span>DISTRIBUTED TRANSACTIONS</div><div class="cb">
+  <div class="g">Local first</div>
+  <ul>
+    <li>Isolation levels: read uncommitted → read committed → repeatable read → serializable</li>
+    <li>The anomalies each one permits: dirty read, non-repeatable read, phantom, write skew</li>
+    <li>Optimistic (version column) vs pessimistic (locking) concurrency</li>
+    <li>MVCC — how most modern databases avoid readers blocking writers</li>
+  </ul>
+  <div class="g">Across services</div>
+  <ul>
+    <li><b>2PC</b> — atomic, blocking, and a coordinator you must keep alive. Rare in modern designs</li>
+    <li><b>3PC</b> — reduces blocking, adds complexity, still assumes a lot</li>
+    <li><b>Saga</b> — a sequence of local transactions with compensating actions. <i>Choreography</i> (events) or <i>orchestration</i> (a coordinator)</li>
+    <li><b>TCC</b> — try, confirm, cancel with explicit reservation</li>
+    <li><b>Outbox</b> — write state and event in one local transaction; publish from the outbox</li>
+    <li><b>Inbox / idempotent consumer</b> — deduplicate on receipt</li>
+    <li><b>CDC</b> — read the log rather than dual-writing</li>
+  </ul>
+  <div class="note r"><b>Sagas give up isolation, not just atomicity.</b> Intermediate states are visible to other
+    readers, so &ldquo;the order exists but is unpaid&rdquo; must be a state your domain model actually has — not a window you
+    hope nobody looks into.</div>
+</div></div>
+
+<div class="card e"><div class="ch"><span class="n">16</span>MESSAGING &amp; EVENT STREAMING</div><div class="cb">
+  <div class="g">Queue vs log — the distinction that matters</div>
+  <ul>
+    <li><b>Queue</b> (RabbitMQ, SQS, ActiveMQ) — a message is delivered, acknowledged and <b>removed</b>. Competing consumers share the work. Per-message acks, visibility timeouts, DLQs</li>
+    <li><b>Log</b> (Kafka, Pulsar) — records are appended and <b>retained</b>; consumers track an offset. Many independent consumers read the same data, and replay is a normal operation</li>
+    <li>Choosing wrongly here shapes everything downstream</li>
+  </ul>
+  <div class="g">Mechanics</div>
+  <ul>
+    <li>Topics, partitions, consumer groups, offsets</li>
+    <li>Ordering is per partition, never global</li>
+    <li>At-most-once / at-least-once / effectively-once</li>
+    <li>DLQ, poison messages, retry topics</li>
+    <li>Backpressure, lag monitoring, rebalancing</li>
+    <li>Fan-out, competing consumers, request-reply</li>
+  </ul>
+  <div class="g">Event-driven design</div>
+  <ul>
+    <li>Event sourcing, event replay, materialized views</li>
+    <li>Schema registry and versioning (Avro, Protobuf) — events are a contract</li>
+    <li>Event-carried state transfer vs thin events</li>
+    <li>Stream processing: windowing, watermarks, joins — Flink, Kafka Streams</li>
+  </ul>
+</div></div>
+
+<div class="card f"><div class="ch"><span class="n">17</span>IAM, AUTHN &amp; AUTHZ</div><div class="cb">
+  <div class="g">Two different questions</div>
+  <ul>
+    <li><b>Authentication</b> — who is this? <b>Authorization</b> — what may they do? Never one control</li>
+  </ul>
+  <div class="g">Protocols &amp; tokens</div>
+  <ul>
+    <li><b>OAuth 2.0 / 2.1</b> — delegated authorization; grant types and which are still safe</li>
+    <li><b>OIDC</b> — authentication layered on OAuth; ID tokens</li>
+    <li><b>SAML</b> — enterprise federation, still everywhere</li>
+    <li><b>JWT</b> — structure, signing, validation, expiry, and why revocation is hard</li>
+    <li>Session cookies vs bearer tokens; refresh token rotation</li>
+    <li>Token exchange for on-behalf-of calls between services</li>
+    <li>API keys and HMAC request signing</li>
+  </ul>
+  <div class="g">Authorization models</div>
+  <ul>
+    <li><b>RBAC</b> roles · <b>ABAC</b> attributes · <b>ReBAC</b> relationships (Zanzibar-style)</li>
+    <li>Permission-based checks, not role-name checks</li>
+    <li>Multi-tenancy and tenant isolation tests</li>
+  </ul>
+  <div class="g">Service-to-service &amp; operations</div>
+  <ul>
+    <li>mTLS and workload identity — network position is not authentication</li>
+    <li>Secrets management and rotation (Vault, cloud KMS)</li>
+    <li>MFA, account recovery, breach response</li>
+    <li>Providers: Keycloak, Auth0, Okta, Cognito, Microsoft Entra ID, Google Identity</li>
+  </ul>
+</div></div>
+
+<div class="card f"><div class="ch"><span class="n">18</span>OBSERVABILITY &amp; OPERATIONS</div><div class="cb">
+  <div class="g">The three signals</div>
+  <ul>
+    <li><b>Logs</b> — structured, correlated, sampled. ELK, Loki</li>
+    <li><b>Metrics</b> — cheap, aggregatable, low cardinality. Prometheus, Grafana</li>
+    <li><b>Traces</b> — one request across services. Jaeger, Tempo, OpenTelemetry</li>
+    <li>Correlation and trace IDs propagated through every hop, including async ones</li>
+    <li>OpenTelemetry as the vendor-neutral instrumentation standard</li>
+  </ul>
+  <div class="g">Knowing what to measure</div>
+  <ul>
+    <li><b>RED</b> — rate, errors, duration (services)</li>
+    <li><b>USE</b> — utilisation, saturation, errors (resources)</li>
+    <li>Four golden signals: latency, traffic, errors, saturation</li>
+    <li>SLI → SLO → SLA, and error budgets that actually gate releases</li>
+    <li>Cardinality discipline — a user ID as a metric label will bankrupt you</li>
+  </ul>
+  <div class="g">Operating it</div>
+  <ul>
+    <li>Alert on symptoms, not causes; page only on user impact</li>
+    <li>Runbooks, on-call rotation, incident command</li>
+    <li>Blameless postmortems and action tracking</li>
+    <li>Chaos engineering and game days</li>
+    <li>Capacity planning and load testing</li>
+  </ul>
+</div></div>
+
+<div class="card f"><div class="ch"><span class="n">19</span>ALGORITHMS FOR SYSTEM DESIGN</div><div class="cb">
+  <div class="g">Probabilistic structures</div>
+  <ul>
+    <li><b>Bloom filter</b> — &ldquo;definitely not present&rdquo; in constant space. Used before every expensive lookup</li>
+    <li><b>HyperLogLog</b> — approximate distinct counts at tiny memory cost</li>
+    <li><b>Count-Min Sketch</b> — approximate frequencies, heavy hitters</li>
+    <li>Skip lists, tries, LSM merge, consistent hash rings</li>
+  </ul>
+  <div class="g">Rate limiting algorithms</div>
+  <ul>
+    <li>Fixed window · sliding window log · sliding window counter</li>
+    <li>Token bucket (allows bursts) · leaky bucket (smooths output)</li>
+    <li>Distributed rate limiting and its coordination cost</li>
+  </ul>
+  <div class="g">Identifiers</div>
+  <ul>
+    <li>UUID v4 vs v7, Snowflake IDs, ULID, KSUID</li>
+    <li>Sortable vs random, and what random keys do to B-tree insert locality</li>
+  </ul>
+  <div class="g">Geospatial &amp; search</div>
+  <ul>
+    <li>Geohash, quadtree, S2, R-tree — proximity search</li>
+    <li>Inverted index, TF-IDF, BM25; vector similarity and ANN</li>
+    <li>Top-K, sampling, reservoir sampling</li>
+  </ul>
+  <div class="note g"><b>These turn up in almost every design problem.</b> Nearby drivers is geospatial indexing;
+    unique visitors is HyperLogLog; &ldquo;have we seen this ID&rdquo; is a Bloom filter.</div>
+</div></div>
+
+<div class="card f"><div class="ch"><span class="n">20</span>DELIVERY, DR &amp; COST</div><div class="cb">
+  <div class="g">Getting changes out safely</div>
+  <ul>
+    <li>CI/CD pipelines, trunk-based development</li>
+    <li>Deployment strategies: rolling, blue-green, canary, shadow traffic</li>
+    <li>Feature flags — decouple deploy from release</li>
+    <li>Backward-compatible migrations: expand → migrate → contract</li>
+    <li>Rollback that is tested, not assumed</li>
+  </ul>
+  <div class="g">Infrastructure</div>
+  <ul>
+    <li>Containers, orchestration, autoscaling</li>
+    <li>Infrastructure as code, immutable infrastructure</li>
+    <li>Environment parity and configuration management</li>
+  </ul>
+  <div class="g">Continuity</div>
+  <ul>
+    <li><b>RTO</b> — how long you may be down. <b>RPO</b> — how much data you may lose</li>
+    <li>Backups, and restores that are actually rehearsed</li>
+    <li>Multi-AZ vs multi-region; failover drills</li>
+    <li>Data residency and retention obligations</li>
+  </ul>
+  <div class="g">Cost</div>
+  <ul>
+    <li>Cost per request, per tenant, per feature</li>
+    <li>Egress, storage tiers, idle capacity</li>
+    <li>Cost as a design constraint, stated alongside latency</li>
+  </ul>
+  <div class="note"><b>Usually the last branch learned and the first one that bites.</b> A design that cannot be
+    deployed safely, restored, or afforded is not finished.</div>
+</div></div>
+
+<div class="card x"><div class="ch">GENERAL DESIGN PRINCIPLES</div><div class="cb">
+  <ul>
+    <li><b>KISS</b> — the simplest thing that meets the requirement</li>
+    <li><b>YAGNI</b> — build for today's requirement, not an imagined one</li>
+    <li><b>DRY</b> — but duplication is cheaper than the wrong abstraction</li>
+    <li><b>Loose coupling, high cohesion</b></li>
+    <li><b>Separation of concerns</b> and <b>single responsibility</b></li>
+    <li><b>Design for failure</b> — assume every dependency will fail</li>
+    <li><b>Make it work, make it right, make it fast</b> — in that order</li>
+    <li><b>Principle of least privilege</b></li>
+    <li><b>Idempotency by default</b> for anything retryable</li>
+    <li><b>Conway's Law</b> — architecture follows team structure</li>
+    <li><b>Think in trade-offs</b> — name the cost, not only the benefit</li>
+  </ul>
+  <div class="note r"><b>Premature optimisation and premature distribution are the same mistake.</b> Both add
+    permanent complexity to buy a benefit you have not yet measured a need for.</div>
+</div></div>
+
+<div class="card x"><div class="ch">A FRAMEWORK FOR DESIGN PROBLEMS</div><div class="cb">
+  <ul>
+    <li><b>1 · Clarify</b> — functional and non-functional requirements, scale, out-of-scope. Ask before drawing</li>
+    <li><b>2 · Estimate</b> — QPS, storage, bandwidth. State assumptions aloud</li>
+    <li><b>3 · Define the API</b> — the contract forces the data model into the open</li>
+    <li><b>4 · Data model</b> — entities, access patterns, then the store that fits them</li>
+    <li><b>5 · High-level design</b> — boxes and arrows, happy path only</li>
+    <li><b>6 · Deep dive</b> — take the one or two components that carry the risk</li>
+    <li><b>7 · Scale it</b> — find the bottleneck, apply one technique, name what it costs</li>
+    <li><b>8 · Failure &amp; operations</b> — what breaks, what degrades, what you monitor</li>
+    <li><b>9 · Trade-offs</b> — state what you would revisit and under what signal</li>
+  </ul>
+  <div class="note g"><b>Access patterns before storage choice.</b> Deciding the database first and then bending
+    the queries to fit it is the most common way a design goes wrong in the first five minutes.</div>
+</div></div>
+
+<div class="card y"><div class="ch">PRACTICE PROBLEMS BY CATEGORY</div><div class="cb">
+  <div class="g">Read-heavy &amp; feed</div>
+  <ul><li>Social feed and timeline · news ranking · notification system · URL shortener · pastebin</li></ul>
+  <div class="g">Real-time &amp; stateful connections</div>
+  <ul><li>Chat and messaging · presence · collaborative editing · multiplayer state · live comments</li></ul>
+  <div class="g">Transactional</div>
+  <ul><li>E-commerce checkout · inventory reservation · ticket booking with seat locking · payments and ledger · wallet</li></ul>
+  <div class="g">Geospatial</div>
+  <ul><li>Ride sharing and matching · food delivery · proximity search · fleet tracking</li></ul>
+  <div class="g">Media &amp; storage</div>
+  <ul><li>Video streaming and transcoding · file storage and sync · image pipeline · CDN design</li></ul>
+  <div class="g">Data &amp; analytics</div>
+  <ul><li>Metrics and monitoring · log aggregation · analytics pipeline · leaderboard · recommendation engine · search</li></ul>
+  <div class="g">Infrastructure</div>
+  <ul><li>Rate limiter · distributed cache · unique ID generator · job scheduler · web crawler · key-value store</li></ul>
+  <div class="note"><b>Group by pattern, not by product.</b> Ticket booking and inventory reservation are the same
+    concurrency problem; feed and leaderboard are the same fan-out and ranking problem. Learning the pattern transfers;
+    memorising the answer does not.</div>
+</div></div>
+
+<div class="card x"><div class="ch">SUPPORTING GROUNDWORK</div><div class="cb">
+  <p>Not part of the roadmap itself, but every branch above assumes it.</p>
+  <ul>
+    <li><b>Computer networks</b> — TCP/IP, DNS, HTTP, TLS, NAT, routing</li>
+    <li><b>Operating systems</b> — processes and threads, context switching, memory, file I/O, epoll</li>
+    <li><b>Data structures &amp; algorithms</b> — hash maps, trees, heaps, graphs, complexity</li>
+    <li><b>Databases</b> — SQL, query planning, transactions, normalisation</li>
+    <li><b>Concurrency</b> — locks, race conditions, deadlock, lock-free structures, async models</li>
+    <li><b>Security</b> — OWASP Top 10, encryption at rest and in transit, key management, threat modelling</li>
+    <li><b>Cloud</b> — one provider deeply rather than three shallowly</li>
+    <li><b>Linux and shell</b> — enough to diagnose a production box under pressure</li>
+  </ul>
+  <div class="note p"><b>Operating systems and networking pay the highest dividend.</b> Most senior system design
+    reasoning — connection limits, thread pools, buffering, latency budgets, backpressure — is applied OS and networking
+    knowledge wearing different vocabulary.</div>
+</div></div>
+
+</div>
+</div>
