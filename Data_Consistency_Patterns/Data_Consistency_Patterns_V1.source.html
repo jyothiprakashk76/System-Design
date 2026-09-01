@@ -1,0 +1,713 @@
+<meta charset="utf-8">
+<title>Data Consistency Patterns in Microservice Architecture</title>
+<style>
+  @page { size: 3400px 5099px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5099px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5069px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 474px 778px 516px 660px 598px 725px 593px 379px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:34px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:16px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.6px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.2px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.6px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.2px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.2px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:13.2px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.6px;line-height:1.46;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.8px;
+           line-height:1.43;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13px;line-height:1.45}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>DATA CONSISTENCY PATTERNS IN MICROSERVICE ARCHITECTURE<span class="v">V1</span></h1>
+  <div class="tag">Distributed transactions, reliable messaging and the guarantees each pattern actually gives you<br>
+    <span style="font-size:13.6px;color:#6d80b6">the dual-write problem · saga &amp; its missing isolation · outbox · idempotency · event sourcing · CQRS · locks &amp; fencing</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;THE PROBLEM THESE PATTERNS EXIST TO SOLVE
+    <span class="sub">start here — what breaks when one transaction becomes several services, and what you can still guarantee</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">What you had, and what you gave up</div>
+      <div style="font-size:13.4px;line-height:1.47">In a monolith with one database, &ldquo;place an order&rdquo; is one
+        transaction. Deduct stock, take payment, create the order — <b>all of it commits, or none of it does</b>, and no
+        other transaction sees the half-finished state.</div>
+      <div class="callout r" style="margin-top:8px"><b>Split those into three services with three databases and that
+        guarantee is simply gone.</b> There is no transaction spanning them. Something can succeed in one service and fail
+        in the next, and there is no mechanism that automatically undoes the first.</div>
+      <div class="h3">The dual-write problem — the specific failure</div>
+      <div style="font-size:13.4px;line-height:1.47">Almost every pattern on this sheet exists because of this one thing:
+        <b>you cannot atomically write to a database and send a message.</b></div>
+      <div class="code"><span class="c">// looks fine. is not.</span>
+db.save(order)          <span class="c">// committed ✓</span>
+broker.publish(event)   <span class="r">// process crashes here ✗</span>
+<span class="c">→ the order exists, nobody downstream knows</span>
+
+<span class="c">// reversing the order is no better</span>
+broker.publish(event)   <span class="c">// published ✓</span>
+db.save(order)          <span class="r">// rolls back ✗</span>
+<span class="c">→ downstream reacts to an order that never existed</span></div>
+      <div class="callout"><b>There is no ordering of those two lines that is safe</b>, and no amount of retry logic
+        fixes it. That is the reason the outbox pattern exists — see panel 7.</div>
+    </div>
+    <div>
+      <div class="h3">What you can still have</div>
+      <table>
+        <thead><tr><th style="width:150px">Guarantee</th><th>Available?</th></tr></thead>
+        <tbody>
+          <tr><td><b>ACID within one service</b></td><td><b style="color:#047857">Yes.</b> Keep data that changes together in one database and one transaction. This is the most under-used tool on the sheet</td></tr>
+          <tr><td><b>Atomicity across services</b></td><td>Only via blocking protocols nobody wants at scale — or approximated by compensation</td></tr>
+          <tr><td><b>Isolation across services</b></td><td><b style="color:#be123c">No.</b> Intermediate states <i>are</i> visible. This is the guarantee people forget they lost</td></tr>
+          <tr><td><b>Eventual convergence</b></td><td><b style="color:#047857">Yes</b> — with reliable delivery and idempotent consumers</td></tr>
+          <tr><td><b>Exactly-once delivery</b></td><td><b style="color:#be123c">No.</b> At-least-once delivery plus idempotent processing gives the same <i>effect</i></td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>The reframe that makes this tractable.</b> Stop asking &ldquo;how do I get a
+        distributed transaction?&rdquo; and start asking &ldquo;what is the business behaviour when step 3 of 5 fails?&rdquo;
+        That question has an answer for every real process — usually a reversal, a retry, a hold, or a human — and it is
+        the answer the patterns implement.</div>
+      <div class="callout g"><b>Before reaching for any of this: check the boundary.</b> If two services are
+        constantly involved in the same transaction, that is often a service-boundary defect, not a consistency problem.
+        Merging them is frequently the correct fix and removes the need for every pattern here.</div>
+    </div>
+    <div>
+      <div class="h3">The order to reach for things</div>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Option</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>One local transaction.</b> Redraw the boundary so the change is local. Free, and always correct</td></tr>
+          <tr><td><b>2</b></td><td><b>Optimistic concurrency</b> — a version column. Handles concurrent updates to one record; costs almost nothing</td></tr>
+          <tr><td><b>3</b></td><td><b>Outbox + idempotent consumer.</b> The workhorse. Reliable eventual consistency between services</td></tr>
+          <tr><td><b>4</b></td><td><b>Saga</b> when a multi-step process genuinely needs undo semantics</td></tr>
+          <tr><td><b>5</b></td><td><b>TCC</b> when the domain supports reservation, and you need a hold before committing</td></tr>
+          <tr><td><b>6</b></td><td><b>2PC</b> only inside one trusted, low-latency boundary, and rarely</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Most teams start at 4 and skip 1 to 3.</b> A saga is a distributed state machine with
+        compensation paths, failure handling and its own operational burden. Reach for it when the process is genuinely
+        long-running and reversible — not as the default answer to &ldquo;we have two services&rdquo;.</div>
+      <div class="h3">Vocabulary used throughout</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>Compensation</b></td><td>A business-level undo — refund, release, cancel. Not a rollback; the original event still happened</td></tr>
+          <tr><td><b>Idempotent</b></td><td>Applying it twice has the same effect as once</td></tr>
+          <tr><td><b>Semantic lock</b></td><td>A status flag marking a record as in-flight and not yet final</td></tr>
+          <tr><td><b>Convergence window</b></td><td>How long the system is observably inconsistent. Should be a number</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. CATALOGUE ============ -->
+<div class="panel c1 span3">
+  <div class="phead">2 &nbsp;· &nbsp;THE PATTERN CATALOGUE
+    <span class="sub">what each one guarantees, what it costs, and where it belongs</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr>
+        <th style="width:34px">#</th><th style="width:158px">Pattern</th><th style="width:250px">How it works</th>
+        <th style="width:158px">Guarantee</th><th>Good for</th><th style="width:230px">Not good for</th>
+        <th style="width:250px">Main cost</th><th style="width:200px">Example</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>1</b></td><td><b>Two-phase commit</b><br><span style="color:#6b7391">2PC · synchronous</span></td><td>Coordinator asks all participants to prepare; if all vote yes, it tells them to commit</td><td>Strong — atomic across participants</td><td>A few services in one trusted, low-latency boundary; legacy XA estates</td><td>Cloud, cross-region, high latency, many participants, anything long-running</td><td><b>Blocks</b> — participants hold locks until the coordinator returns. If it dies mid-flight they stay locked</td><td>Transfer between two accounts in one data centre</td></tr>
+        <tr><td><b>2</b></td><td><b>Three-phase commit</b><br><span style="color:#6b7391">3PC · of historical interest</span></td><td>Adds a pre-commit phase so participants never sit uncertain</td><td>Non-blocking <i>only</i> under fail-stop with no partitions</td><td>Understanding why atomic commit is hard</td><td><b>Production.</b> See the correction in panel 3</td><td>Under a network partition it can produce <b>inconsistency</b> — a worse failure than blocking</td><td>Effectively none; it is not used commercially</td></tr>
+        <tr><td><b>3</b></td><td><b>Saga</b><br><span style="color:#6b7391">choreography or orchestration</span></td><td>A sequence of local transactions; each has a compensating action if a later step fails</td><td>Atomicity, Consistency, Durability — <b>no Isolation</b></td><td>Long-running business processes with a natural reversal: order, booking, fulfilment</td><td>Steps that cannot be undone; processes needing isolation from concurrent activity</td><td>Intermediate states are visible; compensation logic and its own failure paths</td><td>Order → payment → stock → shipping, with refund and release on failure</td></tr>
+        <tr><td><b>4</b></td><td><b>TCC</b><br><span style="color:#6b7391">try-confirm-cancel</span></td><td><b>Try</b> reserves resources, <b>Confirm</b> makes it final, <b>Cancel</b> releases. Two-phase, at the application level</td><td>Eventual, with an explicit hold in between</td><td>Domains with a real notion of reservation — seats, stock, capacity, credit limit</td><td>Domains where nothing can be reserved; simple CRUD</td><td>Every service must implement all three operations; reservations need expiry</td><td>Hold a seat for 10 minutes, then confirm on payment or release on timeout</td></tr>
+        <tr><td><b>5</b></td><td><b>Transactional outbox</b></td><td>Write the state change <b>and</b> the event to an outbox table in <b>one</b> local transaction; a relay publishes from the table</td><td>At-least-once publication, atomic with the state change</td><td><b>Almost every service that publishes events.</b> The default answer to the dual-write problem</td><td>Nothing much — this is close to a baseline requirement</td><td>An outbox table to grow and prune, and a relay process to run</td><td>Order service commits the order and <span class="mono">OrderCreated</span> together</td></tr>
+        <tr><td><b>6</b></td><td><b>Inbox</b><br><span style="color:#6b7391">idempotent consumer</span></td><td>Record each processed message id in the same transaction as its effect; skip anything already seen</td><td>Effectively-once processing over at-least-once delivery</td><td>Every consumer whose work is not naturally idempotent</td><td>Genuinely fire-and-forget, or naturally idempotent, work</td><td>An inbox table with a retention policy sized to the redelivery window</td><td>Payment service charges once even if the event arrives three times</td></tr>
+        <tr><td><b>7</b></td><td><b>Change data capture</b><br><span style="color:#6b7391">CDC</span></td><td>Read the database's own replication log and publish changes</td><td>At-least-once, near real time</td><td>Getting events out of systems you cannot change; replacing outbox polling</td><td>Databases without a usable log; when you want <i>business</i> events rather than row changes</td><td>Events are row-shaped, not domain-shaped, and leak your schema to consumers</td><td>Debezium streaming MySQL binlog into Kafka</td></tr>
+        <tr><td><b>8</b></td><td><b>Event sourcing</b></td><td>Store the sequence of changes as the source of truth; current state is derived by replaying them</td><td>Complete history; state is a projection</td><td>Audit requirements, temporal queries, rebuilding read models, domains where <i>why</i> matters</td><td>Simple CRUD; teams new to it; anything needing arbitrary ad-hoc queries over current state</td><td>Snapshots, schema versioning and erasure obligations — see panel 10</td><td>Account balance derived from every credit and debit</td></tr>
+        <tr><td><b>9</b></td><td><b>CQRS</b></td><td>Separate the write model from one or more read models, updated asynchronously</td><td>Eventual between write and read side</td><td>Read-heavy systems, expensive queries, several different read shapes over one write model</td><td>Systems needing immediate read-your-writes; simple applications</td><td>Two models to keep in step, and a visible replication lag users may notice</td><td>Orders written normalised; dashboards read a denormalised projection</td></tr>
+        <tr><td><b>10</b></td><td><b>Optimistic concurrency</b></td><td>A version column checked on update; a mismatch means someone else changed it first</td><td>Prevents lost updates on a single record</td><td><b>Nearly everything.</b> The cheapest correctness tool available, and usually the missing one</td><td>Cross-record or cross-service invariants</td><td>Callers must handle a conflict and retry</td><td><span class="mono">UPDATE … WHERE id=? AND version=?</span></td></tr>
+        <tr><td><b>11</b></td><td><b>Distributed lock / lease</b></td><td>Acquire a lock with an expiry before entering a critical section</td><td><b>Not mutual exclusion on its own</b> — see panel 12</td><td>Reducing contention; single-runner scheduled jobs; best-effort coordination</td><td>Correctness-critical exclusion without fencing tokens; anything long-running</td><td>Expiry during a stall gives two holders at once, silently</td><td>One instance runs the nightly job</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>These compose, and the common production combination is a stack rather than a choice:</b>
+      outbox to publish reliably, inbox for idempotent consumption, optimistic concurrency on the records themselves, and a
+      saga only where a multi-step process genuinely needs undo.</div>
+  </div>
+</div>
+
+<!-- ============ 3. 2PC/3PC ============ -->
+<div class="panel c5 span2">
+  <div class="phead">3 &nbsp;· &nbsp;ATOMIC COMMIT — 2PC, AND WHY 3PC IS NOT THE ANSWER
+    <span class="sub">the strongest guarantee, the reason it is rare, and a correction worth making</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Two-phase commit</div>
+      <div class="code"><span class="k">PHASE 1 — prepare</span>
+coordinator → all: "can you commit?"
+participants: write to log, <span class="r">take locks</span>, reply YES/NO
+
+<span class="k">PHASE 2 — commit or abort</span>
+all YES → coordinator → all: "commit"
+any NO  → coordinator → all: "abort"</div>
+      <div class="callout r"><b>The failure that matters is the coordinator dying between the phases.</b> Every
+        participant has voted yes and is holding locks, and none of them may unilaterally decide. They <b>block</b> — holding
+        those locks, blocking unrelated traffic — until the coordinator recovers. In a cloud or cross-region deployment that
+        window is long enough to be an outage.</div>
+      <div class="h3">When 2PC is still reasonable</div>
+      <ul>
+        <li>A small number of participants inside <b>one</b> trusted, low-latency network</li>
+        <li>Short transactions, so the locking window is small</li>
+        <li>A highly available coordinator with durable state</li>
+        <li>Existing XA infrastructure that already works</li>
+      </ul>
+      <div class="callout"><b>It is not a microservices pattern.</b> It couples the availability of every
+        participant together — the composite availability is the product of them all — and that is precisely what service
+        independence was meant to avoid.</div>
+    </div>
+    <div>
+      <div class="h3">Three-phase commit — the correction</div>
+      <div class="callout r" style="margin-top:0"><b>3PC is not a hardened 2PC for unreliable networks. The
+        opposite is true.</b> Its non-blocking property holds <b>only</b> under a synchronous network with reliable failure
+        detection and <b>no partitions</b>. Introduce a partition — the thing an unreliable network produces — and 3PC can
+        commit on one side while aborting on the other, leaving <b>inconsistent state</b> when the partition heals.</div>
+      <div class="callout"><b>Blocking is preferable to inconsistency.</b> A blocked transaction resolves when the
+        coordinator recovers. Divergent state after a partition may be unrecoverable, because there is no longer a record of
+        which side was right. That trade is why <b>3PC has never been implemented in a commercial database system</b>, and
+        why it appears in textbooks rather than in production.</div>
+      <div class="h3">What is actually used instead</div>
+      <table>
+        <thead><tr><th style="width:150px">Need</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Atomicity across services</td><td><b>Saga</b> with compensation — accept the loss of isolation</td></tr>
+          <tr><td>Atomicity with a hold</td><td><b>TCC</b> — reserve, then confirm or cancel</td></tr>
+          <tr><td>Agreement in a distributed store</td><td><b>Consensus</b> — Raft or Paxos, which is partition-safe by design and is what distributed SQL uses</td></tr>
+          <tr><td>Reliable propagation</td><td><b>Outbox + idempotent consumer</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>Note the distinction.</b> Consensus and atomic commit are different problems.
+        Consensus needs a majority to agree on a value and tolerates a minority failing; atomic commit needs <i>unanimity</i>
+        to commit, so a single unreachable participant blocks it. That is why Raft scales to production and 2PC does not.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 4. TCC ============ -->
+<div class="panel c4">
+  <div class="phead">4 &nbsp;· &nbsp;TCC <span class="sub">reserve, then decide</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">Every participating service implements three operations. It is a
+      two-phase protocol like 2PC, but expressed in <b>business terms</b> at the application level — so nothing holds a
+      database lock between the phases.</div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:96px">Operation</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td><b>Try</b></td><td>Reserve the resource. Stock is moved to <i>held</i>, not deducted; the seat is blocked, not sold</td></tr>
+        <tr><td><b>Confirm</b></td><td>Make it final. Must be idempotent, and must not fail for business reasons — everything was checked in Try</td></tr>
+        <tr><td><b>Cancel</b></td><td>Release the reservation. Must be idempotent, and must tolerate a Try that never happened</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>The difference from a saga.</b> A saga commits each step for real and undoes it afterwards
+      — so a customer may see a charge and then a refund. TCC holds the resource without committing, so the intermediate
+      state is a <i>reservation</i> rather than a completed action nobody wanted.</div>
+    <div class="h3">What it demands of the domain</div>
+    <ul>
+      <li><b>Reservation must be meaningful</b> — you can hold a seat or stock; you cannot hold an email that was sent</li>
+      <li><b>Reservations must expire</b>, or a crashed orchestrator leaks capacity indefinitely</li>
+      <li><b>Confirm and Cancel must be idempotent</b> and safe to arrive out of order</li>
+      <li><b>Cancel must handle the empty case</b> — arriving for a Try that never landed</li>
+    </ul>
+    <div class="callout r"><b>Where it is misapplied.</b> On domains with no notion of a hold, teams implement Try as
+      &ldquo;do it&rdquo; and Cancel as &ldquo;undo it&rdquo; — at which point it is a saga with three times the code and
+      none of the benefit.</div>
+    <div class="callout g"><b>The expiry is the part to get right.</b> Too short and legitimate slow payments fail;
+      too long and inventory is unavailable to real buyers. Make it a stated business decision, and monitor how many
+      reservations expire unconfirmed.</div>
+  </div>
+</div>
+
+<!-- ============ 5. SAGA ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;SAGA — CHOREOGRAPHY vs ORCHESTRATION
+    <span class="sub">the same pattern with two very different operational characters</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Choreography — services react to events</div>
+      <div class="code">Order    ──OrderCreated──▶  Payment
+Payment  ──PaymentDone──▶   Inventory
+Inventory ──StockReserved─▶ Shipping
+
+<span class="c">// on failure, a compensating event flows back</span>
+Inventory ──OutOfStock──▶   Payment  <span class="c">(refund)</span>
+Payment   ──Refunded───▶    Order    <span class="c">(cancel)</span></div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:70px"></th><th>Character</th></tr></thead>
+        <tbody>
+          <tr><td><b>Good</b></td><td>No central component; services stay loosely coupled; easy to add a listener</td></tr>
+          <tr><td><b>Bad</b></td><td><b>No single place describes the process.</b> Understanding it means reading every service. Cyclic dependencies creep in, and testing the whole flow is hard</td></tr>
+          <tr><td><b>Use when</b></td><td>Few steps, stable process, teams comfortable with event-driven debugging</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Orchestration — a coordinator drives</div>
+      <div class="code">        ┌──────────────┐
+        │ Orchestrator │  holds the state machine
+        └──────────────┘
+   1▼ cmd    2▼ cmd     3▼ cmd
+ Payment   Inventory   Shipping
+   ▲ reply    ▲ reply    ▲ reply
+
+<span class="c">// on failure it issues compensations in reverse</span></div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:70px"></th><th>Character</th></tr></thead>
+        <tbody>
+          <tr><td><b>Good</b></td><td>The process is explicit and in one place; state is queryable; timeouts, retries and compensation ordering are centralised</td></tr>
+          <tr><td><b>Bad</b></td><td>A component to build and run; risks becoming a place business logic accumulates</td></tr>
+          <tr><td><b>Use when</b></td><td>More than a few steps, or the process itself matters to the business</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What both require</div>
+      <ul>
+        <li><b>Every step needs a compensating action</b>, and it must be defined before the step ships — not discovered during an incident</li>
+        <li><b>Compensations must be idempotent</b> and safe to retry</li>
+        <li><b>The saga's own state must be durable.</b> If the coordinator crashes mid-flight, it must resume — this is why workflow engines are commonly used</li>
+        <li><b>Timeouts at every step</b>, with a defined action when one expires</li>
+        <li><b>Correlation id</b> threaded through every message so a flow can be traced</li>
+      </ul>
+      <div class="callout r"><b>The question most designs skip: what if the compensation itself fails?</b> The refund
+        is rejected, or the release times out. Retry with backoff, then a dead-letter queue, then a human — with an alert and
+        a runbook. A saga with no answer here will eventually strand real orders in an intermediate state, and nobody will
+        notice until a customer calls.</div>
+      <div class="h3">Steps that cannot be compensated</div>
+      <div style="font-size:13.2px;line-height:1.45">An email sent, a physical item dispatched, an external payment
+        captured — none of these truly reverse. Put these steps <b>last</b>, after everything reversible has succeeded, so
+        the irreversible action only happens once the outcome is certain.</div>
+      <div class="callout g"><b>Order the steps by reversibility.</b> Retryable steps first, then compensable ones,
+        then a pivot step that commits the outcome, then irreversible actions. This ordering removes most compensation
+        complexity before it is written.</div>
+      <div class="callout b"><b>Prefer orchestration once the process exceeds about three steps.</b> The cost is one
+        component; the benefit is that the business process exists somewhere you can read, test, monitor and change — rather
+        than being an emergent property of who happens to be subscribed to what.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. SAGA ISOLATION ============ -->
+<div class="panel c5">
+  <div class="phead">6 &nbsp;· &nbsp;THE MISSING &ldquo;I&rdquo; <span class="sub">sagas give ACD, not ACID</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>A saga provides Atomicity, Consistency and Durability — but no
+      Isolation.</b> Each local transaction commits immediately, so <b>every other transaction in the system can see the
+      intermediate state</b>. This is the single most under-stated property of the pattern, and the source of its subtlest
+      production bugs.</div>
+    <div class="h3">The anomalies you inherit</div>
+    <table>
+      <thead><tr><th style="width:126px">Anomaly</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b>Dirty read</b></td><td>Another saga reads data that a later compensation will undo — and acts on it</td></tr>
+        <tr><td><b>Lost update</b></td><td>Two sagas update the same record; one silently overwrites the other</td></tr>
+        <tr><td><b>Fuzzy read</b></td><td>A saga reads the same record twice and gets different values mid-flight</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Countermeasures</div>
+    <table>
+      <thead><tr><th style="width:126px">Technique</th><th>How it helps</th></tr></thead>
+      <tbody>
+        <tr><td><b>Semantic lock</b></td><td>Mark the record with an in-flight status — <span class="mono">PENDING</span>, <span class="mono">APPROVAL_PENDING</span> — so others know it is not final and can wait or refuse</td></tr>
+        <tr><td><b>Commutative updates</b></td><td>Design operations so order does not matter. <span class="mono">credit</span> and <span class="mono">debit</span> commute; <span class="mono">set balance</span> does not. Eliminates lost updates</td></tr>
+        <tr><td><b>Pessimistic view</b></td><td>Reorder the saga so risky updates happen in steps that will not be compensated, removing the dirty-read window</td></tr>
+        <tr><td><b>Reread value</b></td><td>Re-read and verify the record is unchanged before writing — optimistic concurrency, applied within a saga</td></tr>
+        <tr><td><b>Version file</b></td><td>Record operations and apply them in a defined order, making out-of-order arrival safe</td></tr>
+        <tr><td><b>By value</b></td><td>Route by risk — use a saga for low-value requests and a stricter mechanism for high-value ones</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>The semantic lock is the one to reach for first.</b> It is cheap, explicit in the domain
+      model, and it makes the in-flight state visible to both other services and the user interface — which is usually where
+      the confusion would otherwise surface.</div>
+  </div>
+</div>
+
+<!-- ============ 7. OUTBOX ============ -->
+<div class="panel c3 span2">
+  <div class="phead">7 &nbsp;· &nbsp;RELIABLE MESSAGING — OUTBOX, INBOX AND CDC
+    <span class="sub">the answer to the dual-write problem, and the pattern most services actually need</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Outbox — publishing reliably</div>
+      <div class="code"><span class="k">BEGIN</span>                       <span class="c">// one local transaction</span>
+  INSERT INTO orders  …
+  INSERT INTO outbox (id, type, payload, created_at)
+       VALUES (uuid, <span class="v">'OrderCreated'</span>, {…}, now())
+<span class="k">COMMIT</span>                      <span class="c">// both, or neither ✓</span>
+
+<span class="c">// separately, a relay:</span>
+poll outbox → publish to broker → mark sent
+<span class="c">// crash before marking = republish = duplicate</span>
+<span class="c">// which is exactly why consumers must be idempotent</span></div>
+      <div class="callout g"><b>Why this works.</b> The event now commits atomically with the state change, because
+        they are the same transaction in the same database. The unreliable step — publishing — moved <i>out</i> of the
+        critical path and became retryable.</div>
+      <div class="h3">Operating it</div>
+      <ul>
+        <li><b>Prune the outbox</b> on a schedule; an unpruned table becomes the slowest part of your write path</li>
+        <li><b>Index on unsent + created_at</b> so the relay's poll stays cheap as the table grows</li>
+        <li><b>Preserve order per aggregate</b> if consumers depend on it — publish by aggregate id</li>
+        <li><b>Monitor relay lag.</b> A stalled relay is silent: writes still succeed and nothing downstream happens</li>
+        <li><b>Store the event in its published shape</b>, not the raw row — consumers should not depend on your schema</li>
+      </ul>
+      <div class="callout"><b>CDC is the alternative relay.</b> Instead of polling a table, read the database's
+        replication log directly. Lower latency and no polling — at the cost of a pipeline component, and events shaped like
+        rows rather than domain facts unless you still write to an outbox table and capture <i>that</i>.</div>
+    </div>
+    <div>
+      <div class="h3">Inbox — consuming exactly once, in effect</div>
+      <div class="code"><span class="k">BEGIN</span>
+  <span class="c">// has this message already been handled?</span>
+  INSERT INTO inbox (message_id) VALUES (?)
+    ON CONFLICT DO NOTHING          <span class="c">// duplicate → 0 rows</span>
+  IF inserted = 0 → <span class="k">COMMIT</span> and return   <span class="c">// skip</span>
+
+  … apply the business effect …
+<span class="k">COMMIT</span>          <span class="c">// dedup record + effect, atomically</span></div>
+      <div class="callout r"><b>The record and the effect must share one transaction.</b> Marking a message processed
+        in a separate step reintroduces exactly the dual-write problem the outbox just solved, one layer down.</div>
+      <div class="h3">Delivery semantics, stated plainly</div>
+      <table>
+        <thead><tr><th style="width:132px">Semantic</th><th>Reality</th></tr></thead>
+        <tbody>
+          <tr><td><b>At-most-once</b></td><td>Fire and forget. Messages can be lost. Acceptable only for genuinely disposable signals</td></tr>
+          <tr><td><b>At-least-once</b></td><td>What brokers actually give you. Duplicates <b>will</b> happen — on redelivery, rebalance, retry and replay</td></tr>
+          <tr><td><b>Exactly-once</b></td><td>Not achievable end to end across systems. <b>At-least-once delivery + idempotent processing</b> produces the same observable effect, and is what &ldquo;exactly-once&rdquo; means in practice</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Size the inbox retention to the redelivery window.</b> It must outlive the longest
+        possible retry or replay — otherwise a message redelivered after cleanup is processed a second time, and the
+        deduplication silently stops working.</div>
+      <div class="callout g"><b>Outbox and inbox are a pair.</b> Outbox guarantees the event is published;
+        inbox guarantees it is applied once. Deploying one without the other leaves an obvious gap at the other end.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. IDEMPOTENCY ============ -->
+<div class="panel c8">
+  <div class="phead">8 &nbsp;· &nbsp;IDEMPOTENCY <span class="sub">what makes retries safe</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">An operation is idempotent when applying it twice has the same effect as
+      applying it once. <b>Every retry, redelivery and replay on this sheet depends on it</b> — without it, reliability
+      mechanisms become duplication mechanisms.</div>
+    <div class="callout r"><b>The fact that forces this.</b> A timeout tells you <b>nothing</b> about whether the other
+      side did the work. The request may have been received, processed and the response lost. Retrying without idempotency
+      charges the customer twice.</div>
+    <div class="h3">How to achieve it</div>
+    <table>
+      <thead><tr><th style="width:132px">Technique</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td><b>Naturally idempotent</b></td><td><span class="mono">set status = SHIPPED</span> is safe to repeat. Prefer this shape where the domain allows</td></tr>
+        <tr><td><b>Idempotency key</b></td><td>Caller supplies a unique key; the server stores it with the result and returns the same result on a repeat</td></tr>
+        <tr><td><b>Deduplication table</b></td><td>The inbox pattern — record the message id in the same transaction as the effect</td></tr>
+        <tr><td><b>Conditional write</b></td><td><span class="mono">UPDATE … WHERE version = ?</span> — the second attempt affects zero rows</td></tr>
+        <tr><td><b>Business key</b></td><td>A unique constraint on a natural identifier lets the database reject the duplicate</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Return the original result, not an error.</b> A repeated request with the same idempotency
+      key should return the first response. Returning a conflict makes the caller believe it failed, and they will retry
+      again.</div>
+    <div class="h3">Ordering, which is separate</div>
+    <ul>
+      <li><b>Order is per partition, never global.</b> Partition by aggregate id to keep one entity's events in sequence</li>
+      <li><b>Handle out-of-order arrival</b> — carry a version or sequence number and ignore anything older than current state</li>
+      <li><b>Idempotency does not give you ordering</b>, and ordering does not give you idempotency. Both are needed</li>
+    </ul>
+    <div class="callout g"><b>Where the key comes from matters.</b> Generate it at the point the intent is formed —
+      the client, or the start of the saga — and carry it end to end. A key generated at the retry site is a new key every
+      time, which defeats the whole mechanism.</div>
+  </div>
+</div>
+
+<!-- ============ 9. EVENT SOURCING ============ -->
+<div class="panel c6">
+  <div class="phead">9 &nbsp;· &nbsp;EVENT SOURCING <span class="sub">state as a consequence</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">Store <b>what happened</b> as an immutable, append-only sequence. Current
+      state is derived by replaying it. The events are the source of truth; the state is a cache of them.</div>
+    <div class="code"><span class="c">// instead of: balance = 150</span>
+AccountOpened      {id, owner}
+Deposited          {amount: 200}
+Withdrawn          {amount: 50}
+<span class="c">// balance is computed: 0 + 200 − 50 = 150</span>
+<span class="c">// and you can also answer "what was it in March?"</span></div>
+    <div class="callout g"><b>What it uniquely gives you.</b> A complete audit trail by construction, temporal queries
+      (&ldquo;what did we believe at the time?&rdquo;), the ability to build a brand-new read model by replaying history, and
+      debugging by reproducing the exact sequence that produced a bad state.</div>
+    <div class="callout"><b>A correction worth noting: writes are <i>not</i> a weakness.</b> Appending is among the
+      cheapest operations a database performs, so event sourcing handles high write volume well. The real costs are
+      elsewhere — in the three items below.</div>
+    <div class="h3">The three real costs</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Replay time</b></td><td>A long stream is slow to rebuild. <b>Snapshots</b> — periodic materialised state — are not optional past a certain stream length</td></tr>
+        <tr><td><b>Schema evolution</b></td><td>Events are immutable and live for ever, so old versions must remain readable. Version every event and write <b>upcasters</b> that translate old shapes forward</td></tr>
+        <tr><td><b>Erasure</b></td><td>An immutable log conflicts directly with a right-to-erasure request. The usual answer is <b>crypto-shredding</b> — encrypt personal data per subject and destroy the key</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Decide the erasure approach before the first event is written.</b> Retrofitting it onto
+      an existing log means rewriting history, which is precisely what the design was built to prevent.</div>
+    <div class="callout p"><b>Events describe facts, in the past tense</b> — <span class="mono">OrderPlaced</span>,
+      not <span class="mono">PlaceOrder</span>. A command can be rejected; an event already happened and cannot be.</div>
+  </div>
+</div>
+
+<!-- ============ 10. CQRS ============ -->
+<div class="panel c7">
+  <div class="phead">10 &nbsp;· &nbsp;CQRS <span class="sub">two models, one truth</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">Separate the model you <b>write</b> through from the model you
+      <b>read</b> through. Writes go to a normalised model optimised for invariants; reads come from projections shaped for
+      the queries that actually run.</div>
+    <div class="callout b"><b>The correction that saves a lot of confusion: CQRS and event sourcing are
+      independent.</b> You can use CQRS over an ordinary relational database with a materialised view, and you can use event
+      sourcing without CQRS. They combine well, which is why they are usually taught together — but neither requires the
+      other, and adopting both at once is a large step.</div>
+    <div class="h3">Why it helps</div>
+    <ul>
+      <li><b>The shapes genuinely conflict.</b> A model good for enforcing invariants is normalised; a model good for a dashboard is not</li>
+      <li><b>Read and write scale independently</b> — usually asymmetric by a large factor</li>
+      <li><b>Several read models</b> from one write model: a search index, a cache, a reporting table</li>
+      <li><b>Rebuildable</b> — a projection can be dropped and regenerated, which makes read-side changes low-risk</li>
+    </ul>
+    <div class="h3">What it costs</div>
+    <ul>
+      <li><b>Replication lag is user-visible.</b> A user writes, then immediately reads, and does not see their own change</li>
+      <li>Two models to keep in step, and projection failures to detect</li>
+      <li>More moving parts than most systems need</li>
+    </ul>
+    <div class="callout r"><b>Handle read-your-writes explicitly.</b> Read from the write model immediately after a
+      write, return the new state in the write's own response, or show the pending state in the interface. Doing nothing
+      means users see their change vanish and submit it again.</div>
+    <div class="callout g"><b>Apply it per aggregate, not per system.</b> CQRS is worth it for the few areas with a
+      genuine read/write mismatch. Applying it uniformly across every entity multiplies the machinery without the benefit.</div>
+  </div>
+</div>
+
+<!-- ============ 11. LOCKS ============ -->
+<div class="panel c5">
+  <div class="phead">11 &nbsp;· &nbsp;LOCKS, LEASES &amp; CONCURRENCY <span class="sub">including one that does not work</span></div>
+  <div class="pbody">
+    <div class="h3">Optimistic concurrency — start here</div>
+    <div class="code">UPDATE inventory
+   SET qty = qty - 1, version = version + 1
+ WHERE id = ? <span class="k">AND version = ?</span>
+<span class="c">// 0 rows affected = someone else won. Re-read, retry.</span></div>
+    <div class="callout g"><b>The cheapest correctness tool available</b>, and the one most often missing. No lock
+      service, no coordination, no extra component — just a column and a retry. It solves lost updates on a single record
+      completely.</div>
+    <div class="h3">Distributed locks — and the flaw</div>
+    <div class="callout r"><b>A lock with an expiry is not mutual exclusion.</b> Client A acquires a 30-second lease,
+      then stalls — a long garbage-collection pause, a scheduling delay, a slow network. The lease expires. Client B
+      acquires it legitimately. Client A resumes, <b>believing it still holds the lock</b>, and writes. Two writers, no
+      error, silent corruption.</div>
+    <div class="code"><span class="c">// the fix: a fencing token</span>
+acquire → returns monotonically increasing token
+write(data, token)
+<span class="c">// the storage layer rejects any token lower</span>
+<span class="c">// than the highest it has already seen</span>
+
+A holds token <span class="v">33</span> → stalls
+B acquires token <span class="v">34</span> → writes ✓
+A resumes, writes with <span class="r">33</span> → <span class="r">rejected ✓</span></div>
+    <div class="callout"><b>Fencing requires support from the resource being protected</b> — it must check and
+      remember the token. Without that, a distributed lock is a best-effort optimisation to reduce contention, and must not
+      be relied on for correctness.</div>
+    <div class="h3">Choosing</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>Single record</b></td><td>Optimistic concurrency — version column</td></tr>
+        <tr><td><b>Short critical section, one database</b></td><td>A database transaction, or <span class="mono">SELECT … FOR UPDATE</span></td></tr>
+        <tr><td><b>Single-runner jobs</b></td><td>A lease is fine — duplicate execution is wasteful, not incorrect</td></tr>
+        <tr><td><b>Correctness-critical exclusion</b></td><td>Fencing tokens, or redesign so the invariant lives in one service and one transaction</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 12. MODELS ============ -->
+<div class="panel c8">
+  <div class="phead">12 &nbsp;· &nbsp;CONSISTENCY MODELS <span class="sub">what &ldquo;consistent&rdquo; means</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">Model</th><th>Guarantee</th></tr></thead>
+      <tbody>
+        <tr><td><b>Linearizable</b><br><span style="color:#6b7391">strong</span></td><td>Every read sees the latest committed write, as if there were one copy. Requires coordination on every operation</td></tr>
+        <tr><td><b>Sequential</b></td><td>Everyone observes operations in the same order, though not necessarily in real time</td></tr>
+        <tr><td><b>Causal</b></td><td>Operations that are causally related are seen in order; unrelated ones may differ per observer</td></tr>
+        <tr><td><b>Read-your-writes</b></td><td>You always see your own updates. Often the minimum users actually notice</td></tr>
+        <tr><td><b>Monotonic reads</b></td><td>Time never appears to move backwards for one reader</td></tr>
+        <tr><td><b>Bounded staleness</b></td><td>Reads lag by at most a stated time or version count — the useful middle ground</td></tr>
+        <tr><td><b>Eventual</b></td><td>Replicas converge if writes stop. The weakest guarantee that is still useful</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>&ldquo;Eventually consistent&rdquo; needs a number.</b> Eventually is 50 milliseconds
+      in one system and 20 minutes in another under load. State the target convergence window, measure it at p99, and alert
+      when it is exceeded — otherwise it is not a design decision, it is a hope.</div>
+    <div class="h3">Getting the guarantee you need</div>
+    <ul>
+      <li><b>Quorums</b> — with N replicas, reading R and writing W, <span class="mono">R + W &gt; N</span> guarantees a read sees the latest write</li>
+      <li><b>Read from the leader</b> for operations that must be current</li>
+      <li><b>Sticky routing</b> to one replica gives read-your-writes and monotonic reads cheaply</li>
+      <li><b>Version tokens</b> — the client passes the version it last saw, and the read waits for a replica at least that current</li>
+    </ul>
+    <div class="callout b"><b>Choose per operation, not per system.</b> &ldquo;Show my order after I place it&rdquo;
+      needs read-your-writes; &ldquo;show the dashboard&rdquo; tolerates minutes. Applying one model everywhere means paying
+      the strongest cost for the weakest need.</div>
+    <div class="callout"><b>The user interface is part of the design.</b> Showing a pending state honestly —
+      &ldquo;payment processing&rdquo; — turns an inconsistency window into normal behaviour rather than a bug report.</div>
+  </div>
+</div>
+
+<!-- ============ 13. CHOOSING ============ -->
+<div class="panel c1 span2">
+  <div class="phead">13 &nbsp;· &nbsp;CHOOSING, AND A WORKED EXAMPLE
+    <span class="sub">the decision path, and what an e-commerce order actually looks like when all of it is applied</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The decision path</div>
+      <table>
+        <thead><tr><th style="width:210px">Situation</th><th>Pattern</th></tr></thead>
+        <tbody>
+          <tr><td>Data changes together and is owned by one service</td><td><b>One local transaction.</b> Stop here — this is the correct answer far more often than it is used</td></tr>
+          <tr><td>Two services always change together</td><td>Question the boundary before adding a pattern</td></tr>
+          <tr><td>Concurrent updates to one record</td><td><b>Optimistic concurrency</b> — version column</td></tr>
+          <tr><td>A service must tell others something happened</td><td><b>Outbox</b> + <b>idempotent consumer</b></td></tr>
+          <tr><td>Multi-step process with a natural undo</td><td><b>Saga</b> — orchestrated past three steps</td></tr>
+          <tr><td>A resource must be held before committing</td><td><b>TCC</b></td></tr>
+          <tr><td>Reads and writes have conflicting shapes</td><td><b>CQRS</b>, on that aggregate only</td></tr>
+          <tr><td>History and audit are the requirement</td><td><b>Event sourcing</b></td></tr>
+          <tr><td>Events needed from a system you cannot change</td><td><b>CDC</b></td></tr>
+          <tr><td>Genuinely need atomic commit, small trusted boundary</td><td><b>2PC</b> — and confirm it is really needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">A worked order flow</div>
+      <div class="code"><span class="k">1</span> Order service — <span class="v">one local transaction</span>
+    INSERT order (status = PENDING)   <span class="c">← semantic lock</span>
+    INSERT outbox (OrderPlaced)
+    COMMIT                            <span class="c">← atomic ✓</span>
+
+<span class="k">2</span> Relay publishes OrderPlaced   <span class="c">at-least-once</span>
+
+<span class="k">3</span> Payment service — inbox dedup on message id
+    charge with the saga's idempotency key
+    INSERT outbox (PaymentCaptured)   <span class="c">same tx ✓</span>
+
+<span class="k">4</span> Inventory — reserve, not deduct   <span class="c">← TCC-style hold</span>
+    reservation expires in 15 min if unconfirmed
+
+<span class="k">5</span> Order service — status = CONFIRMED  <span class="c">← pivot step</span>
+
+<span class="k">6</span> Shipping, email                     <span class="c">← irreversible, last</span>
+
+<span class="r">FAILURE at 4:</span> compensate in reverse —
+    refund payment, release nothing, order = CANCELLED
+    <span class="c">compensation fails → retry → DLQ → human + alert</span></div>
+      <div class="callout g"><b>Read the shape, not the steps.</b> Every reversible action happens before the pivot;
+        everything irreversible happens after it. The semantic lock makes the in-flight state explicit to other services and
+        to the customer. Nothing anywhere depends on a distributed transaction.</div>
+      <div class="callout"><b>What the customer sees matters as much as the mechanism.</b> Between steps 1 and 5 the
+        order genuinely is pending — so show it as pending. The consistency window becomes a status rather than a defect.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 14. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">14 &nbsp;· &nbsp;READINESS CHECKLIST <span class="sub">confirm before a distributed process handles real money or real inventory</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Service boundaries checked</b> — nothing that always changes together was split apart</div>
+      <div>&#9744; <b>Data owned by one service</b> changes in one local transaction</div>
+      <div>&#9744; <b>Optimistic concurrency</b> on every mutable record</div>
+      <div>&#9744; <b>No dual write anywhere</b> — no code writes the database and publishes separately</div>
+      <div>&#9744; <b>Outbox written in the same transaction</b> as the state change</div>
+      <div>&#9744; <b>Outbox pruning scheduled</b> and the relay's lag monitored</div>
+      <div>&#9744; <b>Every consumer idempotent</b>, with the dedup record in the same transaction as the effect</div>
+      <div>&#9744; <b>Inbox retention exceeds</b> the longest redelivery or replay window</div>
+      <div>&#9744; <b>Idempotency keys generated at intent</b> and carried end to end</div>
+      <div>&#9744; <b>Repeated requests return the original result</b>, not a conflict</div>
+      <div>&#9744; <b>Ordering requirements identified</b>, and partitioning matches them</div>
+      <div>&#9744; <b>Out-of-order arrival handled</b> by version or sequence number</div>
+      <div>&#9744; <b>Every saga step has a compensating action</b>, defined before it shipped</div>
+      <div>&#9744; <b>Compensations are idempotent</b> and safe to retry</div>
+      <div>&#9744; <b>Compensation failure has a defined path</b> — retry, DLQ, alert, runbook, human</div>
+      <div>&#9744; <b>Irreversible steps ordered last</b>, after the pivot</div>
+      <div>&#9744; <b>Saga state is durable</b> and resumes after a coordinator crash</div>
+      <div>&#9744; <b>Timeout on every step</b>, with a defined action on expiry</div>
+      <div>&#9744; <b>Isolation anomalies considered</b> — dirty read, lost update, fuzzy read</div>
+      <div>&#9744; <b>Semantic locks</b> on records that are in-flight</div>
+      <div>&#9744; <b>Reservations expire</b>, and expiry rate is monitored</div>
+      <div>&#9744; <b>Correlation id</b> threaded through every message and log line</div>
+      <div>&#9744; <b>Convergence window stated as a number</b> and measured at p99</div>
+      <div>&#9744; <b>Read-your-writes handled</b> where users write then immediately read</div>
+      <div>&#9744; <b>Pending state shown honestly</b> in the interface</div>
+      <div>&#9744; <b>Distributed locks not relied on for correctness</b> without fencing tokens</div>
+      <div>&#9744; <b>Event schema versioned</b>, with upcasters for old shapes</div>
+      <div>&#9744; <b>Snapshots</b> where event streams grow long</div>
+      <div>&#9744; <b>Erasure approach decided</b> before the first event is written</div>
+      <div>&#9744; <b>Stuck-saga alert</b> — anything in an intermediate state beyond its expected window</div>
+      <div>&#9744; <b>DLQ monitored</b>, with an owner and a documented drain procedure</div>
+      <div>&#9744; <b>Failure paths tested</b> by deliberately failing a middle step under load</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>take one business process, fail step three, and follow
+      what happens to the data, the customer and the operator.</b> If the answer is &ldquo;it would probably retry&rdquo;,
+      or nobody can say where the order ends up, the design is not finished — and this is exactly the case that will occur,
+      because at scale every intermediate state eventually happens.</div>
+  </div>
+</div>
+
+</div>
