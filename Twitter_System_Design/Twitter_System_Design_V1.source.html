@@ -1,0 +1,1018 @@
+<meta charset="utf-8">
+<title>Twitter / X — System Design &amp; Interview Reference</title>
+<style>
+  @page { size: 3400px 6092px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:6092px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:6062px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 408px 687px 903px 634px 519px 561px 534px 544px 452px 430px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.4px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:13px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.4px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.6px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.8px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>TWITTER / X — SYSTEM DESIGN &amp; INTERVIEW REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">The fan-out problem, and everything that follows from it<br>
+    <span style="font-size:13.4px;color:#6d80b6">capacity · CAP per capability · fan-out · Snowflake ids · timeline &amp; ranking · graph · search · trends · failures
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. REQUIREMENTS ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;REQUIREMENTS, SCOPE AND THE ONE PROBLEM THAT DEFINES THIS DESIGN
+    <span class="sub">start here — what to establish first, and why this system is interesting at all</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Functional scope — say what is out, too</div>
+      <table>
+        <tbody>
+          <tr><td style="width:74px"><b>In</b></td><td>Post a tweet (text, media) · follow and unfollow · <b>home timeline</b> · user timeline · search · trends · likes, replies and retweets · notifications</td></tr>
+          <tr><td><b>Out</b></td><td>Direct messages, spaces, advertising and monetisation, moderation policy, recommendation model internals — <i>named explicitly, so the design has an edge</i></td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Non-functional targets, with percentiles</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px">Home timeline read</td><td><b>p99 &lt; 200 ms</b></td></tr>
+          <tr><td>Post tweet</td><td>p99 &lt; 500 ms to acknowledge</td></tr>
+          <tr><td>Tweet visible to followers</td><td>Seconds, not milliseconds — this is a <b>deliberate</b> relaxation</td></tr>
+          <tr><td>Search freshness</td><td>Seconds</td></tr>
+          <tr><td>Availability — read</td><td>99.99%</td></tr>
+          <tr><td>Availability — write</td><td>99.9% is the honest figure; a failed post is recoverable, a lost one is not</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Availability arithmetic, stated properly.</b> Serial dependencies <b>multiply</b>: a
+        read path touching five services at 99.9% each yields roughly <b>99.5%</b> composite — about 44 hours a year.
+        Quoting 99.99% for a long synchronous chain is arithmetic, not ambition, which is why so much of this design pushes
+        work off the read path.</div>
+    </div>
+    <div>
+      <div class="h3">The defining characteristic</div>
+      <div class="callout b" style="margin-top:0"><b>This is a read-dominated system with an extreme fan-out
+        asymmetry.</b> Reads outnumber writes by roughly two orders of magnitude — and one write can require millions of
+        downstream writes, or none, depending entirely on <i>who</i> posted it. Nearly every decision on this sheet exists
+        to manage that asymmetry.</div>
+      <div class="h3">Why the home timeline is the hard part</div>
+      <div style="font-size:13px;line-height:1.45">A home timeline is a merged, ranked view of tweets from everyone you
+        follow. Computing it naively at read time means querying hundreds of users' recent tweets, merging and ranking them
+        — <b>per request, at hundreds of thousands of requests per second</b>. That is not achievable, so the timeline is
+        precomputed. Precomputing it is what creates the celebrity problem.</div>
+      <div class="h3">The follower distribution is the whole story</div>
+      <table>
+        <thead><tr><th style="width:150px">User</th><th>Followers</th><th>Fan-out cost per tweet</th></tr></thead>
+        <tbody>
+          <tr><td>Median user</td><td>~ hundreds</td><td>Trivial</td></tr>
+          <tr><td>Popular account</td><td>~ 100 K</td><td>Noticeable</td></tr>
+          <tr><td>Celebrity</td><td>10 M – 100 M+</td><td><b style="color:#be123c">Catastrophic if handled the same way</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>This is a power-law distribution, not a normal one.</b> Designing for the average user
+        produces a system that collapses on the tail — and the tail is precisely the traffic that matters most commercially.</div>
+    </div>
+    <div>
+      <div class="h3">How to work through it in an interview</div>
+      <ol>
+        <li><b>Clarify and scope</b> — features, scale, and what is out</li>
+        <li><b>Estimate</b> — derive QPS and storage, stating assumptions aloud</li>
+        <li><b>Define the API</b> — it forces the data model into the open</li>
+        <li><b>Data model and access patterns</b>, then the stores that fit them</li>
+        <li><b>High-level architecture</b> — happy path only</li>
+        <li><b>Deep-dive the fan-out</b>. This is what the question is actually about</li>
+        <li><b>Bottlenecks, failure modes, degradation</b></li>
+        <li><b>Trade-offs you would revisit</b>, and on what signal</li>
+      </ol>
+      <div class="callout g"><b>Depth expected by level.</b> <span class="lvl jr">JUNIOR</span> the components and the
+        read/write split. <span class="lvl mid">MID</span> fan-out on write versus read, and caching.
+        <span class="lvl sr">STAFF</span> the hybrid boundary and how it is chosen, ranking, ordering guarantees,
+        deletion and edit propagation, cost, and what breaks first. Markers on this sheet indicate where each depth begins.</div>
+      <div class="callout r"><b>The most common interview mistake</b> is going straight to boxes and arrows without
+        establishing the follower distribution. Without that, the celebrity problem never surfaces — and it is the entire
+        reason this question is asked.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. CAPACITY ============ -->
+<div class="panel c1">
+  <div class="phead">2 &nbsp;· &nbsp;CAPACITY ESTIMATION <span class="sub">assumptions, then arithmetic</span></div>
+  <div class="pbody">
+    <div class="callout" style="margin-top:0"><b>State these as assumptions, not facts.</b> Public figures vary by
+      source and by year. What matters in an interview is that the arithmetic is right and the reasoning is visible —
+      not that the inputs match a press release.</div>
+    <div class="code"><span class="c">// assumptions</span>
+monthly active users            500,000,000
+daily active users (~50%)       250,000,000
+tweets per DAU per day                  ~2
+timeline opens per DAU per day         ~20
+
+<span class="c">// writes</span>
+500M tweets/day ÷ 86,400   ≈  <span class="v">5,800 tweets/sec</span>
+peak (×3)                  ≈ <span class="v">17,000 tweets/sec</span>
+
+<span class="c">// reads</span>
+5B timeline views/day ÷ 86,400 ≈ <span class="v">58,000 rps</span>
+peak (×3)                      ≈ <span class="v">175,000 rps</span>
+
+<span class="c">// the ratio that shapes everything</span>
+read : write  ≈  <span class="r">100 : 1</span>
+
+<span class="c">// fan-out amplification — the real number</span>
+avg followers ≈ 200
+5,800 tweets/sec × 200 = <span class="r">1.2 M timeline writes/sec</span>
+   and one celebrity tweet alone can be 100 M</div>
+    <div class="h3">Storage</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Tweets</b></td><td>500 M/day × ~1 KB ≈ <b>500 GB/day</b>, ~180 TB/year. Large, but it is <i>append-only and partitionable by time</i></td></tr>
+        <tr><td><b>Media</b></td><td>Dominates by an order of magnitude. Object storage plus CDN, never a database</td></tr>
+        <tr><td><b>Timelines</b></td><td>250 M users × 800 tweet <b>ids</b> × 8 bytes ≈ <b>1.6 TB</b> — small enough to hold in memory, which is the point</td></tr>
+        <tr><td><b>Social graph</b></td><td>Billions of edges, but each is tiny. Sharded adjacency lists</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The insight the numbers give you.</b> Timelines store <b>tweet ids, not tweets</b> —
+      which is what makes keeping every user's timeline in memory affordable. Store the objects once and hydrate at read
+      time from a cache. That single decision is worth more than any technology choice on this sheet.</div>
+  </div>
+</div>
+
+<!-- ============ 3. CAP ============ -->
+<div class="panel c5 span2">
+  <div class="phead">3 &nbsp;· &nbsp;CAP AND PACELC — PER CAPABILITY, NOT PER SYSTEM
+    <span class="sub">the framing that is usually stated wrongly, and what each part of this platform actually chooses</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1.05fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The correction: CAP is not &ldquo;pick two of three&rdquo;.</b>
+        You do not <i>choose</i> partition tolerance — partitions happen whether you want them or not, so any distributed
+        system must tolerate them. The real statement is narrower: <b>during a partition</b>, choose consistency or
+        availability. With no partition you get both. A diagram that says &ldquo;pick two&rdquo; and then adds
+        &ldquo;we always need P&rdquo; is contradicting itself.</div>
+      <div class="callout b"><b>PACELC is the version you actually use.</b> <b>If P</b>artition → choose <b>A</b> or
+        <b>C</b>; <b>E</b>lse → choose <b>L</b>atency or <b>C</b>onsistency. Partitions are rare; the latency-versus-
+        consistency trade-off is made on every single request, which makes it the more useful lens.</div>
+      <div class="callout g"><b>And it is chosen per capability.</b> This platform is CP for authentication and AP
+        for timelines — often within one request. &ldquo;Our system is AP&rdquo; is the answer of someone who has read about
+        CAP rather than applied it.</div>
+      <div class="h3">The trade this product deliberately makes</div>
+      <div style="font-size:13px;line-height:1.45">A tweet appearing in a follower's timeline <b>seconds late</b> is
+        invisible to users. A timeline that fails to load is not. That asymmetry is why nearly everything on the read path
+        chooses availability — and it is a <i>product</i> judgement expressed as an architectural one.</div>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:150px">Capability</th><th style="width:60px">Choice</th><th>Why, and what it costs</th></tr></thead>
+        <tbody>
+          <tr><td><b>Authentication &amp; sessions</b></td><td><b style="color:#be123c">CP</b></td><td>A revoked session must be revoked. Stale credentials are a security failure, not a stale read</td></tr>
+          <tr><td><b>Follow / unfollow</b></td><td><b style="color:#be123c">CP</b></td><td>A block or unfollow that does not take effect is a safety issue. Small volume, so strong consistency is affordable</td></tr>
+          <tr><td><b>Tweet durability</b></td><td><b style="color:#be123c">CP</b></td><td>An acknowledged tweet must exist. Durability before the response returns</td></tr>
+          <tr><td><b>Home timeline</b></td><td><b style="color:#047857">AP</b></td><td>Seconds of lag is imperceptible; an unavailable timeline is the product being down</td></tr>
+          <tr><td><b>Counts</b><br><span style="color:#6b7391">likes, retweets, followers</span></td><td><b style="color:#047857">AP</b></td><td>Approximate and eventually correct is fine — and at this scale exact counters are a distributed-counter problem nobody needs</td></tr>
+          <tr><td><b>Search index</b></td><td><b style="color:#047857">AP</b></td><td>Near-real-time. Serving slightly stale results beats an error</td></tr>
+          <tr><td><b>Trends</b></td><td><b style="color:#047857">AP</b></td><td>Approximate by construction — see panel 10</td></tr>
+          <tr><td><b>Your own tweet</b></td><td><b style="color:#b45309">Special</b></td><td><b>Read-your-writes is required.</b> A user must see their own tweet immediately, even while fan-out is still running. Usually solved by injecting it into their own view directly</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The last row is the one worth volunteering.</b> Users forgive a friend's tweet arriving
+        late; they do not forgive their own tweet appearing to vanish. Handling read-your-writes explicitly — rather than
+        hoping the fan-out is fast — is a small detail that signals you have thought about the product, not only the
+        architecture.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+    <span class="sub">write path on the left, read path on the right — and they meet only at the timeline store</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 830" width="3320" height="830">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#be123c"/></marker>
+    </defs>
+
+    <!-- EDGE -->
+    <rect x="8" y="6" width="3304" height="104" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">EDGE — absorbs the majority of read traffic before any service is involved</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="26" y="42" width="150" height="56" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="101" y="62" font-size="11.8" font-weight="700" fill="#1e3a8a">Clients</text>
+      <text x="101" y="80" fill="#42507a">web · mobile · API</text>
+      <rect x="190" y="42" width="150" height="56" rx="7" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+      <text x="265" y="62" font-size="11.8" font-weight="700" fill="#be123c">CDN + WAF</text>
+      <text x="265" y="80" fill="#7f2b2b">media, static, DDoS</text>
+      <rect x="354" y="42" width="170" height="56" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="439" y="62" font-size="11.8" font-weight="700" fill="#b45309">API gateway</text>
+      <text x="439" y="80" fill="#7a3d06">authN · rate limit · route</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)"><path d="M176,70 L184,70"/><path d="M340,70 L348,70"/></g>
+    <text x="546" y="60" font-size="11.4" fill="#42507a">Media is served entirely from the CDN and never touches a service. Timelines are personalised and therefore not CDN-cacheable —</text>
+    <text x="546" y="78" font-size="11.4" fill="#42507a">which is why the read path below exists and why it must be fast on its own.</text>
+    <text x="2280" y="60" font-size="11.4" font-weight="700" fill="#be123c">Rate limiting sits here, after authentication — limiting by identity requires knowing the identity first.</text>
+    <text x="2280" y="78" font-size="11.4" fill="#7f2b2b">Read and write limits differ by an order of magnitude, matching the traffic they protect.</text>
+
+    <!-- WRITE PATH -->
+    <rect x="8" y="118" width="1640" height="332" rx="10" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="26" y="142" font-size="16" font-weight="700" fill="#b45309">WRITE PATH — small in volume, and the source of all the amplification</text>
+
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="26" y="156" width="168" height="80" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="110" y="176" font-size="11.6" font-weight="700" fill="#b45309">1 · Tweet service</text>
+      <text x="110" y="194" fill="#7a3d06">validate, assign id</text>
+      <text x="110" y="210" fill="#7a3d06">Snowflake — panel 6</text>
+      <text x="110" y="228" fill="#6b7391">idempotency key</text>
+
+      <rect x="208" y="156" width="168" height="80" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="292" y="176" font-size="11.6" font-weight="700" fill="#be123c">2 · Persist + outbox</text>
+      <text x="292" y="194" fill="#7f2b2b">tweet row and event</text>
+      <text x="292" y="210" fill="#7f2b2b">in ONE transaction</text>
+      <text x="292" y="228" font-weight="700" fill="#be123c">no dual write</text>
+
+      <rect x="390" y="156" width="168" height="80" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="474" y="176" font-size="11.6" font-weight="700" fill="#b45309">3 · Respond</text>
+      <text x="474" y="194" fill="#7a3d06">tweet id returned</text>
+      <text x="474" y="212" fill="#047857">inject into author's</text>
+      <text x="474" y="228" fill="#047857">own view immediately</text>
+
+      <rect x="572" y="156" width="168" height="80" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="656" y="176" font-size="11.6" font-weight="700" fill="#0f766e">4 · Kafka</text>
+      <text x="656" y="194" fill="#2f4f47">tweet-created topic</text>
+      <text x="656" y="210" fill="#2f4f47">partitioned by author</text>
+      <text x="656" y="228" fill="#6b7391">everything below is async</text>
+    </g>
+    <g stroke="#b45309" stroke-width="2.2" fill="none" marker-end="url(#o)">
+      <path d="M194,196 L202,196"/><path d="M376,196 L384,196"/><path d="M558,196 L566,196"/>
+    </g>
+
+    <rect x="756" y="156" width="874" height="80" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="772" y="176" font-size="12.4" font-weight="700" fill="#b91c1c">THE ACKNOWLEDGEMENT BOUNDARY — the single most important line on this diagram</text>
+    <text x="772" y="196" font-size="11.2" fill="#7f2b2b">The user is told &ldquo;posted&rdquo; after step 3 — once the tweet is <tspan font-weight="700">durable</tspan>. Fan-out has not started, and must not be waited on.</text>
+    <text x="772" y="214" font-size="11.2" fill="#7f2b2b">Making the response wait for fan-out would mean a celebrity's post takes minutes to acknowledge and couples write availability to the</text>
+    <text x="772" y="230" font-size="11.2" font-weight="700" fill="#b91c1c">availability of every downstream consumer. Durability is synchronous; distribution is not.</text>
+
+    <!-- consumers -->
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="26" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="124" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Fan-out service</text>
+      <text x="124" y="290" fill="#2f4f47">the hybrid decision</text>
+      <text x="124" y="308" fill="#be123c">panel 5 — the core</text>
+
+      <rect x="236" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="334" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Search indexer</text>
+      <text x="334" y="290" fill="#2f4f47">inverted index</text>
+      <text x="334" y="308" fill="#6b7391">near-real-time</text>
+
+      <rect x="446" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="544" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Trend aggregator</text>
+      <text x="544" y="290" fill="#2f4f47">sketches over windows</text>
+      <text x="544" y="308" fill="#6b7391">approximate</text>
+
+      <rect x="656" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="754" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Notification service</text>
+      <text x="754" y="290" fill="#2f4f47">mentions, replies, likes</text>
+      <text x="754" y="308" fill="#6b7391">its own fan-out problem</text>
+
+      <rect x="866" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="964" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Media pipeline</text>
+      <text x="964" y="290" fill="#2f4f47">transcode, variants</text>
+      <text x="964" y="308" fill="#6b7391">object store + CDN</text>
+
+      <rect x="1076" y="252" width="196" height="72" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1174" y="272" font-size="11.4" font-weight="700" fill="#0f766e">Counters</text>
+      <text x="1174" y="290" fill="#2f4f47">likes, retweets, replies</text>
+      <text x="1174" y="308" fill="#6b7391">approximate, batched</text>
+
+      <rect x="1286" y="252" width="344" height="72" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+      <text x="1458" y="272" font-size="11.6" font-weight="700" fill="#047857">Why one event, many consumers</text>
+      <text x="1458" y="290" fill="#2f4f47">Each consumer scales, fails and is replayed</text>
+      <text x="1458" y="308" fill="#2f4f47">independently. None can block the write.</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2" fill="none" marker-end="url(#g)" stroke-dasharray="5 3">
+      <path d="M656,236 L656,244"/>
+    </g>
+
+    <rect x="26" y="340" width="1604" height="98" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+    <text x="42" y="360" font-size="12.6" font-weight="700" fill="#b45309">WHY THE OUTBOX, SPECIFICALLY</text>
+    <text x="42" y="380" font-size="11.4" fill="#7a3d06">You cannot atomically write to a database and publish to Kafka. Persist the tweet and its event in one local transaction; a relay publishes from the outbox.</text>
+    <text x="42" y="398" font-size="11.4" fill="#7a3d06">Without it, a crash between the two leaves a tweet that exists but never reaches a single follower's timeline — and nothing errors, so nobody notices.</text>
+    <text x="42" y="420" font-size="11.4" font-weight="700" fill="#be123c">Consumers are idempotent, because Kafka delivery is at-least-once and a replayed event must not duplicate a timeline entry or double-count a like.</text>
+
+    <!-- READ PATH -->
+    <rect x="1662" y="118" width="1650" height="332" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1680" y="142" font-size="16" font-weight="700" fill="#0f766e">READ PATH — 100× the volume, and it must be a lookup rather than a computation</text>
+
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="1680" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1766" y="176" font-size="11.6" font-weight="700" fill="#0f766e">1 · Timeline service</text>
+      <text x="1766" y="194" fill="#2f4f47">read cached id list</text>
+      <text x="1766" y="212" fill="#2f4f47">Redis, ~800 ids</text>
+      <text x="1766" y="228" fill="#6b7391">a list read, nothing more</text>
+
+      <rect x="1866" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1952" y="176" font-size="11.6" font-weight="700" fill="#be123c">2 · Pull celebrities</text>
+      <text x="1952" y="194" fill="#7f2b2b">fetch recent tweets from</text>
+      <text x="1952" y="212" fill="#7f2b2b">followed large accounts</text>
+      <text x="1952" y="228" font-weight="700" fill="#be123c">the hybrid half</text>
+
+      <rect x="2052" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2138" y="176" font-size="11.6" font-weight="700" fill="#0f766e">3 · Merge</text>
+      <text x="2138" y="194" fill="#2f4f47">combine both sources</text>
+      <text x="2138" y="212" fill="#2f4f47">dedupe, sort by id</text>
+      <text x="2138" y="228" fill="#6b7391">ids are time-ordered</text>
+
+      <rect x="2238" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2324" y="176" font-size="11.6" font-weight="700" fill="#7c2d92">4 · Rank</text>
+      <text x="2324" y="194" fill="#4b3a5e">score by relevance</text>
+      <text x="2324" y="212" fill="#4b3a5e">engagement, recency</text>
+      <text x="2324" y="228" fill="#6b7391">panel 7</text>
+
+      <rect x="2424" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2510" y="176" font-size="11.6" font-weight="700" fill="#0f766e">5 · Hydrate</text>
+      <text x="2510" y="194" fill="#2f4f47">ids → tweet objects</text>
+      <text x="2510" y="212" fill="#2f4f47">from cache, batched</text>
+      <text x="2510" y="228" fill="#be123c">apply deletes and blocks</text>
+
+      <rect x="2610" y="156" width="172" height="80" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2696" y="176" font-size="11.6" font-weight="700" fill="#0f766e">6 · Respond</text>
+      <text x="2696" y="194" fill="#2f4f47">page of tweets</text>
+      <text x="2696" y="212" fill="#2f4f47">+ cursor</text>
+      <text x="2696" y="228" fill="#6b7391">p99 target &lt; 200 ms</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M1852,196 L1860,196"/><path d="M2038,196 L2046,196"/><path d="M2224,196 L2232,196"/>
+      <path d="M2410,196 L2418,196"/><path d="M2596,196 L2604,196"/>
+    </g>
+
+    <rect x="2796" y="156" width="500" height="80" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="2812" y="176" font-size="12.2" font-weight="700" fill="#047857">WHY HYDRATION IS SEPARATE</text>
+    <text x="2812" y="196" font-size="11" fill="#2f4f47">Timelines hold ids; tweet bodies are stored once and shared. A tweet</text>
+    <text x="2812" y="212" font-size="11" fill="#2f4f47">retweeted a million times is one object, referenced a million times —</text>
+    <text x="2812" y="230" font-size="11" font-weight="700" fill="#047857">and an edit or delete then applies everywhere at once, for free.</text>
+
+    <rect x="1680" y="252" width="800" height="86" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1696" y="272" font-size="12.4" font-weight="700" fill="#b91c1c">FILTERING HAPPENS AT READ TIME, NOT WRITE TIME</text>
+    <text x="1696" y="292" font-size="11.2" fill="#7f2b2b">Blocks, mutes, deleted tweets and suspended accounts are applied when the timeline is <tspan font-weight="700">read</tspan>. Applying them at fan-out</text>
+    <text x="1696" y="310" font-size="11.2" fill="#7f2b2b">would mean rewriting millions of stored timelines every time one user blocks another — which is unbounded work for a trivial action.</text>
+    <text x="1696" y="330" font-size="11.2" font-weight="700" fill="#b91c1c">The cost is that every read carries a filtering step, so those lists must be small, cached, and cheap to check.</text>
+
+    <rect x="2494" y="252" width="802" height="86" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.8"/>
+    <text x="2510" y="272" font-size="12.4" font-weight="700" fill="#1d4ed8">CACHE HIT RATE IS THE WHOLE READ PATH</text>
+    <text x="2510" y="292" font-size="11.2" fill="#1e3a5f">Timeline lists and tweet objects both live in memory. At this read volume the databases behind them are sized for a</text>
+    <text x="2510" y="310" font-size="11.2" fill="#1e3a5f"><tspan font-weight="700">fraction</tspan> of real traffic — they physically cannot serve it. A cold cache after a restart is therefore not a slow</text>
+    <text x="2510" y="330" font-size="11.2" font-weight="700" fill="#1d4ed8">period; it is an outage. Warm before taking traffic, and never flush the whole cache at once.</text>
+
+    <rect x="1680" y="352" width="1616" height="86" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="1696" y="372" font-size="12.6" font-weight="700" fill="#0f766e">WHAT MAKES THIS READ FAST — three properties, in order of importance</text>
+    <text x="1696" y="392" font-size="11.4" fill="#2f4f47"><tspan font-weight="700">1 · It is precomputed.</tspan> The expensive merge happened at write time for most followees, so the read is a list lookup rather than a query across hundreds of users.</text>
+    <text x="1696" y="410" font-size="11.4" fill="#2f4f47"><tspan font-weight="700">2 · It holds ids, not objects.</tspan> The list is tiny and stays in memory; bodies are fetched in one batched call against a shared cache.</text>
+    <text x="1696" y="430" font-size="11.4" fill="#2f4f47"><tspan font-weight="700">3 · Nothing on it is synchronous with anything expensive.</tspan> Ranking is bounded, filtering reads small cached sets, and no step waits on a database under normal operation.</text>
+
+    <!-- STORES -->
+    <rect x="8" y="458" width="3304" height="180" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="482" font-size="16" font-weight="700" fill="#7c2d92">STORES — each chosen for one access pattern, and named by what it must do rather than by product</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="26" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="152" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Tweet store</text>
+      <text x="152" y="532" fill="#4b3a5e">append-only, by id and author</text>
+      <text x="152" y="548" fill="#6b7391">partitioned by time</text>
+
+      <rect x="292" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="418" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Timeline cache</text>
+      <text x="418" y="532" fill="#4b3a5e">Redis list of ids per user</text>
+      <text x="418" y="548" fill="#6b7391">capped, LPUSH + LTRIM</text>
+
+      <rect x="558" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="684" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Tweet object cache</text>
+      <text x="684" y="532" fill="#4b3a5e">id → tweet, shared by all</text>
+      <text x="684" y="548" fill="#6b7391">the hydration source</text>
+
+      <rect x="824" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="950" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Social graph</text>
+      <text x="950" y="532" fill="#4b3a5e">sharded adjacency lists</text>
+      <text x="950" y="548" fill="#be123c">not a graph database — panel 8</text>
+
+      <rect x="1090" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1216" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Search index</text>
+      <text x="1216" y="532" fill="#4b3a5e">inverted, time-partitioned</text>
+      <text x="1216" y="548" fill="#6b7391">rebuildable projection</text>
+
+      <rect x="1356" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1482" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">User &amp; auth</text>
+      <text x="1482" y="532" fill="#4b3a5e">relational, transactional</text>
+      <text x="1482" y="548" fill="#6b7391">small and strict</text>
+
+      <rect x="1622" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1748" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Object storage</text>
+      <text x="1748" y="532" fill="#4b3a5e">media originals + variants</text>
+      <text x="1748" y="548" fill="#6b7391">fronted by CDN</text>
+
+      <rect x="1888" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2014" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Counters</text>
+      <text x="2014" y="532" fill="#4b3a5e">approximate, batched</text>
+      <text x="2014" y="548" fill="#6b7391">never a row per like</text>
+
+      <rect x="2154" y="494" width="252" height="64" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2280" y="514" font-size="11.6" font-weight="700" fill="#7c2d92">Analytics</text>
+      <text x="2280" y="532" fill="#4b3a5e">columnar, clickstream</text>
+      <text x="2280" y="548" fill="#6b7391">off the serving path</text>
+    </g>
+    <rect x="2420" y="494" width="876" height="64" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="2436" y="514" font-size="12" font-weight="700" fill="#b91c1c">POLYGLOT PERSISTENCE IS A CONSEQUENCE, NOT A GOAL</text>
+    <text x="2436" y="532" font-size="10.8" fill="#7f2b2b">Each store above exists because one access pattern genuinely could not be served by the others. Every</text>
+    <text x="2436" y="550" font-size="10.8" fill="#7f2b2b">additional one is a thing to back up, patch, monitor and be paged for — earn each with a measured need.</text>
+
+    <text x="26" y="588" font-size="11.6" fill="#42507a"><tspan font-weight="700">Naming stores by role rather than by product is deliberate.</tspan> The interview question is whether you can justify the access pattern, not whether you can recall a vendor. Cassandra, DynamoDB, HBase and Bigtable are all defensible for the tweet store; what matters is that you say <tspan font-style="italic">why</tspan> a wide-column store with a time-ordered clustering key fits an append-heavy, read-by-author workload.</text>
+    <text x="26" y="612" font-size="11.6" font-weight="700" fill="#be123c">And note what is deliberately absent: no single database is doing more than one job, and nothing on the read path performs a join. At this scale, a join across services on the request path is the design error that no amount of hardware recovers from.</text>
+
+    <!-- CROSS CUTTING -->
+    <rect x="8" y="646" width="3304" height="176" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="670" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — the three decisions everything else follows from</text>
+    <text x="26" y="696" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · The write is acknowledged before distribution begins.</tspan> Durability is synchronous; fan-out is not. This is what keeps post latency constant regardless of whether the author has 200 followers or 100 million, and it is why the event backbone is load-bearing rather than decorative.</text>
+    <text x="26" y="726" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · The read is a lookup, never a computation.</tspan> The expensive merge was done in advance for most followees; what remains at read time is a list fetch, a bounded pull for large accounts, a merge, a ranking pass and a batched hydration. Nothing scans, nothing joins.</text>
+    <text x="26" y="756" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · Consistency is chosen per capability and changes within one request.</tspan> The same request reads strongly-consistent block lists and eventually-consistent counts, and injects the user's own tweet directly so read-your-writes holds while fan-out is still in flight.</text>
+    <text x="26" y="790" font-size="12" fill="#6b7391">Useful interrogation for any box: what access pattern justifies it, what is its p99, what does the user see when it is down, and what would you remove first if the budget halved?</text>
+    <text x="26" y="812" font-size="12" font-weight="700" fill="#1e3a8a">If a component has no answer to all four, it is on the diagram because it is expected rather than because it is needed — and most published versions of this design carry two or three of those.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. FAN-OUT ============ -->
+<div class="panel c5 span2">
+  <div class="phead">5 &nbsp;· &nbsp;THE FAN-OUT PROBLEM — THE HEART OF THIS DESIGN
+    <span class="sub">what the question is actually testing · <span class="lvl mid">MID</span> the two strategies · <span class="lvl sr">STAFF</span> where the boundary goes and why</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The two pure strategies</div>
+      <table>
+        <thead><tr><th style="width:126px"></th><th>Fan-out on write &nbsp;<span style="color:#6b7391">push</span></th><th>Fan-out on read &nbsp;<span style="color:#6b7391">pull</span></th></tr></thead>
+        <tbody>
+          <tr><td><b>On post</b></td><td>Append the tweet id to every follower's stored timeline</td><td>Do nothing</td></tr>
+          <tr><td><b>On read</b></td><td>Return the stored list — one lookup</td><td>Query every followee's recent tweets, merge and sort</td></tr>
+          <tr><td><b>Read latency</b></td><td><b style="color:#047857">Excellent</b> — a list read</td><td><b style="color:#be123c">Poor</b> — hundreds of queries per request</td></tr>
+          <tr><td><b>Write cost</b></td><td><b style="color:#be123c">O(followers)</b> — unbounded</td><td><b style="color:#047857">O(1)</b></td></tr>
+          <tr><td><b>Storage</b></td><td>One entry per follower per tweet</td><td>None</td></tr>
+          <tr><td><b>Breaks when</b></td><td>Someone has millions of followers</td><td>Everyone reads constantly — which they do</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Neither works alone, and saying so is the answer.</b> Pure push cannot survive a
+        celebrity: one tweet becomes tens of millions of writes, and if they post ten times a day the fan-out system does
+        nothing else. Pure pull cannot survive the read volume: at ~175,000 reads per second, each fanning out to hundreds
+        of queries, the numbers are absurd.</div>
+      <div class="h3">The hybrid — what is actually built</div>
+      <div class="code"><span class="c">// on post</span>
+followers = graph.count(author)
+
+<span class="k">if</span> followers &lt; THRESHOLD:      <span class="c">// ~10k, tuned</span>
+    <span class="v">push</span>  → append id to each follower's list
+<span class="k">else</span>:
+    <span class="r">skip</span>  → store nothing; readers will pull
+
+<span class="c">// on read</span>
+timeline = redis.lrange(user, 0, n)        <span class="c">// pushed</span>
+celebs   = pullRecent(followedLargeAccounts) <span class="c">// pulled</span>
+<span class="k">return</span> rank(merge(timeline, celebs))</div>
+      <div class="callout g"><b>Why the split works.</b> Ordinary users have few followers, so pushing is cheap.
+        Celebrities have many followers <i>but post rarely relative to their reach</i>, so pulling is bounded — and the
+        pull is shared: one fetch of a celebrity's recent tweets serves every follower reading at that moment.</div>
+    </div>
+    <div>
+      <div class="h3"><span class="lvl sr">STAFF</span> Choosing the threshold</div>
+      <ul>
+        <li><b>It is a tuning parameter, not a constant.</b> Order of ten thousand followers is a common landing point, arrived at by measuring — not derived from first principles</li>
+        <li><b>Too low</b> → too many accounts pulled, so every read does more work and read latency degrades</li>
+        <li><b>Too high</b> → fan-out queues back up during peak posting, and timelines fall behind</li>
+        <li><b>Consider posting rate as well as follower count.</b> A million-follower account that posts once a month is cheap to push; a fifty-thousand-follower account posting constantly may be worth pulling</li>
+        <li><b>It must be changeable at runtime</b> — a configuration value with a kill switch, not a deploy</li>
+      </ul>
+      <div class="callout"><b>The refinement worth mentioning.</b> Fan out only to <b>active</b> followers. A large
+        share of accounts have not opened the app in months, and materialising timelines for them is pure waste. Push to
+        recently-active users, and rebuild on demand for anyone returning — this can remove the majority of fan-out work.</div>
+      <div class="h3">What the fan-out worker must handle</div>
+      <ul>
+        <li><b>Idempotency</b> — Kafka redelivers, and a replayed event must not duplicate the entry</li>
+        <li><b>Capping</b> — <span class="mono">LPUSH</span> then <span class="mono">LTRIM</span> to a fixed length; timelines are bounded, not infinite</li>
+        <li><b>Batching</b> — write in chunks rather than one call per follower</li>
+        <li><b>Backpressure</b> — lag is the metric that matters; alert on it, not on error rate</li>
+        <li><b>Prioritisation</b> — active followers first, so the people who will actually read it get it soonest</li>
+      </ul>
+      <div class="callout r"><b><span class="lvl sr">STAFF</span> The question that separates depth: what happens
+        when fan-out lags?</b> Timelines fall behind silently — no error, no alert unless you built one. Users see stale
+        feeds and nothing in the system considers itself unhealthy. Monitor consumer lag as a primary SLI, shed the lowest
+        value work first, and be able to fall back to pull for accounts whose push is behind.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. IDs ============ -->
+<div class="panel c4">
+  <div class="phead">6 &nbsp;· &nbsp;TWEET IDs — SNOWFLAKE <span class="sub">a detail worth knowing</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.45">Every tweet needs a unique id, generated at thousands per second across
+      many machines, with <b>no coordination</b> — and ideally <b>sortable by time</b>, so that ordering a timeline is
+      ordering integers.</div>
+    <div class="h3">Why the obvious options fail</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Auto-increment</b></td><td>Requires a single writer. A coordination point in the hottest path</td></tr>
+        <tr><td><b>Random UUID</b></td><td>Unique and coordination-free, but <b>not sortable</b> — so ordering needs a separate timestamp and index, and insert locality is poor</td></tr>
+        <tr><td><b>Timestamp alone</b></td><td>Collides — many tweets share a millisecond</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">The Snowflake layout</div>
+    <div class="code"><span class="c">64 bits, most significant first</span>
+
+ 1  bit  <span class="k">unused</span>     keeps the value positive
+41  bits <span class="v">timestamp</span>  ms since a custom epoch
+                    ≈ 69 years of range
+10  bits <span class="v">machine</span>    up to 1,024 workers
+12  bits <span class="v">sequence</span>   4,096 ids per ms per machine
+
+<span class="c">// capacity: 1,024 × 4,096 = ~4.2 M ids per ms</span>
+<span class="c">// far beyond any plausible tweet rate</span></div>
+    <div class="callout g"><b>The property that makes it valuable.</b> Because the timestamp occupies the high bits,
+      <b>sorting ids sorts by time</b>. Timeline merges, pagination cursors and range scans all become integer comparisons —
+      no separate timestamp column, no secondary index, no clock comparison across machines.</div>
+    <div class="callout r"><b>The failure mode to name: clock skew.</b> If a machine's clock moves backwards — an NTP
+      correction, a leap second — it can generate an id it has already issued. The generator must detect a backwards clock
+      and <b>refuse to issue ids</b> until time catches up, rather than producing a duplicate. Refusing briefly is
+      recoverable; a duplicate tweet id is not.</div>
+    <div class="callout b"><b>The general lesson beyond this system.</b> Sortable, coordination-free identifiers are
+      useful anywhere you need ordering without a central sequence — which is why ULID and UUIDv7 exist and follow the same
+      time-high-bits idea.</div>
+  </div>
+</div>
+
+<!-- ============ 7. TIMELINE ============ -->
+<div class="panel c2 span2">
+  <div class="phead">7 &nbsp;· &nbsp;TIMELINE STORAGE, RANKING AND THE OPERATIONS THAT ARE HARD AFTERWARDS
+    <span class="sub"><span class="lvl mid">MID</span> the cache structure · <span class="lvl sr">STAFF</span> ranking, deletion, editing and ordering guarantees</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The stored timeline</div>
+      <div class="code"><span class="c">// one capped list of ids per user</span>
+key:   timeline:{user_id}
+type:  list of tweet ids (8 bytes each)
+size:  ~800 entries, hard capped
+
+LPUSH timeline:{u} {tweet_id}
+LTRIM timeline:{u} 0 799        <span class="c">// bounded</span>
+
+<span class="c">// 250M users × 800 × 8B ≈ 1.6 TB — fits in memory</span>
+<span class="c">// storing tweet OBJECTS instead would be ~100× more</span></div>
+      <div class="callout g"><b>Bounding the list is what makes this affordable.</b> Nobody scrolls back a thousand
+        entries in a home timeline; anyone who does can be served from the user timelines directly. Unbounded per-user
+        storage would grow without limit for no product benefit.</div>
+      <div class="h3">Ranking — the timeline is not chronological</div>
+      <ul>
+        <li><b>Candidate generation</b> — the merged push and pull sets, typically hundreds of tweets</li>
+        <li><b>Scoring</b> — engagement signals, author affinity, recency decay, media type, predicted interaction</li>
+        <li><b>Policy</b> — deduplicate, cap consecutive tweets from one author, inject what must be shown, remove what must not</li>
+        <li><b>Cost note</b> — scoring is bounded because the candidate set is small. The precomputation is what makes ranking affordable at read time</li>
+      </ul>
+      <div class="callout"><b>Offer chronological as an option.</b> Some users strongly prefer it, and it is nearly
+        free — it is the merged list before scoring. Being able to say why it costs almost nothing shows you understand
+        where the expense actually sits.</div>
+    </div>
+    <div>
+      <div class="h3"><span class="lvl sr">STAFF</span> The operations that are awkward after fan-out</div>
+      <table>
+        <thead><tr><th style="width:120px">Operation</th><th>Why it is hard, and how it is handled</th></tr></thead>
+        <tbody>
+          <tr><td><b>Delete a tweet</b></td><td>The id sits in millions of stored timelines. <b>Do not remove it from each one.</b> Delete the object and filter at hydration — a missing or tombstoned object simply does not render. Timelines self-clean as they roll over</td></tr>
+          <tr><td><b>Edit a tweet</b></td><td>Free, because timelines hold ids. Update the object once and every timeline shows the new version. Keep an edit history for auditability</td></tr>
+          <tr><td><b>Block or mute</b></td><td>Applied at read, from a small cached set. Rewriting stored timelines on every block would be unbounded work for a trivial action</td></tr>
+          <tr><td><b>Account suspension</b></td><td>Same mechanism as delete, at the author level — filter at hydration rather than purge</td></tr>
+          <tr><td><b>New follow</b></td><td>The new followee's past tweets are absent from the stored timeline. Backfill a bounded window, or let it fill naturally and pull recent ones</td></tr>
+          <tr><td><b>Unfollow</b></td><td>Their ids remain until they age out. Filtered at read; not worth rewriting</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The principle running through every row: never rewrite fanned-out data.</b> Anything
+        that would require touching millions of stored timelines to satisfy one user action must instead be handled by
+        filtering at read time. This is the single most useful heuristic in this design, and it generalises well beyond it.</div>
+      <div class="callout b"><b><span class="lvl sr">STAFF</span> The ordering guarantee, stated honestly.</b> There
+        is <b>no global ordering</b> across the timeline. Push and pull arrive on different paths with different latencies,
+        so two users may briefly see the same tweets in a different order. Snowflake ids give a consistent sort <i>once
+        everything has arrived</i> — the guarantee is eventual convergence, not real-time global order, and claiming
+        otherwise would be false.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. GRAPH ============ -->
+<div class="panel c3">
+  <div class="phead">8 &nbsp;· &nbsp;THE SOCIAL GRAPH <span class="sub">a correction worth making</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>A graph database is usually the wrong answer here, and it is a
+      common reflex.</b> Graph engines earn their cost on <b>variable-depth traversal</b> — friends-of-friends-of-friends,
+      shortest path, community detection. The follower graph's hot operations are far simpler than that.</div>
+    <div class="h3">What the access patterns actually are</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>Who follows X?</b></td><td>Read one adjacency list — for fan-out</td></tr>
+        <tr><td><b>Who does X follow?</b></td><td>Read one adjacency list — for pull and backfill</td></tr>
+        <tr><td><b>Does X follow Y?</b></td><td>A single membership check</td></tr>
+        <tr><td><b>How many followers?</b></td><td>An approximate counter</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Every one of those is a key lookup or a membership test</b> — which a sharded key-value
+      or wide-column store serves faster, cheaper and more predictably than a graph engine. Store both directions
+      explicitly: followers-of and following-of as separate lists, written together, because both are read hot.</div>
+    <div class="h3">Practical concerns</div>
+    <ul>
+      <li><b>Shard by user id</b>, so one user's list is on one node</li>
+      <li><b>Very large lists need paging</b> — a hundred-million-follower list is never returned whole; cursor over it</li>
+      <li><b>Counts are approximate</b> and maintained separately. An exact follower count at this scale is a distributed-counter problem with no product benefit</li>
+      <li><b>Writes are small but must be strongly consistent</b> — an unfollow or block that does not take effect is a safety issue, not a stale read</li>
+      <li><b>Hot shards</b> — celebrity accounts concentrate load on one partition; cache their lists aggressively</li>
+    </ul>
+    <div class="callout"><b>When a graph store <i>would</i> be right:</b> a &ldquo;people you may know&rdquo; feature
+      doing multi-hop traversal, or fraud-ring detection over the follow graph. Those are genuine graph problems — and they
+      belong in an offline system, not on the serving path.</div>
+  </div>
+</div>
+
+<!-- ============ 9. SEARCH ============ -->
+<div class="panel c8">
+  <div class="phead">9 &nbsp;· &nbsp;SEARCH <span class="sub">real-time, over an append-only corpus</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.45">Search here has an unusual shape: the corpus is <b>enormous,
+      append-only and dominated by recency</b>. Almost all queries want recent tweets; very few want something from years
+      ago. That skew is what the design exploits.</div>
+    <div class="h3">The indexing pipeline</div>
+    <div class="code">tweet → outbox → Kafka → indexer → inverted index
+                                  └▶ vector index (semantic)
+
+<span class="c">// never dual-write to the store and the index —</span>
+<span class="c">// that leaves the index silently wrong, with no error</span></div>
+    <div class="h3">Partitioning by time</div>
+    <ul>
+      <li><b>Recent shards are small, hot and in memory</b>; older shards are large, cold and rarely touched</li>
+      <li><b>Most queries hit only the recent shards</b>, so the effective search space is a fraction of the corpus</li>
+      <li><b>Old shards can be moved to cheaper storage</b> or dropped entirely, according to a retention policy</li>
+    </ul>
+    <div class="callout g"><b>This is the highest-leverage decision in the panel.</b> Time-partitioning turns
+      &ldquo;search billions of documents&rdquo; into &ldquo;search the last few hours, and only widen if the query
+      demands it&rdquo;.</div>
+    <div class="h3">Query concerns</div>
+    <ul>
+      <li><b>Relevance scoring</b> — BM25 as a baseline, plus engagement and author signals</li>
+      <li><b>Recency versus relevance</b> is a product decision, exposed as top-versus-latest</li>
+      <li><b>Filters</b> — author, language, media, date range, safety</li>
+      <li><b>Hybrid retrieval</b> — keyword for exact handles and hashtags, vector for meaning. Fuse the ranked lists</li>
+    </ul>
+    <div class="callout r"><b>The index is a projection, never the source of truth.</b> It must be fully rebuildable
+      from the tweet store, and rebuilding should be a rehearsed operation — you will need it after a mapping change, and
+      discovering that during an incident is the wrong time.</div>
+  </div>
+</div>
+
+<!-- ============ 10. TRENDS ============ -->
+<div class="panel c6">
+  <div class="phead">10 &nbsp;· &nbsp;TRENDING TOPICS <span class="sub">approximate on purpose</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.45">Trends answer &ldquo;what is being discussed unusually much,
+      <b>right now</b>&rdquo;. Exact counting across billions of terms is neither achievable nor necessary — nobody can tell
+      whether a hashtag was mentioned 48,000 or 49,000 times.</div>
+    <div class="h3">Why exact counting is the wrong goal</div>
+    <ul>
+      <li>Every tweet contains many candidate terms, so the counting rate is a large multiple of the tweet rate</li>
+      <li>The term space is effectively unbounded and constantly changing</li>
+      <li>Only the <b>heavy hitters</b> matter — the top tens per region, not the full distribution</li>
+    </ul>
+    <div class="h3">The approach</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>Sliding windows</b></td><td>Count over recent intervals — five minutes, an hour — not all time</td></tr>
+        <tr><td><b>Probabilistic counting</b></td><td><b>Count-Min Sketch</b> for approximate frequency in fixed memory; heavy-hitter algorithms to surface the top terms</td></tr>
+        <tr><td><b>Rate of change</b></td><td>The signal is <b>acceleration, not volume</b>. Common words are always frequent; a trend is a term unusually frequent <i>compared to its own baseline</i></td></tr>
+        <tr><td><b>Geo and language partitioning</b></td><td>Trends are computed per region, which also bounds the term space per shard</td></tr>
+        <tr><td><b>Safety filtering</b></td><td>Applied before publication, not after</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The insight to state.</b> Comparing against a baseline is what distinguishes a trend
+      from a popular word. Ranking by raw count surfaces the same generic terms every hour and is useless as a product —
+      which is why the metric is deviation from expectation rather than volume.</div>
+    <div class="callout"><b>Serving is trivial once computed.</b> The output is a small ranked list per region,
+      refreshed every few minutes and cached at the edge. All the engineering is in the aggregation, none in the read.</div>
+  </div>
+</div>
+
+<!-- ============ 11. MEDIA ============ -->
+<div class="panel c7">
+  <div class="phead">11 &nbsp;· &nbsp;MEDIA &amp; NOTIFICATIONS <span class="sub">bytes and second-order fan-out</span></div>
+  <div class="pbody">
+    <div class="h3">Media — never on the tweet path</div>
+    <ol>
+      <li>Client requests a <b>pre-signed upload URL</b> and uploads <b>directly to object storage</b> — the bytes never pass through your services</li>
+      <li>The upload emits an event; a pipeline transcodes and generates size and format variants</li>
+      <li>The tweet references a media id; the CDN serves the variants</li>
+      <li>The tweet can be posted while processing continues, with a placeholder until ready</li>
+    </ol>
+    <div class="callout g"><b>Direct-to-storage upload is the decision that matters.</b> Routing media through
+      application servers wastes bandwidth, memory and connection capacity on the busiest tier for no benefit — and it makes
+      a large upload capable of degrading unrelated requests.</div>
+    <div class="callout r"><b>Media dominates cost, not tweets.</b> Text is bytes; video is orders of magnitude more,
+      and egress is usually the largest line on the bill. CDN offload ratio is the single highest-leverage cost metric in
+      the whole system.</div>
+    <div class="h3">Notifications — the second fan-out</div>
+    <ul>
+      <li><b>Likes and retweets on a popular tweet</b> are their own fan-out problem, in the opposite direction — millions of events converging on one author</li>
+      <li><b>Aggregate rather than deliver individually</b> — &ldquo;and 12,000 others&rdquo; is both better product and vastly cheaper</li>
+      <li><b>Coalesce over a window</b> so one person's burst of activity is one notification</li>
+      <li><b>Mentions of a large account</b> need rate limiting, or a pile-on becomes a denial of service on the notification path</li>
+      <li><b>Push delivery is best-effort</b>; the in-app list is the durable record</li>
+    </ul>
+    <div class="callout"><b>A good interview observation:</b> notifications have the <i>inverse</i> shape of timelines
+      — many writers, one reader. It is the same fan-out mathematics reflected, and aggregation is the equivalent of the
+      hybrid strategy.</div>
+  </div>
+</div>
+
+<!-- ============ 12. API ============ -->
+<div class="panel c1 span3">
+  <div class="phead">12 &nbsp;· &nbsp;API SPECIFICATION
+    <span class="sub">the contract, including the parts that make it correct under retries and at depth</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:56px">Method</th><th style="width:186px">Endpoint</th><th>Notes &amp; status codes</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td class="mono">/v1/tweets</td><td><b>201</b> · <b><span class="mono">Idempotency-Key</span> required</b> — a retried post must not duplicate · 422 too long · 429</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/tweets/{id}</td><td><b>200</b> · 404 if deleted · 403 if blocked or protected</td></tr>
+          <tr><td>DELETE</td><td class="mono">/v1/tweets/{id}</td><td><b>204</b> · idempotent by nature · 403 if not the author</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/timelines/home</td><td><b>200</b> · <b>cursor</b> pagination · the hot path</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/timelines/user/{id}</td><td><b>200</b> · cursor · cacheable, unlike home</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/follows</td><td><b>201</b> · body carries the target · idempotent</td></tr>
+          <tr><td>DELETE</td><td class="mono">/v1/follows/{id}</td><td><b>204</b> — <b>not</b> <span class="mono">POST /unfollow</span>; unfollow is the deletion of a follow</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/users/{id}/followers</td><td><b>200</b> · cursor · <b>never returns the full list</b></td></tr>
+          <tr><td>POST</td><td class="mono">/v1/tweets/{id}/likes</td><td><b>201</b> · idempotent — liking twice is one like</td></tr>
+          <tr><td>DELETE</td><td class="mono">/v1/tweets/{id}/likes</td><td><b>204</b> · unlike</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/search</td><td><b>200</b> · <span class="mono">q, sort=top|latest, filters, cursor</span></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/trends</td><td><b>200</b> · by region · heavily cached, short TTL</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/media/upload-url</td><td><b>201</b> · returns a pre-signed URL; bytes go direct to storage</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/notifications</td><td><b>200</b> · cursor · aggregated, not raw events</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Post a tweet</div>
+      <div class="code">POST /v1/tweets
+<span class="k">Authorization:</span> Bearer …
+<span class="k">Idempotency-Key:</span> <span class="v">01J8F3K2M9Q</span>
+{
+  <span class="k">"text"</span>: <span class="v">"Hello world"</span>,
+  <span class="k">"media_ids"</span>: [<span class="v">"m_1029"</span>],
+  <span class="k">"in_reply_to"</span>: <span class="v">null</span>
+}
+
+HTTP/1.1 <span class="v">201 Created</span>
+{
+  <span class="k">"id"</span>: <span class="v">"1729384756102938624"</span>,   <span class="c">// Snowflake</span>
+  <span class="k">"author_id"</span>: <span class="v">"u_8813"</span>,
+  <span class="k">"text"</span>: <span class="v">"Hello world"</span>,
+  <span class="k">"created_at"</span>: <span class="v">"2026-09-01T10:14:22Z"</span>,
+  <span class="k">"metrics"</span>: { <span class="k">"likes"</span>: 0, <span class="k">"retweets"</span>: 0,
+               <span class="k">"replies"</span>: 0 }
+}</div>
+      <div class="callout r"><b>The idempotency key is not optional here.</b> A user on a poor connection taps post,
+        the response is lost, the client retries — and without a key they have tweeted twice publicly. It is the most
+        visible possible failure, and it is entirely preventable.</div>
+      <div class="callout"><b>The id is returned as a string.</b> A 64-bit Snowflake id exceeds what JavaScript
+        represents exactly as a number, so serialising it as an integer silently corrupts the low digits in browser
+        clients. This is a real and well-known class of bug.</div>
+    </div>
+    <div>
+      <div class="h3">Read the home timeline</div>
+      <div class="code">GET /v1/timelines/home?limit=50&amp;cursor=17293847…
+
+HTTP/1.1 <span class="v">200 OK</span>
+<span class="k">RateLimit-Limit:</span> 900
+<span class="k">RateLimit-Remaining:</span> 887
+{
+  <span class="k">"data"</span>: [ { <span class="k">"id"</span>: <span class="v">"172938…"</span>, <span class="k">"text"</span>: <span class="v">"…"</span>,
+             <span class="k">"author"</span>: { <span class="k">"id"</span>: <span class="v">"u_44"</span>, <span class="k">"handle"</span>: <span class="v">"…"</span> },
+             <span class="k">"metrics"</span>: { … } }, … ],
+  <span class="k">"meta"</span>: {
+    <span class="k">"next_cursor"</span>: <span class="v">"1729384750000000000"</span>,
+    <span class="k">"result_count"</span>: 50
+  }
+}</div>
+      <div class="callout g"><b>Cursor pagination, never offset.</b> The timeline changes constantly, so
+        <span class="mono">offset=100</span> returns a shifting window — users see duplicates and miss tweets. A cursor is
+        a position in an ordered sequence, and because Snowflake ids sort by time, <b>the id itself is the cursor</b>.</div>
+      <div class="h3">Conventions applied throughout</div>
+      <ul>
+        <li><b>Versioned in the path</b>; breaking changes get a new version</li>
+        <li><b>One error envelope</b> with a stable machine-readable code</li>
+        <li><b>Rate limit headers on every response</b>, not only on 429 — clients can then slow down before being limited</li>
+        <li><b>Read and write limits differ by an order of magnitude</b>, matching the traffic each protects</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. TECH ============ -->
+<div class="panel c3 span3">
+  <div class="phead">13 &nbsp;· &nbsp;TECHNOLOGY CHOICES — ADVANTAGES, DISADVANTAGES AND THE ALTERNATIVE
+    <span class="sub">every row includes what you would use instead, because &ldquo;why not X?&rdquo; is always the second question</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr>
+        <th style="width:140px">Role</th><th style="width:150px">Choice</th><th style="width:250px">Why</th>
+        <th>Advantages</th><th style="width:270px">Disadvantages</th><th style="width:270px">Alternative, and when</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>Tweet store</b></td><td>Wide-column<br><span style="color:#6b7391">Cassandra, Bigtable, DynamoDB</span></td><td>Append-heavy, read by author or id, time-ordered, no joins — exactly what a partition key plus clustering key serves</td><td>Very high write throughput, linear scaling, no single leader, multi-region friendly</td><td>Eventually consistent; no ad-hoc queries; the data model must be designed per access pattern</td><td><b>PostgreSQL partitioned by time</b> is entirely adequate below a few hundred million rows — and far simpler</td></tr>
+        <tr><td><b>Timeline &amp; object cache</b></td><td>Redis</td><td>Capped lists are a native operation, and sub-millisecond reads are what the whole read path depends on</td><td>List operations fit the access pattern precisely; extremely low latency; rich types</td><td>Memory cost dominates; AP with async replication, so it can lose acknowledged writes on failover</td><td>None sensible for the timeline itself. It is a <b>cache</b>, rebuildable from source — never the record of truth</td></tr>
+        <tr><td><b>Social graph</b></td><td>Sharded key-value or wide-column</td><td>The hot operations are list reads and membership tests, not traversal</td><td>Predictable, cheap, shards cleanly by user</td><td>Multi-hop queries are awkward — but they are not on the serving path</td><td><b>Graph database</b> only for genuine traversal features, and run offline rather than in the request path</td></tr>
+        <tr><td><b>Event backbone</b></td><td>Kafka</td><td>One tweet event feeds fan-out, search, trends, notifications and analytics independently, with replay</td><td>High throughput, durable, ordered per partition, replayable, many independent consumers</td><td>Operationally heavy; ordering only per partition; consumer lag becomes a primary SLI</td><td><b>A managed queue</b> if you only need work distribution. Replay and multiple consumers are what justify a log</td></tr>
+        <tr><td><b>Search</b></td><td>Inverted index<br><span style="color:#6b7391">Elasticsearch, OpenSearch</span></td><td>Relevance ranking, facets and fuzzy matching are a different problem from querying rows</td><td>Mature, scales horizontally, strong aggregation, near-real-time indexing</td><td>Heavy to run; a second copy of the corpus; must never be authoritative</td><td><b>PostgreSQL full-text</b> at small scale — it removes an entire system</td></tr>
+        <tr><td><b>User &amp; auth</b></td><td>PostgreSQL</td><td>Small, strict, transactional, and it must be correct rather than fast</td><td>ACID, constraints, isolation levels, well understood</td><td>Single-writer scaling — irrelevant at this volume</td><td>None needed. Resist the urge to make everything distributed</td></tr>
+        <tr><td><b>Media</b></td><td>Object storage + CDN</td><td>Large, immutable, cacheable at the edge, and never touched by application logic</td><td>Effectively unlimited, durable, cheap per byte, integrates with the CDN</td><td>Egress cost is significant; lifecycle policies are required</td><td>None sensible. Serving media from application servers is a mistake at any scale</td></tr>
+        <tr><td><b>Analytics</b></td><td>Columnar<br><span style="color:#6b7391">ClickHouse, BigQuery</span></td><td>Aggregating clickstream and engagement over enormous row counts</td><td>Very fast scans and compression; SQL</td><td>Poor at point updates; batch-oriented</td><td><b>Read replicas</b> until the scan volume genuinely justifies a separate system</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The honest close.</b> Every row above is justified by scale that most systems never
+      reach. At a hundredth of this traffic, PostgreSQL with read replicas, Redis and a CDN would serve the entire product,
+      and the fan-out could be a background job — with a fraction of the operational surface. Being able to say where each
+      component <i>starts</i> to be necessary is a stronger answer than naming all of them.</div>
+  </div>
+</div>
+
+<!-- ============ 14. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">14 &nbsp;· &nbsp;PRODUCTION FAILURES, DEGRADATION AND WHAT BREAKS FIRST
+    <span class="sub">the questions asked after the happy path — and the answers that show you have operated something like this</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:132px">Failure</th><th>What you see</th><th style="width:170px">Answer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Fan-out lag</b></td><td>Timelines silently stale; no errors anywhere</td><td>Alert on consumer lag as a primary SLI; prioritise active users; fall back to pull</td></tr>
+          <tr><td><b>Celebrity storm</b></td><td>A very large account posts; fan-out queues saturate</td><td>The pull path already covers it — verify the threshold is enforced and tunable at runtime</td></tr>
+          <tr><td><b>Cache cold start</b></td><td>Databases receive traffic they were never sized for</td><td>Warm before readiness; never flush globally; stagger restarts</td></tr>
+          <tr><td><b>Hot key</b></td><td>One trending tweet saturates a single cache node</td><td>Replicate the key across nodes, or cache it in-process at the service tier</td></tr>
+          <tr><td><b>Duplicate tweet</b></td><td>A user posts twice from one tap, publicly</td><td>Idempotency key end to end; the most visible failure on this sheet</td></tr>
+          <tr><td><b>Deleted tweet still visible</b></td><td>Content reappears after deletion</td><td>Filter at hydration; never rely on purging fanned-out lists</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Degradation matrix — decide before the incident</div>
+      <table>
+        <thead><tr><th style="width:126px">Down</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><b>Ranking service</b></td><td>Serve the merged timeline in reverse-chronological order. Slightly worse, entirely usable</td></tr>
+          <tr><td><b>Search</b></td><td>Return an honest error for search only; the rest of the product is unaffected</td></tr>
+          <tr><td><b>Trends</b></td><td>Serve the last computed list, or hide the module</td></tr>
+          <tr><td><b>Notifications</b></td><td>Queue and drain later. Nothing customer-blocking</td></tr>
+          <tr><td><b>Fan-out</b></td><td>Reads still work from existing timelines; new tweets arrive late. <b>Degrade, do not fail</b></td></tr>
+          <tr><td><b>Media pipeline</b></td><td>Post the tweet; show a placeholder until processing completes</td></tr>
+          <tr><td><b>Tweet store</b></td><td>Writes fail loudly and honestly. <b>Never accept a tweet you cannot durably store</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The principle.</b> Reads degrade gracefully; writes fail loudly. A stale or
+        unranked timeline is acceptable; silently losing a user's post is not.</div>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:30px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>Fan-out consumer throughput</b> during a posting peak — it lags before anything errors</td></tr>
+          <tr><td><b>2</b></td><td><b>Cache memory and hot keys</b>, particularly around a trending event</td></tr>
+          <tr><td><b>3</b></td><td><b>Kafka partition skew</b> — a hot author concentrates load on one partition</td></tr>
+          <tr><td><b>4</b></td><td><b>Database connection pools</b>, which saturate long before CPU does</td></tr>
+          <tr><td><b>5</b></td><td><b>Media egress and cost</b>, which is a budget limit rather than a technical one</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note that the first three are all fan-out or cache.</b> The tweet database — the
+        thing most designs spend their time on — is nowhere near the top of this list.</div>
+      <div class="h3">What to monitor above all</div>
+      <ul>
+        <li><b>Fan-out consumer lag</b>, and the age of the oldest unprocessed event</li>
+        <li><b>Timeline cache hit rate</b> — a fall here precedes every read incident</li>
+        <li><b>Timeline read p99</b>, split by push-heavy and pull-heavy users</li>
+        <li><b>Post success rate</b> — the one metric that means the product works</li>
+        <li><b>Tweets fanned out per second</b> versus tweets posted per second — the amplification factor, live</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">15 &nbsp;· &nbsp;INTERVIEW &amp; READINESS CHECKLIST <span class="sub">what a strong answer covers, and what a running system needs</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Scope stated</b>, with what is explicitly out</div>
+      <div>&#9744; <b>Read:write ratio derived</b>, not asserted</div>
+      <div>&#9744; <b>Follower distribution raised early</b> — it is the whole problem</div>
+      <div>&#9744; <b>Fan-out amplification calculated</b>, not hand-waved</div>
+      <div>&#9744; <b>Latency targets at p99</b>, per endpoint</div>
+      <div>&#9744; <b>Composite availability computed</b> for the read chain</div>
+      <div>&#9744; <b>CAP stated correctly</b> — not &ldquo;pick two&rdquo;; PACELC per capability</div>
+      <div>&#9744; <b>Read-your-writes handled</b> for the author's own tweet</div>
+      <div>&#9744; <b>Hybrid fan-out explained</b>, with why neither pure strategy works</div>
+      <div>&#9744; <b>Threshold is runtime-tunable</b>, with a kill switch</div>
+      <div>&#9744; <b>Fan-out only to active users</b> considered</div>
+      <div>&#9744; <b>Timelines store ids, not objects</b>, and are capped</div>
+      <div>&#9744; <b>Fan-out workers idempotent</b> — replay must not duplicate</div>
+      <div>&#9744; <b>Consumer lag alerted on</b> as a primary SLI</div>
+      <div>&#9744; <b>Outbox used</b>; no dual write to database and broker</div>
+      <div>&#9744; <b>Write acknowledged before fan-out</b>, never after</div>
+      <div>&#9744; <b>Snowflake-style ids</b> — time-sortable, coordination-free</div>
+      <div>&#9744; <b>Clock-skew behaviour defined</b> — refuse rather than duplicate</div>
+      <div>&#9744; <b>Ids serialised as strings</b> in JSON</div>
+      <div>&#9744; <b>Deletes filtered at hydration</b>, never purged from timelines</div>
+      <div>&#9744; <b>Blocks and mutes applied at read</b>, from cached sets</div>
+      <div>&#9744; <b>Edit handled by object update</b>, with history retained</div>
+      <div>&#9744; <b>Ordering guarantee stated honestly</b> — eventual, not global</div>
+      <div>&#9744; <b>Social graph is adjacency lists</b>, not a graph database</div>
+      <div>&#9744; <b>Both graph directions stored</b> and written together</div>
+      <div>&#9744; <b>Follower lists paginated</b>, never returned whole</div>
+      <div>&#9744; <b>Counts approximate</b> and maintained separately</div>
+      <div>&#9744; <b>Search index time-partitioned</b> and rebuildable</div>
+      <div>&#9744; <b>Trends use sketches over windows</b>, ranked by acceleration</div>
+      <div>&#9744; <b>Media uploaded direct to storage</b> via pre-signed URL</div>
+      <div>&#9744; <b>Notifications aggregated</b>, not delivered per event</div>
+      <div>&#9744; <b>Idempotency key on post</b> — a retry must not tweet twice</div>
+      <div>&#9744; <b>Cursor pagination</b> everywhere; never offset</div>
+      <div>&#9744; <b>Rate limits per user and per endpoint</b>, headers returned on success</div>
+      <div>&#9744; <b>Cache warmed before readiness</b>; no global flush</div>
+      <div>&#9744; <b>Degradation matrix agreed</b>, and each path tested</div>
+      <div>&#9744; <b>Reads degrade, writes fail loudly</b></div>
+      <div>&#9744; <b>Bottleneck order known</b> — fan-out and cache before the database</div>
+      <div>&#9744; <b>Cost per tweet and CDN offload ratio</b> tracked</div>
+      <div>&#9744; <b>Trade-offs to revisit</b> stated unprompted</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>trace one tweet from a hundred-million-follower
+      account through to appearing in a specific follower's timeline, and name every place the design deliberately refuses
+      to do the obvious thing.</b> Acknowledging before fan-out, storing ids rather than objects, pulling instead of pushing,
+      and filtering at read rather than rewriting — each is a refusal, and together they are the design.</div>
+  </div>
+</div>
+
+</div>
