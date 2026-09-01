@@ -1,0 +1,665 @@
+<meta charset="utf-8">
+<title>Types of Databases — Architecture, Indexing, Optimization &amp; Use Cases</title>
+<style>
+  @page { size: 3400px 4754px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:4754px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:4724px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 607px 730px 571px 522px 579px 523px 487px 359px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:34px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:16px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.6px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.2px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.6px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.2px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.2px;line-height:1.44} li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.6px;line-height:1.46;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.8px;
+           line-height:1.43;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13px;line-height:1.45}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .ok{color:#047857;font-weight:700} .no{color:#be123c;font-weight:700}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>TYPES OF DATABASES — ARCHITECTURE, INDEXING, OPTIMIZATION &amp; USE CASES<span class="v">V1</span></h1>
+  <div class="tag">Eleven families, what each is physically doing, and the access pattern that decides between them<br>
+    <span style="font-size:13.6px;color:#6d80b6">storage model · index structures · consistency &amp; transactions · scaling · when <b style="color:#8fa8e8">not</b> to add another one</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;HOW TO READ THIS — THE TWO AXES THAT ACTUALLY SEPARATE DATABASES
+    <span class="sub">start here — the taxonomy, what genuinely differs, and the question that decides the choice</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">What a database actually is</div>
+      <div style="font-size:13.4px;line-height:1.47">A system that <b>stores data durably</b>, <b>finds it again quickly</b>,
+        and <b>keeps it correct while many people change it at once</b>. Every family below makes the same three promises —
+        they differ in what they optimise and what they give up.</div>
+      <div class="h3">Axis 1 — the storage model</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Row-oriented</b></td><td>All of a record's fields stored together. Cheap to read or write one whole record. <i>Relational, document, wide-column.</i></td></tr>
+          <tr><td><b>Column-oriented</b></td><td>All values of one field stored together. Cheap to scan a few fields over very many records. <i>Analytical / OLAP.</i></td></tr>
+          <tr><td><b>Log-structured</b></td><td>Append, never update in place; merge later. Very fast writes, read amplification. <i>LSM engines.</i></td></tr>
+          <tr><td><b>Graph-native</b></td><td>Edges stored as direct pointers, so traversal does not need an index lookup per hop.</td></tr>
+          <tr><td><b>Vector</b></td><td>High-dimensional embeddings with approximate nearest-neighbour search.</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Axis 2 — the distribution model</div>
+      <ul>
+        <li><b>Single-node</b> — one machine, strong consistency, simplest. Scales up, not out.</li>
+        <li><b>Replicated</b> — copies for availability and read scale; writes still funnel to a leader.</li>
+        <li><b>Partitioned / sharded</b> — data split by key across nodes. Scales writes, and costs you cross-shard joins and transactions.</li>
+        <li><b>Distributed SQL</b> — sharded <i>and</i> transactional, via consensus. Newer, and it removes the old &ldquo;SQL cannot scale out&rdquo; trade-off.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">The question that decides it</div>
+      <div class="callout b" style="margin-top:0"><b>Not &ldquo;how much data?&rdquo; — but &ldquo;what does a typical
+        read look like?&rdquo;</b> A ten-million-row table scanned by wide aggregates belongs somewhere completely different
+        from a ten-billion-row table read only by primary key. Volume is a capacity question; <b>access pattern is the
+        design question</b>.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:186px">If the dominant access is…</th><th>Then</th></tr></thead>
+        <tbody>
+          <tr><td>Fetch or update one record by id</td><td>Relational, document, or key-value</td></tr>
+          <tr><td>Query by many different attributes, with joins</td><td>Relational</td></tr>
+          <tr><td>Aggregate a few columns over millions of rows</td><td>Columnar / OLAP</td></tr>
+          <tr><td>Write enormously, read by known key</td><td>Wide-column</td></tr>
+          <tr><td>Follow relationships several hops deep</td><td>Graph</td></tr>
+          <tr><td>Append timestamped points, query by range</td><td>Time series</td></tr>
+          <tr><td>Rank documents by relevance to text</td><td>Search</td></tr>
+          <tr><td>Find semantically similar items</td><td>Vector</td></tr>
+          <tr><td>Sub-millisecond lookup of transient state</td><td>In-memory key-value</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Most systems get this wrong in one specific way:</b> they pick the database first,
+        then bend the access patterns to fit it. Write down the five queries that must be fast <i>before</i> choosing —
+        and if you cannot list them, that is the finding, not the database.</div>
+    </div>
+    <div>
+      <div class="h3">Start relational, and make the second store earn its place</div>
+      <div style="font-size:13.4px;line-height:1.47">PostgreSQL competently handles <b>relational, JSON documents,
+        full-text search, geospatial, key-value, and vectors</b> (via extensions), and TimescaleDB adds time series. For a
+        large share of systems that is the entire data layer.</div>
+      <div class="callout"><b>Every additional store has a standing cost</b> that a benchmark never shows: another
+        thing to back up, restore, patch, monitor, secure, upgrade and be paged for — plus dual writes, or a pipeline, and
+        the consistency questions that come with either.</div>
+      <div class="h3">When a second store is genuinely justified</div>
+      <ul>
+        <li>The access pattern is <b>fundamentally different</b>, not merely slow — analytics beside OLTP, or ANN search</li>
+        <li>You have <b>measured</b> the primary store failing at it, with the obvious indexing and tuning already done</li>
+        <li>The scale is real and current, not projected</li>
+        <li>Someone will own its operations, on call, at 3am</li>
+      </ul>
+      <div class="callout g"><b>&ldquo;Polyglot persistence&rdquo; is a description, not a goal.</b> Large systems
+        end up with several stores because different subsystems genuinely differ. Starting there, before any of them is
+        justified, buys all the operational cost of the end state and none of the benefit.</div>
+      <div class="callout p"><b>A note on names.</b> &ldquo;NoSQL&rdquo; originally meant non-relational, not
+        &ldquo;not only SQL&rdquo; — that reading came later. It groups families that have almost nothing in common with
+        each other, so it is a poor basis for a decision.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. THE FAMILIES ============ -->
+<div class="panel c1 span3">
+  <div class="phead">2 &nbsp;· &nbsp;THE ELEVEN FAMILIES AT A GLANCE
+    <span class="sub">what each physically stores, how it finds things, how it scales, and what it is poor at</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr>
+        <th style="width:150px">Family</th><th style="width:174px">Stores</th><th style="width:150px">Primary index</th>
+        <th style="width:132px">Scales by</th><th style="width:150px">Consistency</th>
+        <th>Strong for</th><th style="width:250px">Poor for</th><th style="width:186px">Examples</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>Relational (OLTP)</b></td><td>Rows in typed tables, fixed schema, foreign keys</td><td>B+ tree</td><td>Vertical + read replicas</td><td>Strong, ACID, isolation levels</td><td>Joins, ad-hoc queries, transactions, integrity</td><td>Very high write throughput on one node; huge analytical scans</td><td>PostgreSQL, MySQL, Oracle, SQL Server</td></tr>
+        <tr><td><b>Distributed SQL</b><br><span style="color:#6b7391">&ldquo;NewSQL&rdquo;</span></td><td>Same relational model, sharded across nodes</td><td>B+ tree / LSM + Raft</td><td>Horizontal, transparently</td><td>Strong, distributed via consensus</td><td>Relational semantics <i>and</i> horizontal write scale; multi-region</td><td>Latency-sensitive single-row writes; small systems (operational cost)</td><td>CockroachDB, TiDB, YugabyteDB, Spanner</td></tr>
+        <tr><td><b>Document</b></td><td>Self-contained JSON/BSON documents, flexible schema</td><td>B+ tree on <span class="mono">_id</span></td><td>Sharding by key</td><td>Tunable; multi-doc ACID available</td><td>Evolving schemas, aggregate-shaped data, fast development</td><td>Many-way joins; data naturally normalised across entities</td><td>MongoDB, Couchbase, Firestore, DocumentDB</td></tr>
+        <tr><td><b>Key-value</b></td><td>Opaque value under a key</td><td>Hash</td><td>Consistent hashing</td><td>Varies — single-node strong to tunable</td><td>Caching, sessions, counters, rate limits, very fast simple access</td><td>Querying by anything but the key; large values; analytics</td><td>Redis, Valkey, DynamoDB, Memcached</td></tr>
+        <tr><td><b>Wide-column</b><br><span style="color:#6b7391">column-family</span></td><td>Rows partitioned by key, each with many dynamic columns — <b>stored row-wise</b></td><td>Partition key + clustering key, LSM</td><td>Horizontal, linear, no leader</td><td>Tunable per query (quorum)</td><td>Massive write throughput, time-ordered reads by known key, multi-region</td><td>Ad-hoc queries; joins; anything not anticipated in the partition key</td><td>Cassandra, ScyllaDB, HBase, Bigtable</td></tr>
+        <tr><td><b>Columnar / OLAP</b></td><td>Values of one column stored contiguously — <b>a different thing entirely; see panel 6</b></td><td>Sort key + zone maps, no per-row index</td><td>Horizontal; storage/compute split</td><td>Usually eventual; batch loaded</td><td>Aggregating few columns over billions of rows; compression</td><td>Point lookups; single-row updates; transactional workloads</td><td>ClickHouse, Snowflake, BigQuery, Redshift, Druid</td></tr>
+        <tr><td><b>Graph</b></td><td>Nodes, edges and properties; edges as direct pointers</td><td>Index-free adjacency + node/edge indexes</td><td>Hard — traversals resist partitioning</td><td>ACID in native engines</td><td>Multi-hop relationships, path finding, fraud rings, recommendations</td><td>Bulk scans; sparsely connected data; simple lookups</td><td>Neo4j, Memgraph, ArangoDB, Neptune</td></tr>
+        <tr><td><b>Time series</b></td><td>Timestamped points grouped by series, heavily compressed</td><td>Time + tag index</td><td>Partition by time and series</td><td>Eventual; append-mostly</td><td>Metrics, sensors, ingest at scale, downsampling and retention</td><td>Updates and deletes; joins; non-time-ordered queries</td><td>InfluxDB, TimescaleDB, Prometheus, VictoriaMetrics</td></tr>
+        <tr><td><b>Search</b></td><td>Inverted index from terms to documents, plus the documents</td><td>Inverted index</td><td>Sharding + replicas</td><td>Near-real-time, eventual</td><td>Full-text relevance, faceting, fuzzy matching, log analytics</td><td>Source of truth; heavy updates; transactions</td><td>Elasticsearch, OpenSearch, Solr, Typesense</td></tr>
+        <tr><td><b>Vector</b></td><td>High-dimensional embeddings + metadata</td><td>HNSW / IVF (approximate)</td><td>Sharding by vector space</td><td>Eventual</td><td>Semantic similarity, RAG retrieval, recommendations, image search</td><td>Exact match; filtering as the primary access; transactional guarantees</td><td>pgvector, Qdrant, Milvus, Pinecone, Weaviate</td></tr>
+        <tr><td><b>Embedded</b></td><td>An in-process library, not a server — file or memory backed</td><td>B+ tree (SQLite) / columnar (DuckDB)</td><td>Does not — it runs inside your process</td><td>ACID (SQLite), single writer</td><td>Local and edge apps, tests, analytics on a laptop, CLI tools</td><td>Multi-writer concurrency across machines; shared server access</td><td>SQLite, DuckDB, RocksDB, LevelDB</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Two entries here are usually missing from a chart like this, and both matter.</b>
+      <b>Distributed SQL</b> is why &ldquo;relational cannot scale horizontally&rdquo; is no longer simply true. And
+      <b>SQLite</b> is among the most widely deployed database engines in the world — it is in phones, browsers and
+      applications everywhere, and it is frequently the right answer for local state.</div>
+  </div>
+</div>
+
+<!-- ============ 3. RELATIONAL ============ -->
+<div class="panel c2 span2">
+  <div class="phead">3 &nbsp;· &nbsp;RELATIONAL &amp; DISTRIBUTED SQL <span class="sub">the default, and the reason its main limitation is now negotiable</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Architecture</div>
+      <div class="code">client → connection pool → parser → planner/optimizer
+                              ↓ cost-based
+       transaction manager  +  buffer cache
+                              ↓
+       storage engine → data files · index files
+                      → <span class="k">WAL</span> (write-ahead log, durability)</div>
+      <div class="callout"><b>The WAL is the part worth understanding.</b> Changes are written to a sequential log
+        <i>before</i> the data files, which is what makes crash recovery, point-in-time restore and replication all possible
+        from one mechanism.</div>
+      <div class="h3">Indexes available</div>
+      <table>
+        <thead><tr><th style="width:100px">Type</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td><b>B+ tree</b></td><td>The default. Equality, ranges, ordering, prefix matching</td></tr>
+          <tr><td><b>Hash</b></td><td>Equality only, no ranges</td></tr>
+          <tr><td><b>GIN</b></td><td>Multi-value columns — JSONB, arrays, full-text</td></tr>
+          <tr><td><b>GiST / SP-GiST</b></td><td>Geometric, geospatial, nearest-neighbour</td></tr>
+          <tr><td><b>BRIN</b></td><td>Very large naturally-ordered tables; tiny index, coarse skipping</td></tr>
+          <tr><td><b>Partial / covering</b></td><td>Index a subset, or answer from the index without touching the row</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Composite index column order is not arbitrary.</b> An index on <span class="mono">(a,b)</span>
+        serves queries filtering on <span class="mono">a</span>, or on <span class="mono">a AND b</span> — but not on
+        <span class="mono">b</span> alone. Most &ldquo;the index isn't being used&rdquo; problems are this.</div>
+    </div>
+    <div>
+      <div class="h3">Transaction isolation — usually omitted, and it matters</div>
+      <table>
+        <thead><tr><th style="width:132px">Level</th><th>Permits</th></tr></thead>
+        <tbody>
+          <tr><td><b>Read uncommitted</b></td><td>Dirty reads. Effectively unused</td></tr>
+          <tr><td><b>Read committed</b></td><td>Non-repeatable reads, phantoms. <b>The default in PostgreSQL and Oracle</b></td></tr>
+          <tr><td><b>Repeatable read</b></td><td>Phantoms (in the standard); write skew. MySQL/InnoDB default</td></tr>
+          <tr><td><b>Serializable</b></td><td>Nothing — behaves as if transactions ran one at a time. Costs throughput</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Read committed does not protect a read-modify-write.</b> Two concurrent
+        &ldquo;check the balance, then deduct&rdquo; transactions can both read the same balance. You need an explicit lock,
+        an atomic update, a version column, or serializable isolation — the default will not save you.</div>
+      <div class="h3">Optimisation, in the order that pays</div>
+      <ul>
+        <li><b>Read the query plan</b> before changing anything. Most tuning is guesswork otherwise</li>
+        <li><b>Index what you filter, join and sort on</b> — and remove indexes nothing uses; each one slows every write</li>
+        <li><b>Keep statistics current</b>; a stale planner picks bad join orders</li>
+        <li><b>Connection pooling</b> — connections are expensive, and an unpooled app exhausts the server first</li>
+        <li><b>Partition</b> large tables by time or key so old data can be pruned or dropped cheaply</li>
+        <li><b>Read replicas</b> for read scale — and accept the replication lag they introduce</li>
+      </ul>
+      <div class="callout b"><b>When single-node writes genuinely run out</b>, distributed SQL keeps the relational
+        model, joins and transactions while sharding underneath via consensus. It is a real option now — at the cost of
+        higher write latency, since a commit needs agreement across nodes, and considerably more to operate.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 4. DOCUMENT ============ -->
+<div class="panel c3">
+  <div class="phead">4 &nbsp;· &nbsp;DOCUMENT <span class="sub">aggregate-shaped data</span></div>
+  <div class="pbody">
+    <div class="h3">The model</div>
+    <div style="font-size:13.2px;line-height:1.45">Each document is <b>self-contained</b> — the order, its lines and its
+      address in one record. Read the whole thing in one operation, no join. Schema is enforced by the application, or
+      optionally by the database.</div>
+    <div class="code">{ _id: <span class="v">"o_1183"</span>, customer: <span class="v">"c_44"</span>,
+  status: <span class="v">"shipped"</span>,
+  lines: [ {sku:<span class="v">"A1"</span>, qty:2}, {sku:<span class="v">"B7"</span>, qty:1} ],
+  address: { city:<span class="v">"Bengaluru"</span>, pin:<span class="v">"560001"</span> } }</div>
+    <div class="callout g"><b>The design rule.</b> Embed what is read together and changes together; reference what
+      is shared or grows without bound. An array that grows for ever inside one document is the classic failure — documents
+      have a size limit, and rewriting a large one on every append is expensive.</div>
+    <div class="h3">Indexing &amp; tuning</div>
+    <ul>
+      <li>B+ tree on <span class="mono">_id</span> by default; add compound, text, geospatial and TTL indexes as needed</li>
+      <li><b>Compound index order follows the same rule as SQL</b> — equality fields, then sort, then range</li>
+      <li>Shard key choice is effectively permanent — pick for even distribution <i>and</i> for query routing</li>
+      <li>Covered queries answer from the index alone</li>
+    </ul>
+    <div class="callout"><b>On transactions — a common out-of-date claim.</b> Multi-document ACID transactions have
+      been supported since MongoDB 4.0 for replica sets, and 4.2 extended them across sharded clusters. They are no longer
+      a missing capability. They do carry a cost, so the guidance is to <i>model</i> so that most operations touch a single
+      document — not to assume transactions are unavailable.</div>
+    <div class="callout r"><b>Where it goes wrong:</b> using it for data that is genuinely relational. If you find
+      yourself joining three collections in application code and keeping duplicated fields in sync by hand, you have
+      rebuilt a relational database without the guarantees.</div>
+  </div>
+</div>
+
+<!-- ============ 5. KEY-VALUE ============ -->
+<div class="panel c4">
+  <div class="phead">5 &nbsp;· &nbsp;KEY-VALUE &amp; IN-MEMORY <span class="sub">the simplest contract</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">One operation: <span class="mono">get(key)</span> /
+      <span class="mono">put(key, value)</span>. The value is opaque to the database, so there is nothing to query by
+      except the key — which is exactly why it is fast.</div>
+    <div class="h3">Two quite different things</div>
+    <table>
+      <thead><tr><th style="width:118px">Kind</th><th>Character</th></tr></thead>
+      <tbody>
+        <tr><td><b>In-memory</b><br><span style="color:#6b7391">Redis, Valkey, Memcached</span></td><td>Sub-millisecond, data in RAM. Durability optional and a trade-off. For cache, sessions, counters, locks, rate limits, queues</td></tr>
+        <tr><td><b>Persistent, distributed</b><br><span style="color:#6b7391">DynamoDB, Riak</span></td><td>Disk-backed, horizontally scaled, durable. A system of record for key-addressed data</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Redis is no longer only key-value.</b> It has lists, sets, sorted sets, hashes, streams,
+      geospatial and pub/sub. Sorted sets alone cover leaderboards, rate limiting and priority queues — most teams use a
+      fraction of what is there.</div>
+    <div class="h3">Practical rules</div>
+    <ul>
+      <li><b>Design the key like an API.</b> <span class="mono">user:1183:cart</span> — a consistent scheme is the only structure you get</li>
+      <li><b>Always set a TTL</b> on cache entries; unbounded keys become an eviction incident</li>
+      <li><b>Know the eviction policy</b> before memory fills, not after</li>
+      <li><b>Keep values small</b> — multi-megabyte values block the server and saturate the network</li>
+      <li><b>Consistent hashing with virtual nodes</b> so adding a node moves only its share of keys</li>
+    </ul>
+    <div class="callout r"><b>The cache failure modes that cause outages:</b> a stampede when many keys expire at
+      once (jitter the TTLs), a hot key saturating one node, and cold-start after a restart — when the database receives
+      the full load it has not been sized for.</div>
+  </div>
+</div>
+
+<!-- ============ 6. WIDE-COLUMN vs COLUMNAR ============ -->
+<div class="panel c5 span2">
+  <div class="phead">6 &nbsp;· &nbsp;WIDE-COLUMN vs COLUMNAR — TWO DIFFERENT THINGS WITH SIMILAR NAMES
+    <span class="sub">the most common confusion in database taxonomy, and choosing the wrong one is expensive</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>They are not variations of one idea.</b> &ldquo;Wide-column&rdquo;
+        (or column-family) describes a <i>flexible schema</i>: each row may hold different columns. &ldquo;Columnar&rdquo;
+        describes a <i>physical layout</i>: values of one column stored contiguously on disk. Cassandra is the first and
+        <b>not</b> the second — within a partition its data is laid out row-wise.</div>
+      <div class="code"><span class="c">// WIDE-COLUMN (Cassandra) — row-wise on disk</span>
+partition <span class="v">"sensor_9"</span>:
+  [ts=10:00 | temp=21 | hum=40 ]
+  [ts=10:01 | temp=22 | hum=41 | batt=97 ]   <span class="c">← extra col</span>
+  <span class="c">one partition read = one sequential read</span>
+
+<span class="c">// COLUMNAR (ClickHouse) — column-wise on disk</span>
+ts:   [10:00, 10:01, 10:02, …]
+temp: [21, 22, 22, …]        <span class="c">← compresses hard</span>
+hum:  [40, 41, 41, …]
+  <span class="c">SUM(temp) reads only the temp column</span></div>
+      <div class="h3">Why the layout decides everything</div>
+      <ul>
+        <li><b>Point read by key</b> — row layouts win decisively; the whole record is in one place</li>
+        <li><b>Aggregate over millions of rows</b> — column layouts win decisively; only the named columns are read, and they compress far better because adjacent values share a type</li>
+        <li><b>Single-row update</b> — cheap in a row store, expensive in a column store, which is built for batch loads</li>
+      </ul>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px"></th><th>Wide-column</th><th>Columnar / OLAP</th></tr></thead>
+        <tbody>
+          <tr><td><b>Examples</b></td><td>Cassandra, ScyllaDB, HBase, Bigtable</td><td>ClickHouse, Snowflake, BigQuery, Druid, Redshift</td></tr>
+          <tr><td><b>Built for</b></td><td>Write throughput and known-key reads</td><td>Scanning and aggregating</td></tr>
+          <tr><td><b>Query shape</b></td><td>Must include the partition key</td><td>Arbitrary SQL over any columns</td></tr>
+          <tr><td><b>Engine</b></td><td>LSM tree</td><td>Column segments + sort keys, zone maps</td></tr>
+          <tr><td><b>Joins</b></td><td>Avoided by design; denormalise instead</td><td>Supported, though wide tables are preferred</td></tr>
+          <tr><td><b>Updates</b></td><td>Write a new version; compaction resolves</td><td>Batch rewrite; single-row updates are awkward</td></tr>
+          <tr><td><b>Design driver</b></td><td><b>Model per query.</b> One table per access pattern is normal and correct</td><td><b>Model per fact.</b> Sort order determines what can be skipped</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The wide-column rule that surprises people.</b> You design tables from your queries,
+        not from your entities — and duplicating the same data into several tables with different partition keys is the
+        intended practice, not a mistake. There is no ad-hoc query escape hatch later.</div>
+      <div class="callout g"><b>The columnar rule that decides performance.</b> Statistics can only skip a block if
+        the values in it are <b>clustered</b>. Write rows in random order and every block's min/max spans the whole domain,
+        so nothing is ever skipped — the statistics are present, correct and useless. Sort order at write time matters more
+        than any query tuning.</div>
+      <div class="callout r"><b>Choosing wrongly is not a tuning problem.</b> Cassandra will not become an analytics
+        engine, and ClickHouse will not become a transactional store. Both failures usually surface only at production scale.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 7. GRAPH ============ -->
+<div class="panel c6">
+  <div class="phead">7 &nbsp;· &nbsp;GRAPH <span class="sub">when relationships are the data</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">Nodes, edges and properties, where an edge is a <b>direct pointer</b>
+      rather than a foreign key to be looked up. Traversing a hop is a pointer dereference, not an index seek — which is
+      what &ldquo;index-free adjacency&rdquo; means.</div>
+    <div class="callout b"><b>The comparison that justifies it.</b> A three-hop relationship query in SQL is three
+      joins; five hops is five, and cost grows with table size at every step. In a native graph engine, traversal cost
+      depends on how many edges you actually walk — not on how large the graph is.</div>
+    <div class="h3">Use it when</div>
+    <ul>
+      <li><b>Depth is variable or unbounded</b> — &ldquo;anyone connected to X within 4 hops&rdquo;</li>
+      <li><b>The relationship carries meaning</b> — type, weight, direction, time</li>
+      <li><b>Path itself is the answer</b> — routing, dependency chains, provenance, impact analysis</li>
+      <li>Fraud rings, identity resolution, knowledge graphs, recommendations, supply chains, network topology, access control</li>
+    </ul>
+    <div class="h3">Algorithms you will meet</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>BFS / DFS</b></td><td>Reachability and traversal</td></tr>
+        <tr><td><b>Dijkstra / A*</b></td><td>Shortest and cheapest path</td></tr>
+        <tr><td><b>PageRank</b></td><td>Influence and importance</td></tr>
+        <tr><td><b>Community detection</b></td><td>Clusters, rings, segments</td></tr>
+        <tr><td><b>Similarity</b></td><td>Jaccard, cosine over neighbourhoods</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The honest limitation.</b> Graphs resist partitioning — a traversal that crosses
+      machines is far more expensive than one that does not, and there is no partition key that makes all traversals local.
+      Graph databases scale up more readily than out.</div>
+    <div class="callout"><b>Not every relationship needs one.</b> Two joins in an existing relational database beat
+      operating a second system. The threshold is variable-depth traversal, not the presence of foreign keys.</div>
+  </div>
+</div>
+
+<!-- ============ 8. TIME SERIES ============ -->
+<div class="panel c8">
+  <div class="phead">8 &nbsp;· &nbsp;TIME SERIES <span class="sub">append-mostly, ordered</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">Every record is a <b>timestamp, a series identity (tags) and a value</b>.
+      The workload is extremely predictable — heavy append, query by time range, almost never update — and the engines
+      exploit exactly that.</div>
+    <div class="h3">What the specialisation buys</div>
+    <ul>
+      <li><b>Compression by an order of magnitude</b> — delta and delta-of-delta on timestamps, XOR on floats. Adjacent values are similar, so there is a great deal of structure to exploit</li>
+      <li><b>Time partitioning</b> — old chunks are dropped, not deleted row by row</li>
+      <li><b>Continuous aggregates</b> — hourly and daily rollups maintained as data arrives</li>
+      <li><b>Retention and downsampling policies</b> as first-class configuration</li>
+      <li><b>Time-aware functions</b> — gap filling, interpolation, rate, time buckets</li>
+    </ul>
+    <div class="callout r"><b>Cardinality is the failure mode.</b> Every distinct tag combination is a separate
+      series. Putting a user id, request id or trace id in a tag creates millions of series and will exhaust memory — this
+      is the single most common way a metrics system falls over, and it arrives suddenly.</div>
+    <div class="h3">Choosing</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Prometheus</b></td><td>Pull-based monitoring, alerting; short local retention</td></tr>
+        <tr><td><b>TimescaleDB</b></td><td>PostgreSQL extension — full SQL and joins with relational data</td></tr>
+        <tr><td><b>InfluxDB</b></td><td>Purpose-built, push-based ingestion</td></tr>
+        <tr><td><b>ClickHouse</b></td><td>Often excellent for this too, when you also want analytics</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>If you already run PostgreSQL</b>, Timescale is usually the lowest-friction option —
+      it keeps SQL, joins against your relational tables, and one system to operate.</div>
+  </div>
+</div>
+
+<!-- ============ 9. SEARCH ============ -->
+<div class="panel c7">
+  <div class="phead">9 &nbsp;· &nbsp;SEARCH <span class="sub">relevance, not matching</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">A database answers &ldquo;which rows match?&rdquo;. A search engine
+      answers &ldquo;which documents are <b>most relevant</b>, ranked?&rdquo; — a different question, and the inverted index
+      is what makes it fast.</div>
+    <div class="code"><span class="c">// inverted index: term → documents containing it</span>
+"database" → [d1, d7, d9, d22 …]
+"indexing" → [d7, d9, d41 …]
+<span class="c">// intersect the lists, then score by relevance</span></div>
+    <div class="h3">The pipeline that decides quality</div>
+    <ul>
+      <li><b>Analysis</b> — tokenise, lowercase, remove stopwords, stem or lemmatise. Applied identically at index and query time, or results are silently wrong</li>
+      <li><b>Scoring</b> — <b>BM25</b> is the modern default; it improves on TF-IDF by saturating term frequency and normalising for document length</li>
+      <li><b>Fuzzy matching</b> — edit distance for typos; n-grams for partial words; phonetic for names</li>
+      <li><b>Faceting and filters</b> — counts by category alongside results</li>
+    </ul>
+    <div class="callout"><b>Hybrid search is now the norm.</b> Keyword search finds exact terms, product codes and
+      names; vector search finds meaning. Running both and fusing the ranked lists beats either alone, particularly on
+      short queries where semantics are ambiguous.</div>
+    <div class="callout r"><b>Do not make it the system of record.</b> Search indexes are near-real-time, eventually
+      consistent, and rebuildable by design. Keep the authoritative copy in a database and project into the index — losing
+      the index should mean a reindex, not data loss.</div>
+    <div class="callout g"><b>PostgreSQL full-text search is genuinely capable</b> and removes an entire system.
+      Move to a dedicated engine when you need relevance tuning, faceting at scale, or search-specific analytics.</div>
+  </div>
+</div>
+
+<!-- ============ 10. VECTOR ============ -->
+<div class="panel c3">
+  <div class="phead">10 &nbsp;· &nbsp;VECTOR <span class="sub">similarity, approximately</span></div>
+  <div class="pbody">
+    <div style="font-size:13.2px;line-height:1.45">A model turns text, images or audio into a <b>vector</b>. Similar
+      meanings land close together, so &ldquo;find similar&rdquo; becomes &ldquo;find nearest points&rdquo; in a
+      high-dimensional space.</div>
+    <div class="h3">Why it must be approximate</div>
+    <div style="font-size:13.2px;line-height:1.45">Exact nearest-neighbour search compares against every vector — linear
+      in collection size, and far too slow at scale. <b>ANN</b> indexes trade a small amount of recall for orders of
+      magnitude in speed.</div>
+    <table style="margin-top:7px">
+      <thead><tr><th style="width:96px">Index</th><th>Character</th></tr></thead>
+      <tbody>
+        <tr><td><b>HNSW</b></td><td>Multi-layer navigable graph. Excellent recall and latency; higher memory and build cost. The common default</td></tr>
+        <tr><td><b>IVF</b></td><td>Cluster vectors, search only the nearest clusters. Lower memory, needs training</td></tr>
+        <tr><td><b>Flat</b></td><td>Exhaustive and exact. Correct choice for small collections — do not over-engineer</td></tr>
+        <tr><td><b>PQ / quantized</b></td><td>Compress vectors; large memory saving for some recall</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>ANN is approximate by construction.</b> A genuinely similar item can simply not be
+      returned, and nothing errors. Measure recall against exact search on a sample before assuming the retrieval layer is
+      exhaustive.</div>
+    <div class="callout"><b>Filter inside the index, not after.</b> Post-filtering ANN results by tenant, stock or
+      category can leave far fewer than the k you asked for — sometimes zero. Push the filter into the search.</div>
+    <div class="callout g"><b>Try <span class="mono">pgvector</span> first.</b> If your data already lives in
+      PostgreSQL, it keeps vectors beside the rows they describe — so filtering and joining are ordinary SQL, with one
+      system to operate. Move to a dedicated store at scale, or when you need advanced index tuning.</div>
+  </div>
+</div>
+
+<!-- ============ 11. INDEX STRUCTURES ============ -->
+<div class="panel c2 span2">
+  <div class="phead">11 &nbsp;· &nbsp;INDEX STRUCTURES <span class="sub">what each one is actually doing, and what it costs</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:118px">Structure</th><th>How it works · what it gives you</th></tr></thead>
+        <tbody>
+          <tr><td><b>B+ tree</b></td><td>Balanced tree, all values in the leaves, leaves linked. <b>O(log n)</b> search, and range scans work because the leaves are ordered. Updated in place. The default nearly everywhere</td></tr>
+          <tr><td><b>Hash</b></td><td>Hash the key to a bucket. <b>O(1)</b> average equality lookup, and <b>no</b> range or ordering support at all</td></tr>
+          <tr><td><b>LSM tree</b></td><td>Writes to an in-memory table, flushed to sorted files, merged by background compaction. Very fast writes; reads may touch several files; compaction is real ongoing work</td></tr>
+          <tr><td><b>Inverted index</b></td><td>Term → list of documents containing it. The basis of all full-text search</td></tr>
+          <tr><td><b>Bloom filter</b></td><td>Probabilistic set membership in very little space. <b>False positives possible; false negatives never</b> — so &ldquo;definitely not present&rdquo; is trustworthy and &ldquo;probably present&rdquo; needs a real lookup. Used in LSM engines to skip files</td></tr>
+          <tr><td><b>Skip list</b></td><td>Layered linked lists giving tree-like search without rebalancing. Used in memtables and in Redis sorted sets</td></tr>
+          <tr><td><b>R-tree / GiST</b></td><td>Bounding boxes for geospatial and multi-dimensional ranges</td></tr>
+          <tr><td><b>Zone map / BRIN</b></td><td>Min-max per block. Tiny, and it skips blocks — <b>only if the data is clustered on that column</b></td></tr>
+          <tr><td><b>HNSW / IVF</b></td><td>Approximate nearest neighbour over vectors — see panel 10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Read, write and space amplification</div>
+      <div style="font-size:13.2px;line-height:1.45">Every engine picks a point on a three-way trade-off, and the choice
+        explains most of its behaviour:</div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:118px"></th><th>B+ tree</th><th>LSM tree</th></tr></thead>
+        <tbody>
+          <tr><td><b>Writes</b></td><td>Slower — update in place, random I/O</td><td>Faster — sequential appends</td></tr>
+          <tr><td><b>Reads</b></td><td>Predictable, one path</td><td>May check several files; bloom filters mitigate</td></tr>
+          <tr><td><b>Space</b></td><td>Fragmentation from in-place updates</td><td>Old versions retained until compaction</td></tr>
+          <tr><td><b>Background work</b></td><td>Vacuum / defragmentation</td><td>Compaction — significant, and it competes with your traffic</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>This is why Cassandra writes so fast</b> and why PostgreSQL reads so predictably.
+        Neither is better; they occupy different points on the same trade-off.</div>
+      <div class="h3">Rules that apply to every database</div>
+      <ul>
+        <li><b>An index speeds reads and slows every write.</b> Unused indexes are pure cost — find and drop them</li>
+        <li><b>Composite order matters</b> — leading column first, and only prefixes of the index are usable</li>
+        <li><b>Wrapping a column in a function disables its index</b> unless you built a matching expression index</li>
+        <li><b>Covering indexes</b> answer from the index alone and avoid touching the row entirely</li>
+        <li><b>Low-cardinality columns rarely deserve their own index</b> — a boolean index seldom helps</li>
+        <li><b>Measure with the query plan</b>, never by assumption</li>
+      </ul>
+      <div class="callout g"><b>Sharding, partitioning and replication are three different things.</b>
+        <b>Partitioning</b> splits a table within one database. <b>Sharding</b> splits data across machines.
+        <b>Replication</b> copies the same data for availability and read scale. They are frequently combined and
+        frequently confused.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 12. CONSISTENCY ============ -->
+<div class="panel c5 span3">
+  <div class="phead">12 &nbsp;· &nbsp;CONSISTENCY, TRANSACTIONS &amp; DISTRIBUTION <span class="sub">the guarantees each family gives up, stated plainly</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">ACID and BASE</div>
+      <table>
+        <thead><tr><th style="width:110px">ACID</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><b>Atomicity</b></td><td>All of a transaction happens, or none of it</td></tr>
+          <tr><td><b>Consistency</b></td><td>Constraints hold before and after</td></tr>
+          <tr><td><b>Isolation</b></td><td>Concurrent transactions do not corrupt each other — to a stated degree</td></tr>
+          <tr><td><b>Durability</b></td><td>Once committed, it survives a crash</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>BASE</b> — basically available, soft state, eventual consistency. Not a weaker
+        implementation of ACID but a different bargain: accept temporary disagreement between replicas in exchange for
+        availability and write scale. The question is never which is better, but which your use case can tolerate.</div>
+      <div class="h3">CAP, and the more useful version</div>
+      <ul>
+        <li><b>CAP</b> — during a <i>network partition</i>, choose consistency or availability. It says nothing about normal operation, which is where the popular reading goes wrong</li>
+        <li><b>PACELC</b> — and <b>else</b>, when there is no partition, choose latency or consistency. This is the trade-off you actually make every day</li>
+      </ul>
+      <div class="callout r"><b>&ldquo;Eventually consistent&rdquo; needs a number.</b> Eventually is milliseconds
+        in one system and minutes in another under load. Ask what the replication lag is at p99, and what the application
+        does when a user writes and immediately reads a stale value.</div>
+    </div>
+    <div>
+      <div class="h3">Consistency models, strongest first</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Strict / linearizable</b></td><td>Reads always see the latest committed write. Costs coordination</td></tr>
+          <tr><td><b>Sequential</b></td><td>Everyone sees operations in the same order</td></tr>
+          <tr><td><b>Causal</b></td><td>Related operations are ordered; unrelated ones may differ</td></tr>
+          <tr><td><b>Read-your-writes</b></td><td>You see your own updates. Often the minimum users notice</td></tr>
+          <tr><td><b>Monotonic reads</b></td><td>Time never appears to go backwards</td></tr>
+          <tr><td><b>Eventual</b></td><td>Replicas converge if writes stop. The weakest useful guarantee</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>Quorums make this tunable.</b> With N replicas, reading from R and writing to W,
+        <b>R + W &gt; N</b> guarantees a read sees the latest write. Cassandra and DynamoDB expose this per query, so
+        consistency becomes a per-operation decision rather than a database-wide one.</div>
+      <div class="h3">Distribution mechanics</div>
+      <ul>
+        <li><b>Leader-follower</b> — one writer, many readers. Simple, and the leader is the write bottleneck</li>
+        <li><b>Multi-leader</b> — write anywhere; you must now resolve conflicts</li>
+        <li><b>Leaderless</b> — quorum reads and writes, with read repair and anti-entropy</li>
+        <li><b>Consensus (Raft/Paxos)</b> — how distributed SQL keeps strong consistency while sharded, at the cost of a round trip per commit</li>
+      </ul>
+      <div class="callout r"><b>Replication is not a backup.</b> It faithfully copies a mistaken
+        <span class="mono">DELETE</span> to every replica in milliseconds. Only a backup — tested by restoring it —
+        protects against a bad deployment or a wrong command.</div>
+    </div>
+    <div>
+      <div class="h3">What each family actually gives you</div>
+      <table>
+        <thead><tr><th style="width:140px">Family</th><th>Transaction reality</th></tr></thead>
+        <tbody>
+          <tr><td><b>Relational</b></td><td>Full ACID across rows and tables, with a choice of isolation level</td></tr>
+          <tr><td><b>Distributed SQL</b></td><td>ACID across shards via consensus; commits cost a network round trip</td></tr>
+          <tr><td><b>Document</b></td><td>Always atomic within one document; multi-document ACID supported, and best avoided by modelling</td></tr>
+          <tr><td><b>Key-value</b></td><td>Atomic per key. Redis has scripts and transactions; DynamoDB has conditional and multi-item writes</td></tr>
+          <tr><td><b>Wide-column</b></td><td>Atomic per partition. No multi-row transactions — this is a design constraint, not a gap</td></tr>
+          <tr><td><b>Columnar</b></td><td>Batch-oriented; some now offer table-level ACID via a table format</td></tr>
+          <tr><td><b>Graph</b></td><td>ACID in native engines, across a traversal</td></tr>
+          <tr><td><b>Time series / Search / Vector</b></td><td>Append-oriented, eventually consistent. Do not depend on them for transactional correctness</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Across services, not just rows</div>
+      <ul>
+        <li><b>Two-phase commit</b> — atomic, blocking, and it needs a coordinator you must keep alive. Rare in modern designs</li>
+        <li><b>Saga</b> — a sequence of local transactions with compensating actions. Gives up isolation, so intermediate states are visible and must be modelled</li>
+        <li><b>Outbox</b> — write the state change and its event in <i>one</i> local transaction, then publish. The standard way to avoid dual writes</li>
+      </ul>
+      <div class="callout g"><b>The practical hierarchy.</b> Keep data that must change together in one database and
+        one transaction wherever you can. Reach for a saga only when a boundary genuinely forces it — the coordination is
+        far more expensive than it appears in a diagram.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. CHOOSING ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;CHOOSING, AND THE CHECKS BEFORE YOU COMMIT <span class="sub">the decision is reversible only while the data is small</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>The five queries that must be fast</b> are written down before any product is chosen</div>
+      <div>&#9744; <b>Read:write ratio known</b>, and peak rather than average</div>
+      <div>&#9744; <b>Data volume and growth</b> estimated over 12–18 months</div>
+      <div>&#9744; <b>Consistency requirement stated per operation</b>, not for the whole system</div>
+      <div>&#9744; <b>Latency target at p99</b>, not average</div>
+      <div>&#9744; <b>Access pattern matched to storage model</b> — point reads vs scans vs traversals</div>
+      <div>&#9744; <b>Checked whether the existing database already does this</b> adequately</div>
+      <div>&#9744; <b>Partition or shard key chosen for distribution <i>and</i> for query routing</b></div>
+      <div>&#9744; <b>Shard key treated as permanent</b> — changing it is a migration, not a setting</div>
+      <div>&#9744; <b>Hot-partition risk checked</b> against the real key distribution</div>
+      <div>&#9744; <b>Indexes cover the filters, joins and sorts</b> actually used</div>
+      <div>&#9744; <b>Unused indexes identified and dropped</b></div>
+      <div>&#9744; <b>Query plans reviewed</b> for the top queries, not assumed</div>
+      <div>&#9744; <b>Statistics refreshed</b> after bulk loads</div>
+      <div>&#9744; <b>Connection pooling in place</b> and sized</div>
+      <div>&#9744; <b>Isolation level understood</b>, and read-modify-write paths protected explicitly</div>
+      <div>&#9744; <b>Replication lag measured</b>, and stale-read behaviour defined</div>
+      <div>&#9744; <b>Backups automated, offsite, encrypted</b> — and <b>restore tested and timed</b></div>
+      <div>&#9744; <b>RTO and RPO agreed</b> with whoever owns the tolerance</div>
+      <div>&#9744; <b>Schema migration path</b> is expand → migrate → contract, tested at production data size</div>
+      <div>&#9744; <b>Time-series cardinality bounded</b> — no ids in tags</div>
+      <div>&#9744; <b>Cache TTLs jittered</b>; eviction policy chosen deliberately</div>
+      <div>&#9744; <b>ANN recall measured</b> against exact search on a sample</div>
+      <div>&#9744; <b>Search index treated as rebuildable</b>, never as the source of truth</div>
+      <div>&#9744; <b>Monitoring covers</b> slow queries, lock waits, replication lag, disk and connection saturation</div>
+      <div>&#9744; <b>Encryption in transit and at rest</b>; access control and audit in place</div>
+      <div>&#9744; <b>Someone owns its operations</b> — upgrades, patching, capacity and on-call</div>
+      <div>&#9744; <b>Team can operate it</b>, or the learning cost is budgeted</div>
+      <div>&#9744; <b>Licence and cost model understood</b> at projected scale</div>
+      <div>&#9744; <b>Exit path considered</b> — how data would leave if this choice proves wrong</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>name the access pattern before naming the
+      database.</b> Nearly every expensive migration traces back to a system chosen for its category — or its popularity —
+      rather than for the shape of the queries it would actually receive.</div>
+  </div>
+</div>
+
+</div>
