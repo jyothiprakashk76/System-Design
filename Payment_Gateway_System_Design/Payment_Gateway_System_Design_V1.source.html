@@ -1,0 +1,893 @@
+<meta charset="utf-8">
+<title>Payment Gateway — System Design &amp; Interview Reference</title>
+<style>
+  @page { size: 3400px 5470px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5470px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5440px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 460px 903px 656px 534px 536px 471px 600px 504px 408px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.4px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:13px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.4px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.6px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.8px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>PAYMENT GATEWAY — SYSTEM DESIGN &amp; INTERVIEW REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Moving money correctly, when every dependency is external and nothing may be lost or duplicated<br>
+    <span style="font-size:13.4px;color:#6d80b6">four-party model · auth &amp; capture · idempotency · ledger · PCI &amp; tokenisation · routing · reconciliation · disputes</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A PAYMENT GATEWAY IS, WHO ELSE IS INVOLVED, AND WHY THIS IS HARD
+    <span class="sub">start here — the participants, the vocabulary, and the three properties that make payments unlike any other system</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition, and what it is not</div>
+      <div style="font-size:13.2px;line-height:1.47">A <b>payment gateway</b> captures payment credentials securely,
+        turns them into an authorisation request, routes it to whoever can approve it, and reports the outcome. It is the
+        merchant's entry point to the payments network — not the entity that holds or moves the money.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:120px">Party</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><b>Cardholder</b></td><td>The customer paying</td></tr>
+          <tr><td><b>Merchant</b></td><td>Sells the goods; holds a merchant account</td></tr>
+          <tr><td><b>Gateway</b></td><td>Captures credentials, routes the request, returns the result</td></tr>
+          <tr><td><b>Processor / PSP</b></td><td>Handles the transaction mechanics with the networks. Often bundled with the gateway commercially, but a distinct function</td></tr>
+          <tr><td><b>Acquirer</b></td><td>The <i>merchant's</i> bank. Holds the merchant account, receives the funds, carries the risk</td></tr>
+          <tr><td><b>Card network</b></td><td>Visa, Mastercard, RuPay — routes between acquirer and issuer, sets the rules and the fees</td></tr>
+          <tr><td><b>Issuer</b></td><td>The <i>cardholder's</i> bank. <b>Makes the approve-or-decline decision</b> and bills the customer</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>This is the four-party model</b> — cardholder, acquirer, network, issuer — and almost
+        every card payment in the world runs on it. Being able to name who actually decides (the issuer) and who actually
+        bears the risk (the acquirer) is the fastest way to show you understand the domain.</div>
+    </div>
+    <div>
+      <div class="h3">Vocabulary the rest of the sheet uses</div>
+      <table>
+        <tbody>
+          <tr><td style="width:126px"><b>Authorisation</b></td><td>The issuer checks funds and risk, then <b>holds</b> the amount. No money has moved</td></tr>
+          <tr><td><b>Capture</b></td><td>The merchant claims the held amount. Usually at dispatch, not at checkout</td></tr>
+          <tr><td><b>Void / reversal</b></td><td>Cancelling an authorisation before capture. Cheap and clean</td></tr>
+          <tr><td><b>Clearing</b></td><td>Batch exchange of transaction detail between acquirer and issuer</td></tr>
+          <tr><td><b>Settlement</b></td><td>The actual movement of funds, typically <b>T+1 or T+2</b></td></tr>
+          <tr><td><b>Refund</b></td><td>Returning money <i>after</i> capture. A new transaction, not an undo</td></tr>
+          <tr><td><b>Chargeback</b></td><td>The cardholder disputes through their issuer. Forcible reversal, plus a fee</td></tr>
+          <tr><td><b>PAN</b></td><td>The card number. Never store it</td></tr>
+          <tr><td><b>Token</b></td><td>A reference standing in for the PAN</td></tr>
+          <tr><td><b>MDR / interchange</b></td><td>What the merchant pays; interchange is the issuer's share of it</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The distinction that trips people up.</b> <b>Authorisation is not payment.</b> An
+        approved authorisation is a promise the issuer will honour a claim if made within a window — typically days. Capture
+        is when you claim it. Settlement is when the funds actually arrive. Three different events, three different days.</div>
+    </div>
+    <div>
+      <div class="h3">Why this is harder than it looks</div>
+      <table>
+        <thead><tr><th style="width:132px">Property</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td><b>Errors are not reversible by a deploy</b></td><td>A double charge is a customer's money and a regulatory matter. There is no rollback — only a compensating refund, and the damage to trust is already done</td></tr>
+          <tr><td><b>Every dependency is external</b></td><td>Issuer, network and acquirer are outside your control, on their maintenance windows, with their rate limits and their outages</td></tr>
+          <tr><td><b>Timeouts are ambiguous</b></td><td>A timeout tells you <b>nothing</b> about whether the customer was charged. This single fact drives most of the design</td></tr>
+          <tr><td><b>Correctness is audited</b></td><td>Every rupee must reconcile against the provider and the bank, daily, with an explanation for every break</td></tr>
+          <tr><td><b>The rules are regulated</b></td><td>PCI DSS, strong authentication, tokenisation mandates, data residency. Non-compliance is a business risk, not a technical one</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The three design commitments everything else follows from.</b>
+        <b>1 ·</b> Every operation that moves money is idempotent, keyed by the caller.
+        <b>2 ·</b> The ledger is append-only and double-entry, so state is derived rather than overwritten.
+        <b>3 ·</b> Nothing is believed until it reconciles against an external source of truth.</div>
+      <div class="callout"><b>Availability target, stated honestly.</b> 99.99% for the API you control, but the
+        end-to-end success rate depends on issuers you do not. Design for graceful failure and clear messaging rather than
+        for a number you cannot deliver alone.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE AND THE MONEY TIMELINE
+    <span class="sub">the real-time path on top, the batch path below — and card data never crossing the merchant boundary</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 830" width="3320" height="830">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#be123c"/></marker>
+    </defs>
+
+    <!-- CARD DATA BOUNDARY -->
+    <rect x="8" y="6" width="3304" height="196" rx="10" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#be123c">CREDENTIAL CAPTURE — the boundary that keeps card data out of the merchant's systems, and therefore out of PCI scope</text>
+
+    <rect x="26" y="44" width="176" height="86" rx="8" fill="#fff" stroke="#be123c" stroke-width="2"/>
+    <text x="114" y="66" font-size="13" font-weight="700" fill="#be123c" text-anchor="middle">Customer browser</text>
+    <text x="114" y="86" font-size="11" fill="#7f2b2b" text-anchor="middle">enters card details into</text>
+    <text x="114" y="103" font-size="11" fill="#7f2b2b" text-anchor="middle">a hosted field / iframe</text>
+    <text x="114" y="122" font-size="10.6" fill="#6b7391" text-anchor="middle">served by the gateway</text>
+
+    <rect x="216" y="44" width="176" height="86" rx="8" fill="#f7f8fd" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7 4"/>
+    <text x="304" y="66" font-size="13" font-weight="700" fill="#475569" text-anchor="middle">Merchant server</text>
+    <text x="304" y="88" font-size="11" fill="#42507a" text-anchor="middle">never sees the PAN</text>
+    <text x="304" y="106" font-size="11" fill="#42507a" text-anchor="middle">receives only a token</text>
+    <text x="304" y="124" font-size="10.6" font-weight="700" fill="#be123c" text-anchor="middle">out of scope by design</text>
+
+    <rect x="406" y="44" width="196" height="86" rx="8" fill="#fff" stroke="#be123c" stroke-width="2"/>
+    <text x="504" y="66" font-size="13" font-weight="700" fill="#be123c" text-anchor="middle">Vault / tokenisation</text>
+    <text x="504" y="86" font-size="11" fill="#7f2b2b" text-anchor="middle">PAN encrypted, HSM-backed</text>
+    <text x="504" y="103" font-size="11" fill="#7f2b2b" text-anchor="middle">returns a durable token</text>
+    <text x="504" y="122" font-size="10.6" fill="#6b7391" text-anchor="middle">the only place card data lives</text>
+
+    <rect x="616" y="44" width="700" height="86" rx="8" fill="#fff" stroke="#be123c" stroke-width="1.8"/>
+    <text x="632" y="66" font-size="12.6" font-weight="700" fill="#b91c1c">WHY THE BOUNDARY IS DRAWN HERE</text>
+    <text x="632" y="86" font-size="11.2" fill="#7f2b2b">The browser posts the card directly to the gateway; the merchant's server receives a token it can safely store.</text>
+    <text x="632" y="103" font-size="11.2" fill="#7f2b2b">That single decision moves the merchant to the lightest PCI assessment, because no cardholder data is stored,</text>
+    <text x="632" y="122" font-size="11.2" font-weight="700" fill="#b91c1c">processed or transmitted by their systems. Every other design here is downstream of that choice.</text>
+
+    <rect x="1330" y="44" width="800" height="86" rx="8" fill="#fff7ea" stroke="#e9b669" stroke-width="1.8"/>
+    <text x="1346" y="66" font-size="12.6" font-weight="700" fill="#a35c00">TWO KINDS OF TOKEN — and they are not interchangeable</text>
+    <text x="1346" y="86" font-size="11.2" fill="#7a3d06"><tspan font-weight="700">Gateway token</tspan> — issued by your PSP, meaningful only to them. Simple, but it locks the stored credential to that provider.</text>
+    <text x="1346" y="103" font-size="11.2" fill="#7a3d06"><tspan font-weight="700">Network token</tspan> — issued by the card network, tied to card and merchant. Survives card reissue, lifts authorisation rates,</text>
+    <text x="1346" y="122" font-size="11.2" fill="#7a3d06">and is what regulatory card-on-file tokenisation mandates are built on. Prefer it where available.</text>
+
+    <rect x="2144" y="44" width="1152" height="86" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.8"/>
+    <text x="2160" y="66" font-size="12.6" font-weight="700" fill="#1d4ed8">REGULATORY CONTEXT WORTH NAMING</text>
+    <text x="2160" y="86" font-size="11.2" fill="#1e3a5f"><tspan font-weight="700">PCI DSS</tspan> governs anyone who stores, processes or transmits card data — the scope you are trying to minimise. <tspan font-weight="700">Strong customer authentication</tspan> requirements drive 3-D Secure.</text>
+    <text x="2160" y="103" font-size="11.2" fill="#1e3a5f"><tspan font-weight="700">In India</tspan>, the Reserve Bank's card-on-file tokenisation rules mean that from 1 October 2022 no entity in the payment chain other than card issuers and networks may store</text>
+    <text x="2160" y="122" font-size="11.2" fill="#1e3a5f">card-on-file data — merchants and gateways must use tokens. Confirm the current position with counsel; these rules are amended by notification.</text>
+
+    <text x="26" y="158" font-size="12" font-weight="700" fill="#b91c1c">Never stored, anywhere, under any circumstance: the CVV after authorisation, the full PAN outside the vault, or the magnetic-stripe / chip data. There is no legitimate reason and no exception.</text>
+    <text x="26" y="180" font-size="12" fill="#7f2b2b">What you may store: the token, the last four digits, the card brand, the expiry, and an issuer BIN range for routing. That is enough to build every customer-facing feature people ask for.</text>
+
+    <!-- REAL TIME PATH -->
+    <rect x="8" y="210" width="3304" height="270" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="234" font-size="16.5" font-weight="700" fill="#1e3a8a">AUTHORISATION — THE REAL-TIME PATH &nbsp;·&nbsp; budget ≈ 2–3 s end to end, and most of it is not yours</text>
+
+    <g font-size="10.8">
+      <rect x="26" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="111" y="268" font-size="11.8" font-weight="700" fill="#1e3a8a" text-anchor="middle">1 · Payment API</text>
+      <text x="111" y="286" fill="#42507a" text-anchor="middle">idempotency key</text>
+      <text x="111" y="302" fill="#42507a" text-anchor="middle">validate, persist intent</text>
+      <text x="111" y="320" fill="#be123c" text-anchor="middle">record BEFORE calling out</text>
+      <text x="111" y="336" fill="#6b7391" text-anchor="middle">~10 ms</text>
+
+      <rect x="210" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="295" y="268" font-size="11.8" font-weight="700" fill="#1e3a8a" text-anchor="middle">2 · Risk / fraud</text>
+      <text x="295" y="286" fill="#42507a" text-anchor="middle">velocity, device, BIN</text>
+      <text x="295" y="302" fill="#42507a" text-anchor="middle">score → allow/challenge/deny</text>
+      <text x="295" y="320" fill="#6b7391" text-anchor="middle">must be fast or bypassed</text>
+      <text x="295" y="336" fill="#6b7391" text-anchor="middle">~50 ms</text>
+
+      <rect x="394" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="479" y="268" font-size="11.8" font-weight="700" fill="#7c2d92" text-anchor="middle">3 · 3-D Secure</text>
+      <text x="479" y="286" fill="#4b3a5e" text-anchor="middle">frictionless or challenge</text>
+      <text x="479" y="302" fill="#4b3a5e" text-anchor="middle">shifts liability to issuer</text>
+      <text x="479" y="320" fill="#be123c" text-anchor="middle">customer-dependent latency</text>
+      <text x="479" y="336" fill="#6b7391" text-anchor="middle">0 s … minutes</text>
+
+      <rect x="578" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#b45309" stroke-width="2"/>
+      <text x="663" y="268" font-size="11.8" font-weight="700" fill="#b45309" text-anchor="middle">4 · Routing engine</text>
+      <text x="663" y="286" fill="#7a3d06" text-anchor="middle">choose acquirer / PSP</text>
+      <text x="663" y="302" fill="#7a3d06" text-anchor="middle">cost, auth rate, health</text>
+      <text x="663" y="320" fill="#6b7391" text-anchor="middle">circuit breaker per route</text>
+      <text x="663" y="336" fill="#6b7391" text-anchor="middle">~5 ms</text>
+
+      <rect x="762" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="847" y="268" font-size="11.8" font-weight="700" fill="#1e3a8a" text-anchor="middle">5 · Acquirer</text>
+      <text x="847" y="286" fill="#42507a" text-anchor="middle">merchant's bank</text>
+      <text x="847" y="302" fill="#42507a" text-anchor="middle">forwards to the network</text>
+      <text x="847" y="320" fill="#6b7391" text-anchor="middle">outside your control</text>
+      <text x="847" y="336" fill="#6b7391" text-anchor="middle">~300 ms</text>
+
+      <rect x="946" y="248" width="170" height="94" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="1031" y="268" font-size="11.8" font-weight="700" fill="#1e3a8a" text-anchor="middle">6 · Card network</text>
+      <text x="1031" y="286" fill="#42507a" text-anchor="middle">Visa / Mastercard / RuPay</text>
+      <text x="1031" y="302" fill="#42507a" text-anchor="middle">routes to the issuer</text>
+      <text x="1031" y="320" fill="#6b7391" text-anchor="middle">very reliable, not free</text>
+      <text x="1031" y="336" fill="#6b7391" text-anchor="middle">~200 ms</text>
+
+      <rect x="1130" y="248" width="180" height="94" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="1220" y="268" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">7 · Issuer decides</text>
+      <text x="1220" y="286" fill="#7f2b2b" text-anchor="middle">funds, limits, own risk model</text>
+      <text x="1220" y="302" fill="#7f2b2b" text-anchor="middle">approve / decline / refer</text>
+      <text x="1220" y="322" font-weight="700" fill="#be123c" text-anchor="middle">the actual decision point</text>
+      <text x="1220" y="337" fill="#6b7391" text-anchor="middle">~500 ms, sometimes far worse</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M196,295 L204,295"/><path d="M380,295 L388,295"/><path d="M564,295 L572,295"/>
+      <path d="M748,295 L756,295"/><path d="M932,295 L940,295"/><path d="M1116,295 L1124,295"/>
+    </g>
+
+    <rect x="1326" y="248" width="640" height="94" rx="7" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+    <text x="1342" y="268" font-size="12.4" font-weight="700" fill="#047857">8 · THE RESPONSE, AND WHAT YOU DO WITH IT</text>
+    <text x="1342" y="288" font-size="11.2" fill="#2f4f47"><tspan font-weight="700">Approved</tspan> — write the ledger entry and the state transition in <tspan font-weight="700">one transaction</tspan>, with the outbox event. Only then respond.</text>
+    <text x="1342" y="306" font-size="11.2" fill="#2f4f47"><tspan font-weight="700">Declined</tspan> — a normal outcome, not an error. Map the issuer's reason code to something the customer can act on.</text>
+    <text x="1342" y="326" font-size="11.2" font-weight="700" fill="#be123c">Timeout — the hard case. Not a failure. Move to UNKNOWN and resolve by query, never by retrying blindly.</text>
+
+    <rect x="1980" y="248" width="1316" height="94" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+    <text x="1996" y="268" font-size="12.6" font-weight="700" fill="#1e3a8a">WHERE THE LATENCY ACTUALLY GOES — and why an aggressive timeout is dangerous here</text>
+    <text x="1996" y="288" font-size="11.4" fill="#42507a">Your own components account for well under 100 ms of a roughly 2-second round trip. <tspan font-weight="700">Everything else belongs to the acquirer, the network and the issuer</tspan> — and issuer latency varies by</text>
+    <text x="1996" y="306" font-size="11.4" fill="#42507a">bank, by time of day and by whether they are having a bad afternoon. Optimising your side buys single-digit percentages; choosing a better route buys far more.</text>
+    <text x="1996" y="328" font-size="11.4" font-weight="700" fill="#be123c">Set the client timeout generously — 30 s or more. A short timeout does not cancel the transaction upstream; it only destroys your knowledge of what happened, and manufactures UNKNOWN states.</text>
+
+    <rect x="26" y="354" width="3270" height="112" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+    <text x="42" y="374" font-size="13" font-weight="700" fill="#1e3a8a">THE MONEY TIMELINE — four distinct events, on four different clocks. Conflating them is the most common domain mistake.</text>
+    <g font-size="11.6">
+      <text x="42" y="398" fill="#42507a"><tspan font-weight="700" fill="#be123c">AUTHORISE (t=0, seconds)</tspan> — the issuer holds the amount against the customer's limit. <tspan font-weight="700">No money has moved.</tspan> The hold expires on its own after days if never captured.</text>
+      <text x="42" y="420" fill="#42507a"><tspan font-weight="700" fill="#b45309">CAPTURE (t = hours to days)</tspan> — you claim the held amount, normally at dispatch. Capturing at checkout for goods you have not shipped is a refund liability and, in some sectors, a compliance problem.</text>
+      <text x="42" y="442" fill="#42507a"><tspan font-weight="700" fill="#7c2d92">CLEAR (t+1, batch)</tspan> — acquirer and issuer exchange transaction detail. This is where fees are computed and where your figures and theirs must agree.</text>
+      <text x="42" y="462" fill="#42507a"><tspan font-weight="700" fill="#047857">SETTLE (t+1 to t+2)</tspan> — funds actually reach the merchant's account, net of fees. <tspan font-weight="700">A payment your system shows as successful is not money in the bank until this happens.</tspan></text>
+    </g>
+
+    <!-- ASYNC -->
+    <rect x="8" y="488" width="3304" height="200" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="512" font-size="16.5" font-weight="700" fill="#0f766e">THE BATCH AND ASYNCHRONOUS SIDE — where correctness is actually established, and where most of the engineering lives</text>
+
+    <g font-size="10.8">
+      <rect x="26" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="124" y="546" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Ledger</text>
+      <text x="124" y="564" fill="#2f4f47" text-anchor="middle">double-entry, append-only</text>
+      <text x="124" y="580" fill="#2f4f47" text-anchor="middle">immutable journal</text>
+      <text x="124" y="598" fill="#be123c" text-anchor="middle">the source of truth</text>
+
+      <rect x="236" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="334" y="546" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Outbox → Kafka</text>
+      <text x="334" y="564" fill="#2f4f47" text-anchor="middle">state change + event</text>
+      <text x="334" y="580" fill="#2f4f47" text-anchor="middle">in one transaction</text>
+      <text x="334" y="598" fill="#6b7391" text-anchor="middle">no dual writes</text>
+
+      <rect x="446" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="544" y="546" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Webhook dispatcher</text>
+      <text x="544" y="564" fill="#2f4f47" text-anchor="middle">signed, retried, ordered</text>
+      <text x="544" y="580" fill="#2f4f47" text-anchor="middle">merchant-facing</text>
+      <text x="544" y="598" fill="#6b7391" text-anchor="middle">replayable on demand</text>
+
+      <rect x="656" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="754" y="546" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">Status resolver</text>
+      <text x="754" y="564" fill="#7f2b2b" text-anchor="middle">sweeps UNKNOWN</text>
+      <text x="754" y="580" fill="#7f2b2b" text-anchor="middle">queries the PSP</text>
+      <text x="754" y="598" font-weight="700" fill="#be123c" text-anchor="middle">stops stuck payments</text>
+
+      <rect x="866" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#b45309" stroke-width="2"/>
+      <text x="964" y="546" font-size="11.8" font-weight="700" fill="#b45309" text-anchor="middle">Reconciliation</text>
+      <text x="964" y="564" fill="#7a3d06" text-anchor="middle">settlement file vs ledger</text>
+      <text x="964" y="580" fill="#7a3d06" text-anchor="middle">daily, three-way</text>
+      <text x="964" y="598" font-weight="700" fill="#b45309" text-anchor="middle">every break investigated</text>
+
+      <rect x="1076" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1174" y="546" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Payouts</text>
+      <text x="1174" y="564" fill="#2f4f47" text-anchor="middle">merchant settlement</text>
+      <text x="1174" y="580" fill="#2f4f47" text-anchor="middle">net of fees and holds</text>
+      <text x="1174" y="598" fill="#6b7391" text-anchor="middle">its own approval path</text>
+
+      <rect x="1286" y="526" width="196" height="86" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1384" y="546" font-size="11.8" font-weight="700" fill="#7c2d92" text-anchor="middle">Dispute handling</text>
+      <text x="1384" y="564" fill="#4b3a5e" text-anchor="middle">chargeback lifecycle</text>
+      <text x="1384" y="580" fill="#4b3a5e" text-anchor="middle">evidence, deadlines</text>
+      <text x="1384" y="598" fill="#6b7391" text-anchor="middle">deadlines are hard limits</text>
+    </g>
+
+    <rect x="1496" y="526" width="880" height="86" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1512" y="546" font-size="12.4" font-weight="700" fill="#b91c1c">THE PRINCIPLE THAT SEPARATES A PAYMENT SYSTEM FROM AN ORDINARY ONE</text>
+    <text x="1512" y="566" font-size="11.2" fill="#7f2b2b">Nothing is considered true because your service returned success. It is true when it appears in the provider's</text>
+    <text x="1512" y="584" font-size="11.2" fill="#7f2b2b">settlement file and your ledger agrees with it. Every other system treats its own database as authoritative;</text>
+    <text x="1512" y="604" font-size="11.2" font-weight="700" fill="#b91c1c">a payment system treats an external file as authoritative and its own database as a claim awaiting confirmation.</text>
+
+    <rect x="2390" y="526" width="906" height="86" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="2406" y="546" font-size="12.4" font-weight="700" fill="#047857">CONSISTENCY CHOICES — CP almost everywhere, and deliberately so</text>
+    <text x="2406" y="566" font-size="11.2" fill="#2f4f47"><tspan font-weight="700">CP:</tspan> the ledger, payment state, idempotency records, balances. Refuse the write rather than risk divergence — an unavailable API is recoverable, a wrong balance is not.</text>
+    <text x="2406" y="584" font-size="11.2" fill="#2f4f47"><tspan font-weight="700">AP:</tspan> merchant dashboards, transaction search, analytics, reporting. Reading a figure a few seconds stale harms nobody.</text>
+    <text x="2406" y="604" font-size="11.2" font-weight="700" fill="#047857">This is the one domain where defaulting to CP is correct, and where &ldquo;eventually consistent&rdquo; needs justification rather than being assumed.</text>
+
+    <rect x="26" y="624" width="3270" height="54" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="42" y="644" font-size="12.6" font-weight="700" fill="#0f766e">READING THE DIAGRAM</text>
+    <text x="42" y="664" font-size="11.6" fill="#42507a">The top band exists to keep card data out of your systems. The middle band is two seconds long and mostly belongs to other companies. The bottom band is where correctness is actually established — and it is the part that is usually missing from a payment architecture diagram, which is why so many of them describe systems that cannot prove they are right.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 3. STATE MACHINE ============ -->
+<div class="panel c5">
+  <div class="phead">3 &nbsp;· &nbsp;THE PAYMENT STATE MACHINE <span class="sub">including the state people omit</span></div>
+  <div class="pbody">
+    <div class="code">CREATED
+   │
+   ├─▶ <span class="k">AUTHORISED</span> ──▶ <span class="v">CAPTURED</span> ──▶ <span class="v">SETTLED</span>
+   │        │             │
+   │        │             ├─▶ REFUNDED
+   │        │             ├─▶ PARTIALLY_REFUNDED
+   │        │             └─▶ <span class="r">DISPUTED</span> ─▶ CHARGEBACK_LOST
+   │        │                              └▶ CHARGEBACK_WON
+   │        ├─▶ VOIDED          <span class="c">// cancelled pre-capture</span>
+   │        └─▶ AUTH_EXPIRED    <span class="c">// hold lapsed, not captured</span>
+   │
+   ├─▶ DECLINED        <span class="c">// issuer said no — a normal outcome</span>
+   ├─▶ FAILED          <span class="c">// our side or a validation error</span>
+   │
+   └─▶ <span class="r">UNKNOWN</span>  ◀── timeout / no response
+          │
+          └─▶ resolved by query or reconciliation
+              into one of the states above</div>
+    <div class="callout r"><b><span class="mono">UNKNOWN</span> is the state most designs are missing, and it is
+      the one that causes double charges.</b> It is not a failure and must never be treated as one. A payment in this state
+      has an unresolved external truth, and the only valid actions are <b>query the provider</b> or <b>wait for
+      reconciliation</b> — never retry, and never tell the customer it failed.</div>
+    <div class="h3">Rules for the machine</div>
+    <ul>
+      <li><b>Transitions are append-only events</b>, not column updates. The history is what an auditor asks for</li>
+      <li><b>Only forward transitions are legal.</b> A <span class="mono">CAPTURED</span> payment never returns to <span class="mono">AUTHORISED</span></li>
+      <li><b>Out-of-order webhooks are normal</b> — ignore any transition older than current state</li>
+      <li><b>Every terminal state has an owner</b> and a defined customer-facing message</li>
+      <li><b>Alert on anything stuck</b> beyond its expected window — this is how stranded payments are found before customers find them</li>
+    </ul>
+    <div class="callout"><b><span class="mono">AUTH_EXPIRED</span> is worth modelling explicitly.</b> Authorisation
+      holds lapse after a period set by the network and issuer. If you capture late and the hold has gone, the capture fails
+      and the customer may already have the goods. Track the expiry and act before it.</div>
+  </div>
+</div>
+
+<!-- ============ 4. IDEMPOTENCY ============ -->
+<div class="panel c4 span2">
+  <div class="phead">4 &nbsp;· &nbsp;IDEMPOTENCY AND THE AMBIGUOUS TIMEOUT
+    <span class="sub">the single most important mechanism on this sheet — everything that moves money depends on it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The governing fact, stated once.</b> When a payment call times
+        out, <b>four things are equally possible</b>: the request never arrived; it arrived and was declined; it arrived and
+        succeeded but the response was lost; or it is still being processed. Your system cannot distinguish them. Every
+        mechanism below exists because of that.</div>
+      <div class="h3">The idempotency contract</div>
+      <div class="code"><span class="c">// caller generates the key when intent is formed,</span>
+<span class="c">// and reuses it for every retry of the SAME intent</span>
+POST /v1/payments
+<span class="k">Idempotency-Key:</span> <span class="v">01J8F3K2M9Q</span>
+
+<span class="c">// server, in one transaction:</span>
+INSERT INTO idempotency(key, request_hash, state)
+  VALUES (?, ?, 'IN_PROGRESS')
+  ON CONFLICT (key) DO NOTHING
+<span class="c">// 0 rows → this key was seen before</span>
+
+  ├─ completed?   → return the ORIGINAL response
+  ├─ in progress? → return 409, tell caller to poll
+  └─ new?         → process, store the result</div>
+      <div class="callout"><b>Return the original response, not an error.</b> A repeat with the same key must
+        return the first result. Returning a conflict makes the caller believe it failed — and they will retry again, which
+        is precisely the loop you are trying to prevent.</div>
+      <div class="callout r"><b>Bind the key to the request body.</b> Store a hash of the payload; if the same key
+        arrives with a different amount, reject it. Otherwise a client bug can turn one key into a way of overwriting an
+        earlier payment's identity.</div>
+    </div>
+    <div>
+      <div class="h3">Retry policy — the rules that prevent double charges</div>
+      <table>
+        <thead><tr><th style="width:150px">Situation</th><th>Correct action</th></tr></thead>
+        <tbody>
+          <tr><td><b>Connection refused</b><br><span style="color:#6b7391">request provably never landed</span></td><td>Safe to retry with the same key</td></tr>
+          <tr><td><b>Timeout after send</b></td><td><b>Do not retry blindly.</b> Retry only with the same idempotency key, or query the provider for the status of that key</td></tr>
+          <tr><td><b>HTTP 5xx</b></td><td>Retry with the same key, with exponential backoff and jitter</td></tr>
+          <tr><td><b>HTTP 4xx</b></td><td>Do not retry. It is deterministic and will fail identically</td></tr>
+          <tr><td><b>Explicit decline</b></td><td>Do not retry automatically. A different card or method is a customer decision</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The three-layer defence.</b> <b>1 ·</b> Your idempotency key stops your own retries
+        duplicating. <b>2 ·</b> The PSP's idempotency key stops your calls duplicating at their end — pass one, always.
+        <b>3 ·</b> Daily reconciliation catches anything that slipped through both. Any one layer alone is insufficient.</div>
+      <div class="h3">Key lifecycle, which is usually forgotten</div>
+      <ul>
+        <li><b>Generated at intent</b>, in the client or at the start of the flow — never at the retry site, which would produce a fresh key each attempt and defeat the mechanism entirely</li>
+        <li><b>Carried end to end</b>, including to the PSP</li>
+        <li><b>Retained longer than the longest plausible retry window</b> — days, not minutes. Delete too early and a late retry is processed as new</li>
+        <li><b>Scoped per merchant</b>, so one merchant's keys cannot collide with another's</li>
+      </ul>
+      <div class="callout p"><b>Exactly-once does not exist across systems.</b> What you build is at-least-once
+        delivery with idempotent processing, which produces the same observable outcome — and saying so precisely is a
+        stronger answer than claiming a guarantee that is not achievable.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 5. LEDGER ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;THE LEDGER — DOUBLE-ENTRY, IMMUTABLE, AND WHY MONEY IS AN INTEGER
+    <span class="sub">how a payment system proves it is right, rather than asserting it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Double-entry, in one paragraph</div>
+      <div style="font-size:13px;line-height:1.45">Every movement is recorded as balanced entries across two or more
+        accounts. Debits equal credits, always. A balance is not a stored number that gets updated — it is the
+        <b>sum of the entries</b>. That is what makes the system auditable and self-checking.</div>
+      <div class="code"><span class="c">// customer pays ₹2,499.00 — captured</span>
+journal_entry: je_8831   ts: 2026-09-01T10:14:22Z
+  <span class="k">DEBIT </span>  merchant_receivable   249900
+  <span class="k">CREDIT</span>  customer_payable      249900
+
+<span class="c">// gateway fee 2% recognised at capture</span>
+journal_entry: je_8832
+  <span class="k">DEBIT </span>  merchant_receivable     4998
+  <span class="k">CREDIT</span>  fee_revenue             4998
+
+<span class="c">// settlement lands T+1, net of fees</span>
+journal_entry: je_9104
+  <span class="k">DEBIT </span>  bank_settlement       244902
+  <span class="k">CREDIT</span>  merchant_receivable   244902
+
+<span class="c">// invariant, checked continuously:</span>
+<span class="v">SUM(debits) == SUM(credits)  — always, no exceptions</span></div>
+      <div class="callout g"><b>Why this is worth the effort.</b> When a figure is disputed, you can show every
+        entry that produced it and when it arrived. An overwritten balance column can only tell you what it says now — which
+        is exactly the wrong answer to give an auditor or a regulator.</div>
+    </div>
+    <div>
+      <div class="h3">Money representation — non-negotiable rules</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Integer minor units</b></td><td>₹2,499.00 is stored as <span class="mono">249900</span>. <b>Never a float</b> — binary floating point cannot represent 0.1 exactly, and rounding errors in money are real losses that accumulate</td></tr>
+          <tr><td><b>Always with a currency</b></td><td>An amount without a currency code is meaningless. Store them together, as one value object</td></tr>
+          <tr><td><b>Minor units differ</b></td><td>Two decimal places is not universal — some currencies have none, some have three. Do not hard-code 100</td></tr>
+          <tr><td><b>Rounding is a policy</b></td><td>Decide it once, write it down, apply it consistently, and record which entry absorbed the remainder when splitting</td></tr>
+          <tr><td><b>FX is a dated fact</b></td><td>Store the rate and the timestamp used with the transaction. Recomputing later with today's rate produces a different answer and an unexplainable break</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Design properties that follow</div>
+      <ul>
+        <li><b>Append-only.</b> No <span class="mono">UPDATE</span>, no <span class="mono">DELETE</span> on journal entries. A correction is a new reversing entry, so the mistake and the fix are both visible</li>
+        <li><b>Idempotent by construction</b> — a journal entry carries the idempotency key that produced it, so replay cannot double-post</li>
+        <li><b>CP, single-writer per account</b> — this is exactly where strong consistency is worth its cost</li>
+        <li><b>Partition by time</b>, and keep the history. It will be asked for</li>
+        <li><b>Continuous invariant checks</b> — debits equal credits, no negative balances where prohibited, no orphan entries. Alert on violation immediately</li>
+      </ul>
+      <div class="callout r"><b>Do not put the ledger in an eventually-consistent store.</b> Redis, a search index or
+        a replica are all fine for <i>reading</i> balances on a dashboard. The authoritative entries belong in a
+        transactional database with real isolation — this is the clearest case on any of these sheets for choosing CP.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. PCI ============ -->
+<div class="panel c6">
+  <div class="phead">6 &nbsp;· &nbsp;PCI SCOPE &amp; TOKENISATION <span class="sub">designing the problem away</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.45">PCI DSS applies to any system that <b>stores, processes or
+      transmits</b> cardholder data. The winning strategy is not to comply harder — it is to arrange the architecture so
+      almost nothing is in scope.</div>
+    <div class="h3">How scope is minimised</div>
+    <table>
+      <thead><tr><th style="width:126px">Approach</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>Hosted fields / iframe</b></td><td>The card input is served by the provider; the browser posts the PAN directly to them. <b>The merchant server never receives it</b>, qualifying for the lightest assessment</td></tr>
+        <tr><td><b>Full redirect</b></td><td>Simplest scope of all, at the cost of losing control of the checkout experience</td></tr>
+        <tr><td><b>Direct API</b></td><td>Card data crosses your servers. Full assessment, annual audit, network segmentation. <b>Only worth it if you are the processor</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Client-side scripts are now the attack surface that matters.</b> Recent PCI guidance
+      places specific emphasis on authorising and monitoring scripts on the payment page, because skimming attacks target
+      the browser rather than the server. An iframe helps, but a compromised parent page is still a risk — inventory your
+      scripts and enforce integrity.</div>
+    <div class="h3">Never stored, under any circumstances</div>
+    <ul>
+      <li><b>CVV / CVC after authorisation</b> — prohibited outright, no exceptions for convenience</li>
+      <li><b>Full PAN outside a vault</b>, and never in logs, traces, error messages, analytics or support tickets</li>
+      <li><b>Track or chip data</b> post-authorisation</li>
+    </ul>
+    <div class="callout g"><b>What you may safely keep:</b> the token, last four digits, brand, expiry and BIN range.
+      That is sufficient for saved cards, receipts, routing and support — every customer-facing feature people ask for.</div>
+    <div class="callout"><b>Redaction must be enforced, not requested.</b> Card numbers reach logs through error
+      objects, request dumps and third-party SDKs. Filter at the logging library and scan for PAN patterns in your log
+      pipeline — a convention that relies on developers remembering will fail.</div>
+  </div>
+</div>
+
+<!-- ============ 7. 3DS ============ -->
+<div class="panel c3">
+  <div class="phead">7 &nbsp;· &nbsp;AUTHENTICATION &amp; FRAUD <span class="sub">the trade-off nobody escapes</span></div>
+  <div class="pbody">
+    <div class="h3">3-D Secure — what it actually does</div>
+    <div style="font-size:13px;line-height:1.45">The issuer authenticates the cardholder before authorisation. Modern
+      implementations pass rich device and transaction data so most sessions are <b>frictionless</b> — approved with no
+      customer interaction — and only riskier ones are challenged.</div>
+    <div class="callout b"><b>The commercial point is liability.</b> A successfully authenticated transaction
+      generally shifts fraud liability from the merchant to the issuer. That is why merchants adopt it even though every
+      added step costs conversion.</div>
+    <div class="h3">The tension, stated honestly</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>More friction</b></td><td>Less fraud, more liability protection, <b>and measurably fewer completed checkouts</b></td></tr>
+        <tr><td><b>Less friction</b></td><td>Higher conversion, more fraud losses and more chargebacks</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Route by risk, not by rule.</b> Challenge the risky minority and let the rest through.
+      A blanket policy either loses revenue on safe transactions or absorbs fraud on dangerous ones — and where regulation
+      mandates strong authentication, exemptions usually exist for low-value or low-risk cases and are worth using.</div>
+    <div class="h3">Fraud signals worth having</div>
+    <ul>
+      <li><b>Velocity</b> — attempts per card, per device, per IP, per address in a window</li>
+      <li><b>Device fingerprint</b> and session behaviour</li>
+      <li><b>BIN intelligence</b> — issuer country versus billing and shipping country</li>
+      <li><b>Mismatch signals</b> — billing/shipping distance, new address on a first order</li>
+      <li><b>Card testing</b> — many small authorisations across many cards from one source</li>
+    </ul>
+    <div class="callout r"><b>The cost of a false positive is invisible and larger than it looks.</b> A declined
+      genuine customer rarely complains — they leave. Track the decline rate as carefully as the fraud rate, and sample
+      declined transactions for review, or the model will quietly optimise itself into blocking real revenue.</div>
+  </div>
+</div>
+
+<!-- ============ 8. ROUTING ============ -->
+<div class="panel c8">
+  <div class="phead">8 &nbsp;· &nbsp;ROUTING &amp; RESILIENCE <span class="sub">every dependency is someone else's</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.45">Once volume justifies more than one acquirer or PSP, <b>which route a
+      transaction takes becomes a design decision</b> — and one with direct revenue consequences.</div>
+    <div class="h3">Why route at all</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Authorisation rate</b></td><td>The same card can be approved by one acquirer and declined by another. Small percentage differences are large revenue differences</td></tr>
+        <tr><td><b>Cost</b></td><td>Fees vary by route, card type and geography</td></tr>
+        <tr><td><b>Redundancy</b></td><td>Providers have outages. A single integration means their downtime is your downtime</td></tr>
+        <tr><td><b>Local acquiring</b></td><td>Domestic routes usually approve better and cost less than cross-border ones</td></tr>
+        <tr><td><b>Method coverage</b></td><td>Cards, bank transfers, wallets and real-time rails rarely come from one provider</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Making it safe</div>
+    <ul>
+      <li><b>Health-aware routing</b> — track success rate and latency per route and shift traffic away from a degrading one automatically</li>
+      <li><b>Circuit breaker per provider</b>, so a failing route fails fast instead of consuming your capacity</li>
+      <li><b>Cascading retry with care</b> — retrying a <i>declined</i> transaction on another route is sometimes legitimate and sometimes prohibited by scheme rules. Know which, and never cascade on a timeout</li>
+      <li><b>Provider-specific idempotency keys</b> so a cascade cannot double-charge</li>
+      <li><b>An abstraction layer</b> so adding a provider is configuration, not a rewrite — but expect their semantics to differ more than their APIs suggest</li>
+    </ul>
+    <div class="callout r"><b>Cascading on an ambiguous outcome is how double charges happen at scale.</b> If route A
+      timed out, you do not know it failed. Resolve A's status first. Only a <b>definitive decline</b> is safe to re-route,
+      and even then only where the scheme permits it.</div>
+    <div class="callout g"><b>Measure authorisation rate per route, per BIN, per hour.</b> It is the single most
+      valuable metric in a payments business, and it moves without anything in your code changing.</div>
+  </div>
+</div>
+
+<!-- ============ 12. TECH ============ -->
+<div class="panel c1">
+  <div class="phead">9 &nbsp;· &nbsp;TECHNOLOGY CHOICES <span class="sub">and the alternative</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:96px">Need</th><th>Choice, why, and what it costs</th></tr></thead>
+      <tbody>
+        <tr><td><b>Ledger</b></td><td><b>PostgreSQL.</b> Real transactions, constraints, serializable isolation where needed.<br><i>Cost:</i> single-writer scaling. <i>Alternative:</i> distributed SQL when write volume genuinely exceeds one node</td></tr>
+        <tr><td><b>State &amp; idempotency</b></td><td><b>The same database.</b> Keeping the record and its effect in one transaction is the whole mechanism.<br><i>Never</i> a separate store — that reintroduces the dual-write problem</td></tr>
+        <tr><td><b>Events</b></td><td><b>Kafka</b> for replay and multiple consumers.<br><i>Cost:</i> operational weight. <i>Alternative:</i> an outbox table with a poller, which is enough at moderate volume</td></tr>
+        <tr><td><b>Vault</b></td><td><b>The provider's vault</b>, or an HSM-backed service.<br><i>Cost:</i> a coupling. <i>Alternative:</i> building your own — only if you are the processor</td></tr>
+        <tr><td><b>Read models</b></td><td><b>A replica or search index</b> for dashboards and transaction search.<br>Keeps reporting load off the ledger</td></tr>
+        <tr><td><b>Reconciliation</b></td><td><b>Columnar or warehouse</b> for matching millions of rows daily.<br><i>Alternative:</i> the transactional database, until the job stops fitting its window</td></tr>
+        <tr><td><b>Secrets &amp; keys</b></td><td><b>Managed KMS / HSM</b> with rotation.<br>Non-negotiable for key material</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The honest summary.</b> A payment system is not technically exotic — it is a
+      transactional database, a queue and a great deal of discipline. The difficulty is in the invariants, the failure
+      handling and the reconciliation, none of which a technology choice solves for you.</div>
+  </div>
+</div>
+
+<!-- ============ 9. RECONCILIATION ============ -->
+<div class="panel c4 span3">
+  <div class="phead">10 &nbsp;· &nbsp;RECONCILIATION, SETTLEMENT AND DISPUTES
+    <span class="sub">the unglamorous half, where correctness is proved and where most payment engineering time actually goes</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Three-way reconciliation, daily</div>
+      <div class="code">    your ledger        ⟷    PSP report    ⟷    bank statement
+    (what you think)      (what they say)     (what arrived)
+
+<span class="c">// every transaction must appear in all three,</span>
+<span class="c">// with the same amount, on the same date</span></div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:140px">Break type</th><th>Usual cause</th></tr></thead>
+        <tbody>
+          <tr><td><b>In ours, not theirs</b></td><td>An <span class="mono">UNKNOWN</span> we optimistically marked successful. <b>The dangerous one</b></td></tr>
+          <tr><td><b>In theirs, not ours</b></td><td>A response we lost — the customer was charged and we do not know</td></tr>
+          <tr><td><b>Amount mismatch</b></td><td>Fees, FX rounding, partial capture</td></tr>
+          <tr><td><b>Date mismatch</b></td><td>Time zone or cut-off boundary, not a real break</td></tr>
+          <tr><td><b>Duplicate</b></td><td>An idempotency failure. Investigate the root cause, never just net it off</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Reconciliation is not a report — it is a control.</b> Every break needs an owner, an
+        age and a resolution. Unexplained breaks accumulating silently is the state in which a payment business discovers a
+        problem months late and cannot say how much money it involves.</div>
+      <div class="callout"><b>Automate the matching, escalate the exceptions.</b> The great majority match on
+        reference and amount. Engineering effort belongs in classifying the remainder and in making each class
+        self-explanatory to the operations team.</div>
+    </div>
+    <div>
+      <div class="h3">Settlement and payouts</div>
+      <ul>
+        <li><b>Funds arrive net</b> of fees and any withheld reserve — the gross figure your system shows is never what lands</li>
+        <li><b>Payout schedule</b> is a product decision: daily, weekly, or on demand for a fee</li>
+        <li><b>Rolling reserve</b> — a percentage held against future chargebacks, released on a schedule. Model it explicitly or merchant balances will not reconcile</li>
+        <li><b>Payout is itself a payment</b> — idempotent, ledgered, reconciled, and with its own approval path for large amounts</li>
+        <li><b>Fee computation must be reproducible</b> — record the rate applied and the basis, not just the result</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">The dispute lifecycle</div>
+      <table>
+        <thead><tr><th style="width:132px">Stage</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td><b>Retrieval request</b></td><td>The issuer asks for information before a formal dispute</td></tr>
+          <tr><td><b>Chargeback</b></td><td>Funds are pulled back, plus a fee. <b>You are debited first and argue afterwards</b></td></tr>
+          <tr><td><b>Representment</b></td><td>You submit evidence — delivery proof, authentication result, terms accepted, communication history</td></tr>
+          <tr><td><b>Pre-arbitration / arbitration</b></td><td>Escalation, with rising costs on both sides</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Deadlines are hard limits, not targets.</b> Miss the response window and the dispute
+        is lost automatically regardless of the merits. Build the timer into the system, alert well before expiry, and treat
+        it as an availability concern rather than a support task.</div>
+      <div class="callout g"><b>Watch the chargeback ratio.</b> Card networks impose monitoring programmes above
+        threshold ratios, with fines and — at the extreme — loss of the ability to accept cards. It is one of the few
+        engineering metrics that can end a business line.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 10. API ============ -->
+<div class="panel c7 span3">
+  <div class="phead">11 &nbsp;· &nbsp;API SPECIFICATION
+    <span class="sub">the contract a merchant integrates against — including the parts that make it safe to retry</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:56px">Method</th><th style="width:180px">Endpoint</th><th>Purpose &amp; status codes</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td class="mono">/v1/tokens</td><td>Exchange card data for a token. <b>Called from the browser</b>, never the merchant server · <b>201</b></td></tr>
+          <tr><td>POST</td><td class="mono">/v1/payments</td><td>Create and authorise · <b>201</b> · <b><span class="mono">Idempotency-Key</span> required</b> · 402 declined · 409 key in progress</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/payments/{id}</td><td>Current state · <b>200</b> · the resolution path for <span class="mono">UNKNOWN</span></td></tr>
+          <tr><td>POST</td><td class="mono">/v1/payments/{id}/capture</td><td>Claim an authorised amount; supports partial · <b>200</b> · 409 if already captured or expired</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/payments/{id}/void</td><td>Cancel before capture · <b>200</b> · 409 if captured</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/refunds</td><td>Refund fully or partially · <b>201</b> · <span class="mono">Idempotency-Key</span> required · 422 if exceeds captured</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/payments</td><td>List and search · <b>200</b> · cursor pagination · served from a read model</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/customers/{id}/methods</td><td>Save a token against a customer for repeat use · <b>201</b></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/disputes/{id}</td><td>Dispute state and the evidence deadline · <b>200</b></td></tr>
+          <tr><td>POST</td><td class="mono">/v1/disputes/{id}/evidence</td><td>Submit representment evidence · <b>202</b></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/settlements/{date}</td><td>Settlement summary and the per-transaction breakdown · <b>200</b></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/balance</td><td>Available, pending and reserved, from the ledger · <b>200</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Note <span class="mono">402</span> for a decline.</b> A declined payment is a
+        successful API call with a business outcome — not a 500. Conflating the two makes every merchant's error handling
+        wrong, and makes your own alerting meaningless.</div>
+    </div>
+    <div>
+      <div class="h3">Create a payment</div>
+      <div class="code">POST /v1/payments
+<span class="k">Authorization:</span> Bearer sk_live_…
+<span class="k">Idempotency-Key:</span> <span class="v">01J8F3K2M9Q</span>
+{
+  <span class="k">"amount"</span>:   { <span class="k">"value"</span>: 249900,
+                <span class="k">"currency"</span>: <span class="v">"INR"</span> },
+  <span class="k">"method"</span>:   { <span class="k">"type"</span>: <span class="v">"card"</span>,
+                <span class="k">"token"</span>: <span class="v">"tok_9f21…"</span> },
+  <span class="k">"capture"</span>:  <span class="v">false</span>,        <span class="c">// authorise only</span>
+  <span class="k">"reference"</span>: <span class="v">"order_1183"</span>, <span class="c">// merchant's id</span>
+  <span class="k">"customer"</span>: <span class="v">"cus_44"</span>,
+  <span class="k">"metadata"</span>: { <span class="k">"channel"</span>: <span class="v">"web"</span> }
+}
+
+HTTP/1.1 <span class="v">201 Created</span>
+{
+  <span class="k">"id"</span>: <span class="v">"pay_8f3c1a"</span>,
+  <span class="k">"status"</span>: <span class="v">"AUTHORISED"</span>,
+  <span class="k">"amount"</span>: { <span class="k">"value"</span>: 249900, <span class="k">"currency"</span>: <span class="v">"INR"</span> },
+  <span class="k">"captured"</span>: { <span class="k">"value"</span>: 0, <span class="k">"currency"</span>: <span class="v">"INR"</span> },
+  <span class="k">"authExpiresAt"</span>: <span class="v">"2026-09-08T10:14:22Z"</span>,
+  <span class="k">"method"</span>: { <span class="k">"brand"</span>: <span class="v">"visa"</span>, <span class="k">"last4"</span>: <span class="v">"4242"</span> },
+  <span class="k">"riskScore"</span>: 12,
+  <span class="k">"createdAt"</span>: <span class="v">"2026-09-01T10:14:22Z"</span>
+}</div>
+      <div class="callout g"><b>Returning <span class="mono">authExpiresAt</span> is a small thing that prevents a
+        common failure.</b> It tells the merchant when the hold lapses, so late captures can be scheduled or abandoned
+        deliberately rather than discovered as an error.</div>
+    </div>
+    <div>
+      <div class="h3">A decline, and an error</div>
+      <div class="code">HTTP/1.1 <span class="r">402 Payment Required</span>
+{
+  <span class="k">"id"</span>: <span class="v">"pay_8f3c1b"</span>,
+  <span class="k">"status"</span>: <span class="v">"DECLINED"</span>,
+  <span class="k">"declineCode"</span>: <span class="v">"insufficient_funds"</span>,
+  <span class="k">"issuerMessage"</span>: <span class="v">"Do not honour"</span>,
+  <span class="k">"retryable"</span>: <span class="v">false</span>,
+  <span class="k">"requestId"</span>: <span class="v">"req_77a2"</span>
+}
+
+HTTP/1.1 <span class="r">409 Conflict</span>
+{
+  <span class="k">"code"</span>: <span class="v">"IDEMPOTENCY_IN_PROGRESS"</span>,
+  <span class="k">"message"</span>: <span class="v">"Original request still processing"</span>,
+  <span class="k">"retryAfter"</span>: 2,
+  <span class="k">"requestId"</span>: <span class="v">"req_77a3"</span>
+}</div>
+      <div class="callout"><b>The <span class="mono">retryable</span> flag earns its place.</b> Merchants cannot be
+        expected to maintain a mapping of every issuer decline code. Telling them plainly whether another attempt could
+        succeed prevents both pointless retries and abandoned recoverable payments.</div>
+      <div class="h3">Webhooks — both directions</div>
+      <ul>
+        <li><b>Signed</b> with a shared secret and a timestamp; reject anything outside a small clock window</li>
+        <li><b>At-least-once and unordered</b> — deduplicate by event id and ignore stale transitions</li>
+        <li><b>Retried with backoff</b> over hours, then parked for manual replay</li>
+        <li><b>A replay endpoint</b> so a merchant can recover after their own outage</li>
+        <li><b>Never the only channel</b> — the payment status endpoint must always be authoritative</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 11. PRODUCTION ============ -->
+<div class="panel c5 span3">
+  <div class="phead">12 &nbsp;· &nbsp;PRODUCTION PROBLEMS
+    <span class="sub">what actually goes wrong, and the answers that show you have run one of these</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.86fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:132px">Problem</th><th>What you see</th><th style="width:180px">Answer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Double charge</b></td><td>Customer billed twice; discovered by them, not you</td><td>Idempotency at both layers, never cascade on timeout, daily reconciliation</td></tr>
+          <tr><td><b>Stuck in UNKNOWN</b></td><td>Payments neither succeed nor fail; support tickets accumulate</td><td>A status-resolver sweep with backoff, plus an age alert</td></tr>
+          <tr><td><b>PSP outage</b></td><td>Authorisation rate falls off a cliff for one route</td><td>Health-aware routing, circuit breaker, failover route, honest customer messaging</td></tr>
+          <tr><td><b>Issuer degradation</b></td><td>One bank's cards timing out; overall rate looks fine</td><td>Slice authorisation rate by BIN and issuer, not just in aggregate</td></tr>
+          <tr><td><b>Card testing attack</b></td><td>Thousands of small authorisations, tiny approval rate, fees mounting</td><td>Velocity limits per card, device and IP; CAPTCHA; alert on the decline-rate spike</td></tr>
+          <tr><td><b>Reconciliation drift</b></td><td>Breaks growing daily, nobody owning them</td><td>Break ageing report, an owner per class, and alerting on unexplained totals</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:132px">Problem</th><th>What you see</th><th style="width:180px">Answer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Late capture failure</b></td><td>Capture rejected because the authorisation expired; goods already shipped</td><td>Track <span class="mono">authExpiresAt</span>, alert before expiry, re-authorise where permitted</td></tr>
+          <tr><td><b>Refund exceeds capture</b></td><td>Over-refunding through partial refunds</td><td>Enforce the invariant in the ledger, not only in the API layer</td></tr>
+          <tr><td><b>FX rounding drift</b></td><td>Small persistent breaks in multi-currency settlement</td><td>Store the rate and timestamp with the transaction; never recompute later</td></tr>
+          <tr><td><b>Webhook storm</b></td><td>A merchant's endpoint fails; your queue backs up behind it</td><td>Per-merchant queues and rate limits so one cannot affect another</td></tr>
+          <tr><td><b>Chargeback deadline missed</b></td><td>Disputes lost by default, without ever being reviewed</td><td>Deadline tracked as a first-class field with escalating alerts</td></tr>
+          <tr><td><b>PAN in logs</b></td><td>Card numbers in an error trace, discovered during audit</td><td>Redaction in the logging library, plus pattern scanning in the pipeline</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first — the bottleneck ladder</div>
+      <table>
+        <thead><tr><th style="width:30px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>The PSP's rate limit.</b> External, and you cannot scale past it. Negotiate headroom before a sale, not during one</td></tr>
+          <tr><td><b>2</b></td><td><b>Issuer latency</b> dragging p99 past your client timeout — which manufactures <span class="mono">UNKNOWN</span> states faster than the resolver clears them</td></tr>
+          <tr><td><b>3</b></td><td><b>Ledger single-writer throughput</b> per account. The only one you can fix with your own infrastructure</td></tr>
+          <tr><td><b>4</b></td><td><b>Reconciliation runtime</b> exceeding its window, so breaks are found a day late and compound</td></tr>
+          <tr><td><b>5</b></td><td><b>Webhook delivery backlog</b> when a large merchant's endpoint degrades</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note that only one of the five is yours.</b> Payment capacity planning is mostly
+        about other people's limits, which is why the conversation with the provider matters more than the autoscaling
+        configuration.</div>
+      <div class="h3">What I would monitor above all</div>
+      <ul>
+        <li><b>Authorisation rate</b>, sliced by route, BIN and issuer — it moves without any deploy</li>
+        <li><b>Payments in <span class="mono">UNKNOWN</span></b>, and their age distribution</li>
+        <li><b>Unexplained reconciliation breaks</b>, and their total value</li>
+        <li><b>Duplicate detection rate</b> — a rising number means idempotency is being tested and holding</li>
+        <li><b>Time to dispute deadline</b> for anything open</li>
+      </ul>
+      <div class="callout g"><b>The one alert that matters most</b> is a fall in authorisation rate. It is the
+        earliest signal of a provider problem, an issuer problem, a fraud-rule regression or an attack — and it is a revenue
+        metric, so it gets attention.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;READINESS CHECKLIST <span class="sub">before this system touches real money</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Card data never reaches your servers</b> — hosted fields or redirect</div>
+      <div>&#9744; <b>CVV never stored</b>; PAN only inside the vault</div>
+      <div>&#9744; <b>PAN redaction enforced</b> in the logging library and scanned for in the pipeline</div>
+      <div>&#9744; <b>Tokenisation approach chosen</b>, and network tokens used where available</div>
+      <div>&#9744; <b>Applicable regulations confirmed with counsel</b>, with the date recorded</div>
+      <div>&#9744; <b>Idempotency key required</b> on every money-moving endpoint</div>
+      <div>&#9744; <b>Key bound to a request hash</b>; mismatches rejected</div>
+      <div>&#9744; <b>Repeat requests return the original response</b>, not an error</div>
+      <div>&#9744; <b>Idempotency records retained</b> beyond the longest retry window</div>
+      <div>&#9744; <b>Idempotency key passed through to the provider</b> as well</div>
+      <div>&#9744; <b><span class="mono">UNKNOWN</span> is a modelled state</b>, never mapped to failure</div>
+      <div>&#9744; <b>Status-resolver sweep runs</b>, with an age alert on stuck payments</div>
+      <div>&#9744; <b>No blind retry after a timeout</b>; no cascade on an ambiguous outcome</div>
+      <div>&#9744; <b>Client timeouts set generously</b> — short ones manufacture unknowns</div>
+      <div>&#9744; <b>Ledger is double-entry and append-only</b>; corrections are reversing entries</div>
+      <div>&#9744; <b>Debits equal credits</b>, checked continuously and alerted on</div>
+      <div>&#9744; <b>Money is integer minor units</b> with an explicit currency</div>
+      <div>&#9744; <b>FX rate and timestamp stored</b> with the transaction</div>
+      <div>&#9744; <b>Rounding policy written down</b> and applied consistently</div>
+      <div>&#9744; <b>Refund cannot exceed captured</b> — enforced in the ledger</div>
+      <div>&#9744; <b>Authorisation expiry tracked</b>, with alerts before it lapses</div>
+      <div>&#9744; <b>Capture at dispatch</b>, not at checkout, unless the domain requires otherwise</div>
+      <div>&#9744; <b>Declines returned as <span class="mono">402</span></b> with an actionable code, not as errors</div>
+      <div>&#9744; <b>Webhook signatures verified</b>; events deduplicated and order-tolerant</div>
+      <div>&#9744; <b>Outbound webhooks signed, retried and replayable</b>; per-merchant isolation</div>
+      <div>&#9744; <b>Status endpoint is authoritative</b>, never the webhook alone</div>
+      <div>&#9744; <b>Three-way reconciliation runs daily</b>, with every break owned and aged</div>
+      <div>&#9744; <b>Duplicates in reconciliation investigated</b>, never silently netted off</div>
+      <div>&#9744; <b>Fees and reserves modelled</b> so merchant balances reconcile</div>
+      <div>&#9744; <b>Payouts are idempotent, ledgered and approved</b> above a threshold</div>
+      <div>&#9744; <b>Dispute deadlines tracked</b> with escalating alerts</div>
+      <div>&#9744; <b>Chargeback ratio monitored</b> against scheme thresholds</div>
+      <div>&#9744; <b>Authorisation rate sliced by route, BIN and issuer</b></div>
+      <div>&#9744; <b>Circuit breaker and failover route</b> per provider, tested</div>
+      <div>&#9744; <b>Velocity limits</b> against card testing, with decline-spike alerting</div>
+      <div>&#9744; <b>Decline rate watched as closely as fraud rate</b>; declines sampled for review</div>
+      <div>&#9744; <b>Runbooks</b> for double charge, stuck payment, PSP outage, reconciliation break</div>
+      <div>&#9744; <b>Failure paths tested</b> by deliberately timing out mid-authorisation under load</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>kill the network mid-authorisation, then answer three
+      questions — was the customer charged, what does your database say, and what will the settlement file say tomorrow?</b>
+      If those three answers can disagree without anything alerting, the system is not ready to take money.</div>
+  </div>
+</div>
+
+</div>
