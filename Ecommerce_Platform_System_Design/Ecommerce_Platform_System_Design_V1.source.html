@@ -1,0 +1,891 @@
+<meta charset="utf-8">
+<title>E-Commerce Platform — System Design &amp; Interview Reference</title>
+<style>
+  @page { size: 3400px 5983px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5983px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5953px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 454px 628px 903px 702px 627px 590px 618px 678px 385px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.4px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:13px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.4px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.6px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.8px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .q{font-size:13px;font-weight:700;color:#be123c;margin:8px 0 3px}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>E-COMMERCE PLATFORM — SYSTEM DESIGN &amp; INTERVIEW REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Scalable, available, consistent where it must be — with the reasoning, the trade-offs and the failures<br>
+    <span style="font-size:13.4px;color:#6d80b6">requirements · capacity · CAP per capability · checkout path · inventory · payments · API · production reality</span></div>
+</div>
+
+<!-- ============ 1. FRAMING ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;HOW TO ANSWER THIS — REQUIREMENTS, SCOPE AND THE FIRST FIVE MINUTES
+    <span class="sub">start here — what to establish before drawing anything, because the design follows from these numbers</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Clarify first — do not start drawing</div>
+      <table>
+        <thead><tr><th style="width:150px">Ask</th><th>Why it changes the design</th></tr></thead>
+        <tbody>
+          <tr><td><b>Scale?</b></td><td>DAU, catalogue size, orders/day, peak multiple. Decides sharding, caching and whether this is one region or several</td></tr>
+          <tr><td><b>Read:write ratio?</b></td><td>E-commerce is typically <b>~100:1 or higher</b> browse-to-buy. That single fact justifies most of the caching and the read replicas</td></tr>
+          <tr><td><b>Flash sales?</b></td><td>If yes, the hot-key and oversell problems dominate the design. If no, they are edge cases</td></tr>
+          <tr><td><b>Marketplace or single seller?</b></td><td>Multi-tenant changes isolation, search, payouts and settlement entirely</td></tr>
+          <tr><td><b>Geography?</b></td><td>Multi-region introduces data residency, replication lag and a much harder consistency story</td></tr>
+          <tr><td><b>Guest checkout?</b></td><td>Decides whether session state is mandatory before identity exists</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The most common interview failure is not a wrong component — it is designing for
+        unstated scale.</b> Sharding a database that holds 40 GB, or hand-waving a flash sale that is the actual hard part.
+        Name the numbers, then design to them.</div>
+    </div>
+    <div>
+      <div class="h3">Functional scope — state what is in and out</div>
+      <table>
+        <tbody>
+          <tr><td style="width:88px"><b>In</b></td><td>Browse and search catalogue · product detail · cart · checkout · payment · order lifecycle · inventory · reviews · recommendations · seller catalogue management</td></tr>
+          <tr><td><b>Out</b></td><td>Warehouse management, logistics routing, pricing/promotion engine internals, fraud scoring models, returns and refunds workflow — <i>named explicitly, so the design has an edge</i></td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Non-functional targets — with percentiles</div>
+      <table>
+        <thead><tr><th style="width:150px">Target</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Product page</td><td><b>p99 &lt; 200 ms</b> server-side</td></tr>
+          <tr><td>Search</td><td>p99 &lt; 300 ms</td></tr>
+          <tr><td>Add to cart</td><td>p99 &lt; 150 ms</td></tr>
+          <tr><td>Checkout submit</td><td>p99 &lt; 1 s (external payment call dominates)</td></tr>
+          <tr><td>Availability — browse</td><td>99.99%</td></tr>
+          <tr><td>Availability — checkout</td><td>99.95% is often the honest number, because it depends on a payment provider you do not control</td></tr>
+          <tr><td>Durability — orders</td><td>No acknowledged order may be lost. This is non-negotiable</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Always say &ldquo;p99&rdquo;, never &ldquo;average&rdquo;.</b> An average hides a
+        bimodal distribution completely, and it is the tail that customers abandon carts over.</div>
+    </div>
+    <div>
+      <div class="h3">Availability arithmetic worth knowing</div>
+      <table>
+        <thead><tr><th style="width:118px">SLA</th><th>Downtime / year</th></tr></thead>
+        <tbody>
+          <tr><td>99%</td><td>3.65 days</td></tr>
+          <tr><td>99.9%</td><td>8.8 hours</td></tr>
+          <tr><td><b>99.99%</b></td><td><b>52.6 minutes</b></td></tr>
+          <tr><td>99.999%</td><td>5.3 minutes — very expensive, and rarely justified for retail</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Serial dependencies multiply, and this is the number people get wrong.</b> A checkout
+        that must call five services each at 99.9% has a composite availability of roughly <b>99.5%</b> — about 44 hours a
+        year. Quoting 99.99% for a system with a long synchronous dependency chain is arithmetic, not ambition.</div>
+      <div class="callout g"><b>Which is why the design removes dependencies from the critical path.</b> Every
+        service you can make asynchronous, cache, or degrade gracefully around raises the composite number. That is the real
+        reason for the event-driven parts of this architecture — not decoupling for its own sake.</div>
+      <div class="h3">The order to work through it</div>
+      <ol>
+        <li>Clarify and scope &nbsp;→&nbsp; 2. Estimate &nbsp;→&nbsp; 3. Define the API</li>
+        <li>Data model and access patterns &nbsp;→&nbsp; 5. High-level architecture</li>
+        <li>Deep-dive the two hard parts: <b>inventory</b> and <b>payment</b></li>
+        <li>Bottlenecks, failure modes, degradation &nbsp;→&nbsp; 8. Trade-offs you would revisit</li>
+      </ol>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. CAPACITY ============ -->
+<div class="panel c1">
+  <div class="phead">2 &nbsp;· &nbsp;CAPACITY ESTIMATION <span class="sub">the numbers that justify the design</span></div>
+  <div class="pbody">
+    <div class="code"><span class="c">// stated assumptions — say these out loud</span>
+DAU                        10,000,000
+sessions/user/day                 1.5
+page views/session                 20
+                    → 300 M views/day
+
+average RPS   300M / 86,400   ≈  <span class="v">3,500 rps</span>
+peak (evening, ×5)           ≈ <span class="v">17,500 rps</span>
+flash sale (×50 for minutes) ≈ <span class="r">175,000 rps</span>
+
+<span class="c">// write path is far smaller</span>
+conversion ~2%  → 300,000 orders/day
+                → <span class="v">~3.5 orders/sec</span> average
+                → ~35/sec at peak
+
+<span class="c">// read:write ≈ 100:1 — the single most</span>
+<span class="c">// important ratio in the whole design</span></div>
+    <div class="h3">Storage</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>Catalogue</b></td><td>10 M products × ~5 KB = <b>~50 GB</b>. Fits in memory on one machine — this is <i>not</i> big data, and does not need sharding</td></tr>
+        <tr><td><b>Orders</b></td><td>300 K/day × 2 KB × 365 = <b>~220 GB/year</b>, growing linearly. Partition by time</td></tr>
+        <tr><td><b>Images</b></td><td>10 M × 5 × 200 KB = <b>~10 TB</b> — object storage plus a CDN, never a database</td></tr>
+        <tr><td><b>Events</b></td><td>300 M/day × 1 KB = <b>~300 GB/day</b> into Kafka. This dominates the infrastructure bill</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>What these numbers tell you.</b> Reads are 100× writes, so cache aggressively and
+      replicate reads. The catalogue is small enough to keep hot in memory. The order database does not need sharding at
+      this scale for years. <b>The events, not the orders, are the volume problem.</b></div>
+    <div class="callout r"><b>Do the arithmetic before choosing technology.</b> Half the components on a typical
+      e-commerce diagram are unjustified at 3,500 rps and 50 GB — and the same diagram is badly under-designed for the flash
+      sale, which is where the real engineering is.</div>
+  </div>
+</div>
+
+<!-- ============ 3. CAP ============ -->
+<div class="panel c5 span2">
+  <div class="phead">3 &nbsp;· &nbsp;CAP AND PACELC — PER CAPABILITY, NOT PER SYSTEM
+    <span class="sub">the framing that is usually stated wrongly, and what each part of the platform actually chooses</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The correction first: CAP is not &ldquo;pick two of
+        three&rdquo;.</b> You do not choose <b>P</b> — network partitions happen whether you want them or not, so any
+        distributed system must tolerate them. The real statement is narrower: <b>during a partition</b>, you must choose
+        consistency or availability. When there is no partition, you get both, and Brewer himself has said the two-of-three
+        formulation was always misleading.</div>
+      <div class="callout b"><b>PACELC is the version you actually use.</b> <b>If P</b>artition → choose <b>A</b> or
+        <b>C</b>; <b>E</b>lse → choose <b>L</b>atency or <b>C</b>onsistency. Partitions are rare; the latency-versus-
+        consistency trade-off is made on <i>every single request</i>, which makes it the more useful lens day to day.</div>
+      <div class="callout g"><b>And it is chosen per capability, not per system.</b> The same platform is CP for
+        payment and inventory, and AP for catalogue and reviews — often within one request. Answering &ldquo;our system is
+        AP&rdquo; is the sign of someone who has read about CAP rather than applied it.</div>
+      <div class="h3">A second correction worth making</div>
+      <div style="font-size:12.8px;line-height:1.45">MongoDB is commonly labelled AP. <b>By default it is CP</b> — a
+        replica set has one primary, writes with majority write concern are confirmed by a majority, and the minority side of
+        a partition has no primary and therefore cannot accept writes. It is <i>tunable</i> toward availability with weaker
+        read and write concerns, which is exactly the point: the classification follows the configuration, not the product.</div>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:132px">Capability</th><th style="width:64px">Choice</th><th>Why, and what it costs</th></tr></thead>
+        <tbody>
+          <tr><td><b>Payment &amp; ledger</b></td><td><b style="color:#be123c">CP</b></td><td>A double charge or lost payment is unrecoverable trust damage. Refuse the write rather than risk divergence. Single-region primary, synchronous commit</td></tr>
+          <tr><td><b>Inventory decrement</b></td><td><b style="color:#be123c">CP</b></td><td>Overselling has a real cost — cancellations, compensation, reputation. Serialise on the item, or hold a reservation</td></tr>
+          <tr><td><b>Order placement</b></td><td><b style="color:#be123c">CP</b></td><td>An acknowledged order must exist. Durability before response</td></tr>
+          <tr><td><b>User account &amp; auth</b></td><td><b style="color:#be123c">CP</b></td><td>Credential and permission changes must not be stale — a revoked session must be revoked</td></tr>
+          <tr><td><b>Product catalogue</b></td><td><b style="color:#047857">AP</b></td><td>A price or description seconds out of date is acceptable; the storefront being down is not. Cache and replicate freely</td></tr>
+          <tr><td><b>Search index</b></td><td><b style="color:#047857">AP</b></td><td>Near-real-time is fine. Serving slightly stale results beats returning an error</td></tr>
+          <tr><td><b>Reviews &amp; ratings</b></td><td><b style="color:#047857">AP</b></td><td>A review appearing a minute later harms nobody</td></tr>
+          <tr><td><b>Recommendations</b></td><td><b style="color:#047857">AP</b></td><td>Stale recommendations degrade quality slightly; unavailable ones remove a whole surface</td></tr>
+          <tr><td><b>Cart</b></td><td><b style="color:#b45309">Mixed</b></td><td>AP while browsing — never lose a cart, tolerate a stale line. <b>Becomes CP at checkout</b>, when price and stock are re-validated authoritatively</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The cart row is the interesting one, and worth volunteering.</b> The same data
+        deliberately changes consistency class at a business boundary — cheap and available while shopping, strict at the
+        moment money is involved. That is what &ldquo;per capability&rdquo; means in practice.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+    <span class="sub">synchronous read path on top · write and event path below · every store chosen for one access pattern</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 830" width="3320" height="830">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#be123c"/></marker>
+    </defs>
+
+    <!-- EDGE -->
+    <rect x="8" y="6" width="3304" height="212" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#1e3a8a">EDGE &amp; SYNCHRONOUS READ PATH — 100× the traffic of the write path, and the reason most of this exists</text>
+
+    <rect x="26" y="44" width="150" height="90" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="101" y="66" font-size="13" font-weight="700" fill="#1e3a8a" text-anchor="middle">Clients</text>
+    <text x="101" y="86" font-size="11" fill="#42507a" text-anchor="middle">web · mobile</text>
+    <text x="101" y="103" font-size="11" fill="#42507a" text-anchor="middle">seller portal</text>
+    <text x="101" y="122" font-size="10.6" fill="#6b7391" text-anchor="middle">guest and signed-in</text>
+
+    <rect x="192" y="44" width="166" height="90" rx="8" fill="#fff" stroke="#be123c" stroke-width="2"/>
+    <text x="275" y="66" font-size="13" font-weight="700" fill="#be123c" text-anchor="middle">CDN + WAF</text>
+    <text x="275" y="86" font-size="11" fill="#7f2b2b" text-anchor="middle">static, images, HTML</text>
+    <text x="275" y="103" font-size="11" fill="#7f2b2b" text-anchor="middle">DDoS, bot, TLS</text>
+    <text x="275" y="122" font-size="10.6" fill="#be123c" text-anchor="middle">absorbs most read traffic</text>
+
+    <rect x="374" y="44" width="176" height="90" rx="8" fill="#fff" stroke="#b45309" stroke-width="2"/>
+    <text x="462" y="66" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">API gateway</text>
+    <text x="462" y="86" font-size="11" fill="#7a3d06" text-anchor="middle">authN · rate limit · quota</text>
+    <text x="462" y="103" font-size="11" fill="#7a3d06" text-anchor="middle">routing · versioning</text>
+    <text x="462" y="122" font-size="10.6" fill="#6b7391" text-anchor="middle">one place for cross-cutting</text>
+
+    <!-- services -->
+    <rect x="566" y="38" width="1180" height="172" rx="9" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="584" y="60" font-size="14" font-weight="700" fill="#0f766e">SERVICES — bounded by data ownership, not by noun. Each owns its store; none reads another's database.</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="584" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="672" y="90" font-size="11.6" font-weight="700" fill="#0f766e">Catalogue</text>
+      <text x="672" y="107" fill="#2f4f47">read-heavy · AP · cached</text>
+      <rect x="772" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="860" y="90" font-size="11.6" font-weight="700" fill="#0f766e">Search</text>
+      <text x="860" y="107" fill="#2f4f47">own index · AP</text>
+      <rect x="960" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1048" y="90" font-size="11.6" font-weight="700" fill="#0f766e">Cart</text>
+      <text x="1048" y="107" fill="#2f4f47">session · AP → CP</text>
+      <rect x="1148" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1236" y="90" font-size="11.6" font-weight="700" fill="#be123c">Inventory</text>
+      <text x="1236" y="107" fill="#7f2b2b">CP · the hard one</text>
+      <rect x="1336" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1424" y="90" font-size="11.6" font-weight="700" fill="#be123c">Order</text>
+      <text x="1424" y="107" fill="#7f2b2b">CP · state machine</text>
+      <rect x="1524" y="72" width="204" height="52" rx="6" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="1626" y="90" font-size="11.6" font-weight="700" fill="#be123c">Payment</text>
+      <text x="1626" y="107" fill="#7f2b2b">CP · idempotent · PSP</text>
+
+      <rect x="584" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="672" y="152" font-size="11.6" font-weight="700" fill="#0f766e">User / identity</text>
+      <text x="672" y="169" fill="#2f4f47">CP · sessions</text>
+      <rect x="772" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="860" y="152" font-size="11.6" font-weight="700" fill="#0f766e">Pricing / promo</text>
+      <text x="860" y="169" fill="#2f4f47">read-heavy · cached</text>
+      <rect x="960" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1048" y="152" font-size="11.6" font-weight="700" fill="#0f766e">Review</text>
+      <text x="1048" y="169" fill="#2f4f47">AP · moderated</text>
+      <rect x="1148" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1236" y="152" font-size="11.6" font-weight="700" fill="#0f766e">Recommendation</text>
+      <text x="1236" y="169" fill="#2f4f47">AP · precomputed</text>
+      <rect x="1336" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1424" y="152" font-size="11.6" font-weight="700" fill="#0f766e">Notification</text>
+      <text x="1424" y="169" fill="#2f4f47">async only</text>
+      <rect x="1524" y="134" width="204" height="52" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1626" y="152" font-size="11.6" font-weight="700" fill="#0f766e">Seller / fulfilment</text>
+      <text x="1626" y="169" fill="#2f4f47">back-office</text>
+    </g>
+
+    <!-- stores -->
+    <rect x="1762" y="38" width="810" height="172" rx="9" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1780" y="60" font-size="14" font-weight="700" fill="#7c2d92">STORES — polyglot, but each choice must be justified by an access pattern</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="1780" y="72" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1874" y="90" font-size="11.4" font-weight="700" fill="#7c2d92">PostgreSQL</text>
+      <text x="1874" y="107" fill="#4b3a5e">orders · payments · users</text>
+      <rect x="1980" y="72" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2074" y="90" font-size="11.4" font-weight="700" fill="#7c2d92">Document store</text>
+      <text x="2074" y="107" fill="#4b3a5e">catalogue · variable attrs</text>
+      <rect x="2180" y="72" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2274" y="90" font-size="11.4" font-weight="700" fill="#7c2d92">Redis</text>
+      <text x="2274" y="107" fill="#4b3a5e">cart · session · counters</text>
+      <rect x="2380" y="72" width="176" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2468" y="90" font-size="11.4" font-weight="700" fill="#7c2d92">OpenSearch</text>
+      <text x="2468" y="107" fill="#4b3a5e">search · facets</text>
+
+      <rect x="1780" y="134" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1874" y="152" font-size="11.4" font-weight="700" fill="#7c2d92">Object storage</text>
+      <text x="1874" y="169" fill="#4b3a5e">images · invoices</text>
+      <rect x="1980" y="134" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2074" y="152" font-size="11.4" font-weight="700" fill="#7c2d92">ClickHouse</text>
+      <text x="2074" y="169" fill="#4b3a5e">analytics · clickstream</text>
+      <rect x="2180" y="134" width="188" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2274" y="152" font-size="11.4" font-weight="700" fill="#7c2d92">Vector index</text>
+      <text x="2274" y="169" fill="#4b3a5e">similar items · semantic</text>
+      <rect x="2380" y="134" width="176" height="52" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2468" y="152" font-size="11.4" font-weight="700" fill="#7c2d92">Read replicas</text>
+      <text x="2468" y="169" fill="#4b3a5e">reporting · exports</text>
+    </g>
+
+    <!-- caching ladder -->
+    <rect x="2588" y="38" width="708" height="172" rx="9" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="2606" y="60" font-size="14" font-weight="700" fill="#047857">THE CACHING LADDER — where the 100:1 ratio is actually absorbed</text>
+    <g font-size="11.2">
+      <text x="2606" y="82" fill="#2f4f47"><tspan font-weight="700">1 · Browser</tspan> — static assets, immutable filenames</text>
+      <text x="2606" y="102" fill="#2f4f47"><tspan font-weight="700">2 · CDN</tspan> — images, JS/CSS, and cacheable product HTML fragments</text>
+      <text x="2606" y="122" fill="#2f4f47"><tspan font-weight="700">3 · Gateway</tspan> — short-TTL responses for anonymous traffic</text>
+      <text x="2606" y="142" fill="#2f4f47"><tspan font-weight="700">4 · Application</tspan> — Redis: product, price, session, cart</text>
+      <text x="2606" y="162" fill="#2f4f47"><tspan font-weight="700">5 · Database</tspan> — buffer pool and query cache</text>
+      <text x="2606" y="186" font-weight="700" fill="#be123c">Each layer should absorb an order of magnitude. If the database sees</text>
+      <text x="2606" y="202" font-weight="700" fill="#be123c">product-page traffic at all, a layer above it is misconfigured.</text>
+    </g>
+
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M176,89 L186,89"/><path d="M358,89 L368,89"/><path d="M550,89 L560,89"/>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2.4" fill="none" marker-end="url(#p)"><path d="M1746,124 L1756,124"/></g>
+
+    <!-- WRITE PATH -->
+    <rect x="8" y="226" width="3304" height="248" rx="10" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="26" y="250" font-size="16.5" font-weight="700" fill="#b45309">CHECKOUT — THE SYNCHRONOUS CRITICAL PATH, AND WHAT IS DELIBERATELY PUSHED OFF IT</text>
+
+    <g font-size="10.8">
+      <rect x="26" y="264" width="176" height="88" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="114" y="284" font-size="11.8" font-weight="700" fill="#b45309" text-anchor="middle">1 · Validate cart</text>
+      <text x="114" y="302" fill="#7a3d06" text-anchor="middle">re-price from source</text>
+      <text x="114" y="318" fill="#7a3d06" text-anchor="middle">re-check stock</text>
+      <text x="114" y="337" fill="#be123c" text-anchor="middle">never trust client totals</text>
+
+      <rect x="216" y="264" width="176" height="88" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="304" y="284" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">2 · Reserve stock</text>
+      <text x="304" y="302" fill="#7f2b2b" text-anchor="middle">atomic decrement of</text>
+      <text x="304" y="318" fill="#7f2b2b" text-anchor="middle">available, TTL 15 min</text>
+      <text x="304" y="337" fill="#be123c" text-anchor="middle">hold, do not deduct</text>
+
+      <rect x="406" y="264" width="176" height="88" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="494" y="284" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">3 · Create order</text>
+      <text x="494" y="302" fill="#7f2b2b" text-anchor="middle">status = PENDING</text>
+      <text x="494" y="318" fill="#7f2b2b" text-anchor="middle">+ outbox event</text>
+      <text x="494" y="337" fill="#be123c" text-anchor="middle">one local transaction</text>
+
+      <rect x="596" y="264" width="176" height="88" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="684" y="284" font-size="11.8" font-weight="700" fill="#be123c" text-anchor="middle">4 · Authorise payment</text>
+      <text x="684" y="302" fill="#7f2b2b" text-anchor="middle">idempotency key</text>
+      <text x="684" y="318" fill="#7f2b2b" text-anchor="middle">external PSP call</text>
+      <text x="684" y="337" fill="#be123c" text-anchor="middle">the slowest step</text>
+
+      <rect x="786" y="264" width="176" height="88" rx="7" fill="#fff" stroke="#047857" stroke-width="2"/>
+      <text x="874" y="284" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">5 · Confirm</text>
+      <text x="874" y="302" fill="#2f4f47" text-anchor="middle">order = CONFIRMED</text>
+      <text x="874" y="318" fill="#2f4f47" text-anchor="middle">reservation → committed</text>
+      <text x="874" y="337" fill="#047857" text-anchor="middle">the pivot step</text>
+
+      <rect x="976" y="264" width="176" height="88" rx="7" fill="#f7f8fd" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="6 4"/>
+      <text x="1064" y="284" font-size="11.8" font-weight="700" fill="#475569" text-anchor="middle">6 · Respond</text>
+      <text x="1064" y="302" fill="#42507a" text-anchor="middle">order id + status</text>
+      <text x="1064" y="320" fill="#6b7391" text-anchor="middle">target p99 &lt; 1 s</text>
+    </g>
+    <g stroke="#b45309" stroke-width="2.4" fill="none" marker-end="url(#o)">
+      <path d="M202,308 L210,308"/><path d="M392,308 L400,308"/><path d="M582,308 L590,308"/>
+      <path d="M772,308 L780,308"/><path d="M962,308 L970,308"/>
+    </g>
+
+    <rect x="1176" y="264" width="500" height="88" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+    <text x="1192" y="284" font-size="12.4" font-weight="700" fill="#0f766e">PUSHED OFF THE CRITICAL PATH — all asynchronous, via events</text>
+    <text x="1192" y="303" font-size="11" fill="#2f4f47">Confirmation email · invoice generation · warehouse notification · loyalty points ·</text>
+    <text x="1192" y="320" font-size="11" fill="#2f4f47">analytics · recommendation update · search reindex · fraud re-scoring · seller payout</text>
+    <text x="1192" y="340" font-size="11" font-weight="700" fill="#047857">Every one of these removed from step 6 raises composite availability and cuts p99.</text>
+
+    <rect x="1692" y="264" width="500" height="88" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1708" y="284" font-size="12.4" font-weight="700" fill="#b91c1c">WHAT MAKES THIS SAFE</text>
+    <text x="1708" y="303" font-size="11" fill="#7f2b2b">Steps 2–4 are a <tspan font-weight="700">saga</tspan>: if payment fails, release the reservation and cancel the order.</text>
+    <text x="1708" y="320" font-size="11" fill="#7f2b2b">Reservation TTL means a crashed checkout self-heals — stock returns without intervention.</text>
+    <text x="1708" y="340" font-size="11" font-weight="700" fill="#b91c1c">Order is created <tspan font-style="italic">before</tspan> payment, so a successful charge always has somewhere to land.</text>
+
+    <rect x="2208" y="264" width="1088" height="88" rx="7" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+    <text x="2224" y="284" font-size="12.4" font-weight="700" fill="#1d4ed8">THE ORDER STATE MACHINE — every transition is an event, and the terminal states are explicit</text>
+    <text x="2224" y="306" font-size="11.6" font-family="Menlo,monospace" fill="#1e3a5f">PENDING ─▶ AWAITING_PAYMENT ─▶ CONFIRMED ─▶ PACKED ─▶ SHIPPED ─▶ DELIVERED ─▶ COMPLETED</text>
+    <text x="2224" y="325" font-size="11.6" font-family="Menlo,monospace" fill="#be123c">   │              │                  │                                    └▶ RETURN_REQUESTED ─▶ REFUNDED</text>
+    <text x="2224" y="344" font-size="11.6" font-family="Menlo,monospace" fill="#be123c">   └▶ CANCELLED   └▶ PAYMENT_FAILED  └▶ CANCELLED (with refund)</text>
+
+    <!-- events -->
+    <rect x="26" y="364" width="3270" height="98" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+    <text x="42" y="384" font-size="13" font-weight="700" fill="#b45309">THE EVENT BACKBONE — how everything above stays in step without synchronous coupling</text>
+    <text x="42" y="405" font-size="11.6" fill="#42507a"><tspan font-weight="700">Outbox</tspan> in each service writes the state change and its event in one transaction &nbsp;→&nbsp; <tspan font-weight="700">CDC or a relay</tspan> publishes to Kafka &nbsp;→&nbsp; consumers apply it idempotently via an <tspan font-weight="700">inbox</tspan>.</text>
+    <text x="42" y="424" font-size="11.6" fill="#42507a">Topics partitioned by aggregate id, so per-order and per-item ordering is preserved. A schema registry versions the contracts. A dead-letter queue captures what cannot be processed.</text>
+    <text x="42" y="445" font-size="11.6" font-weight="700" fill="#be123c">This is what lets the search index, recommendation models, analytics warehouse and seller dashboards all derive from the same facts without any of them being in the checkout path.</text>
+
+    <!-- BAND: cross cutting -->
+    <rect x="8" y="482" width="3304" height="150" rx="10" fill="#f5f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="506" font-size="16.5" font-weight="700" fill="#7c2d92">CROSS-CUTTING — the parts that decide whether this can be operated, not merely drawn</text>
+    <g font-size="10.9">
+      <rect x="26" y="518" width="530" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="291" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">IDENTITY &amp; SECURITY</text>
+      <text x="40" y="557" fill="#42507a">· OIDC, short-lived tokens, refresh rotation; guest sessions upgraded on signup</text>
+      <text x="40" y="573" fill="#42507a">· mTLS or workload identity between services — network position is not authentication</text>
+      <text x="40" y="589" fill="#42507a">· PCI scope minimised: card data goes to the PSP, never through your services</text>
+      <text x="40" y="607" fill="#be123c" font-weight="700">Tokenised card references only. Never store a PAN or CVV.</text>
+
+      <rect x="570" y="518" width="530" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="835" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">OBSERVABILITY</text>
+      <text x="584" y="557" fill="#42507a">· Trace per request, correlated across the async hops via correlation id</text>
+      <text x="584" y="573" fill="#42507a">· RED per service; business metrics: conversion, cart abandonment, oversell count</text>
+      <text x="584" y="589" fill="#42507a">· SLO burn-rate alerting; deployment markers on every dashboard</text>
+      <text x="584" y="607" fill="#be123c" font-weight="700">Alert on checkout success rate — it is the only metric that means revenue.</text>
+
+      <rect x="1114" y="518" width="530" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1379" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">RESILIENCE</text>
+      <text x="1128" y="557" fill="#42507a">· Timeout, retry with jitter, circuit breaker and bulkhead on every remote call</text>
+      <text x="1128" y="573" fill="#42507a">· Fallbacks defined per dependency — see the degradation matrix</text>
+      <text x="1128" y="589" fill="#42507a">· Load shedding at the gateway, prioritising checkout over browse under stress</text>
+      <text x="1128" y="607" fill="#be123c" font-weight="700">Shed browse traffic before checkout. Revenue over pageviews.</text>
+
+      <rect x="1658" y="518" width="530" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1923" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">DELIVERY</text>
+      <text x="1672" y="557" fill="#42507a">· Build once, promote the same artifact; canary with automated rollback</text>
+      <text x="1672" y="573" fill="#42507a">· Expand → migrate → contract for every schema change</text>
+      <text x="1672" y="589" fill="#42507a">· Feature flags so release is decoupled from deploy; kill switch per surface</text>
+      <text x="1672" y="607" fill="#be123c" font-weight="700">Deployment freeze windows around peak trading events.</text>
+
+      <rect x="2202" y="518" width="530" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2467" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">CONTINUITY</text>
+      <text x="2216" y="557" fill="#42507a">· Multi-AZ by default; multi-region for read traffic and disaster recovery</text>
+      <text x="2216" y="573" fill="#42507a">· RTO and RPO stated per data class — orders and payments are the strictest</text>
+      <text x="2216" y="589" fill="#42507a">· Backups tested by restoring, and the restore timed</text>
+      <text x="2216" y="607" fill="#be123c" font-weight="700">Replication is not a backup. It copies a bad DELETE faithfully.</text>
+
+      <rect x="2746" y="518" width="550" height="102" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="3021" y="538" font-size="12.2" font-weight="700" fill="#7c2d92" text-anchor="middle">COST</text>
+      <text x="2760" y="557" fill="#42507a">· Events are the largest line — set Kafka retention deliberately, not by default</text>
+      <text x="2760" y="573" fill="#42507a">· CDN offload ratio is the single highest-leverage cost metric</text>
+      <text x="2760" y="589" fill="#42507a">· Right-size non-production; it is routinely half the bill</text>
+      <text x="2760" y="607" fill="#be123c" font-weight="700">Track cost per order as an engineering metric, not a finance one.</text>
+    </g>
+
+    <rect x="8" y="642" width="3304" height="180" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="666" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — the three design decisions everything else follows from</text>
+    <text x="26" y="692" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · Reads and writes are separated by two orders of magnitude, so they get separate machinery.</tspan> The read path is cached at five layers and served from replicas and derived indexes; the write path is small, strict and transactional. Optimising them together produces a system that is expensive for reads and unsafe for writes.</text>
+    <text x="26" y="722" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · Consistency is chosen per capability, and it changes within a single user journey.</tspan> Browsing is AP and cached; the moment the customer clicks pay, the same cart data is re-validated against the authoritative source under CP semantics. The boundary between them is the checkout submit, and it is deliberate.</text>
+    <text x="26" y="752" font-size="12" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · Everything that does not have to be synchronous is not.</tspan> Six steps are on the critical path; nine more happen afterwards from events. This is what makes the composite availability arithmetic work, and it is why the outbox and the event backbone are load-bearing rather than decorative.</text>
+    <text x="26" y="786" font-size="12" fill="#6b7391">A useful way to interrogate any box on this diagram: what access pattern justifies it, what is its p99, what happens to the customer when it is down, and what would you remove first if the budget halved?</text>
+    <text x="26" y="808" font-size="12" font-weight="700" fill="#1e3a8a">If a component has no answer to all four, it is on the diagram because it is fashionable rather than because it is needed — and at 3,500 rps most e-commerce platforms carry several of those.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. WHY EACH COMPONENT ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;WHY EACH COMPONENT — THE ANSWER, AND THE FOLLOW-UP
+    <span class="sub">what an interviewer is testing is whether you know the cost, not the benefit</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:120px">Component</th><th>Why &nbsp;·&nbsp; and what it costs you</th></tr></thead>
+        <tbody>
+          <tr><td><b>CDN</b></td><td><b>Why:</b> images and static assets are most of the bytes and none of the logic. Serving from the edge cuts latency and origin load together.<br><b>Cost:</b> cache invalidation becomes a distributed problem; use immutable filenames and version the URL rather than purging</td></tr>
+          <tr><td><b>WAF / DDoS</b></td><td><b>Why:</b> a public storefront is permanently under scraping and credential-stuffing traffic.<br><b>Cost:</b> false positives block real customers; tune in monitor mode before enforcing</td></tr>
+          <tr><td><b>API gateway</b></td><td><b>Why:</b> one place for authentication, rate limiting, quotas and versioning, instead of each service reimplementing them.<br><b>Cost:</b> a single point of failure and a potential bottleneck — it must scale horizontally and stay stateless</td></tr>
+          <tr><td><b>Microservices</b></td><td><b>Why:</b> catalogue and checkout have completely different scaling and availability profiles; separate ownership and deployment.<br><b>Cost:</b> a distributed system, with every problem on this sheet. <b>A modular monolith is the right answer more often than it is chosen</b></td></tr>
+          <tr><td><b>Kafka</b></td><td><b>Why:</b> absorbs spikes, decouples producers from consumers, and lets many derived systems read the same facts with replay.<br><b>Cost:</b> operational weight; ordering only per partition; consumer lag becomes a thing you monitor and page on</td></tr>
+          <tr><td><b>Redis</b></td><td><b>Why:</b> sub-millisecond cart, session, counters and rate limits.<br><b>Cost:</b> it is <b>AP with async replication and can lose acknowledged writes on failover</b> — never the source of truth for money or stock</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:120px">Component</th><th>Why &nbsp;·&nbsp; and what it costs you</th></tr></thead>
+        <tbody>
+          <tr><td><b>PostgreSQL</b></td><td><b>Why:</b> orders, payments and inventory need real transactions, constraints and isolation. Nothing else on the sheet is a substitute.<br><b>Cost:</b> single-writer scaling; plan partitioning and connection pooling early</td></tr>
+          <tr><td><b>Document store</b></td><td><b>Why:</b> catalogue items have wildly varying attributes by category — a fixed schema fights the domain.<br><b>Cost:</b> no joins; you denormalise, and you own keeping duplicates in step. <b>PostgreSQL JSONB removes this component for many teams</b></td></tr>
+          <tr><td><b>OpenSearch</b></td><td><b>Why:</b> relevance ranking, facets, typo tolerance and autocomplete are a different problem from querying rows.<br><b>Cost:</b> a second copy of the catalogue to keep in step, and it must never be the source of truth</td></tr>
+          <tr><td><b>Object storage</b></td><td><b>Why:</b> images and invoices are large, immutable and cheap to serve.<br><b>Cost:</b> egress charges; lifecycle policies matter</td></tr>
+          <tr><td><b>Service mesh</b></td><td><b>Why:</b> mTLS, retries and circuit breaking uniformly, without touching application code.<br><b>Cost:</b> substantial. <b>Only adopt when you genuinely have many services</b> — below roughly a dozen, libraries are simpler</td></tr>
+          <tr><td><b>Kubernetes</b></td><td><b>Why:</b> bin-packing, autoscaling, rolling deploys and self-healing.<br><b>Cost:</b> a platform to operate. Managed compute is often sufficient and dramatically cheaper in engineering time</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The answer that distinguishes a staff-level response.</b> For every component, state
+        what you would need to see before adding it, and what you would remove first. &ldquo;We use Kafka because it
+        decouples services&rdquo; is a brochure. &ldquo;We use Kafka because eight consumers need the same order events with
+        replay, and below that a database table and a poller would do&rdquo; is engineering.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. INVENTORY ============ -->
+<div class="panel c5">
+  <div class="phead">6 &nbsp;· &nbsp;INVENTORY &amp; OVERSELL <span class="sub">the hardest correctness problem</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>State the problem precisely.</b> Ten thousand customers click buy
+      on the last 100 units within the same second. Read-then-write without serialisation means many of them read
+      &ldquo;100 available&rdquo; and all of them succeed. Overselling is a business incident: cancellations, compensation,
+      and in some jurisdictions a regulatory one.</div>
+    <div class="h3">Three levels of stock</div>
+    <table>
+      <tbody>
+        <tr><td style="width:112px"><b>On hand</b></td><td>Physically in the warehouse</td></tr>
+        <tr><td><b>Reserved</b></td><td>Held for in-flight checkouts, with an expiry</td></tr>
+        <tr><td><b>Available</b></td><td><span class="mono">on_hand − reserved</span> — the only number a customer may act on</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Making the decrement safe</div>
+    <div class="code"><span class="c">-- atomic and correct: the DB serialises it</span>
+UPDATE inventory
+   SET available = available - :qty
+ WHERE sku = :sku
+   <span class="k">AND available &gt;= :qty</span>;
+<span class="c">-- 0 rows affected = insufficient stock, cleanly</span>
+
+<span class="c">-- and the reservation, with an expiry</span>
+INSERT INTO reservation(order_id, sku, qty, expires_at)
+VALUES (…, now() + interval '15 minutes');</div>
+    <div class="callout"><b>Why not a distributed lock?</b> A lock with a TTL is not mutual exclusion — a stalled
+      holder can have its lease expire while it still believes it holds it, giving two writers. A conditional update inside
+      the database is simpler, cheaper and actually correct.</div>
+    <div class="h3">Flash sale — the hot-key problem</div>
+    <ul>
+      <li><b>One row becomes the bottleneck.</b> Every buyer contends on the same SKU, and lock waits collapse throughput</li>
+      <li><b>Shard the counter</b> — split 1,000 units into 10 buckets of 100 and pick one at random. Contention drops tenfold; the cost is a small chance of a false sold-out while another bucket has stock</li>
+      <li><b>Admission control</b> — a queue or token gate in front, so only as many requests reach inventory as there is stock to sell</li>
+      <li><b>Fail fast and honestly</b> when sold out; do not queue a customer behind an outcome that is already decided</li>
+    </ul>
+    <div class="callout g"><b>The expiry is what makes it self-healing.</b> A crashed checkout releases its stock
+      automatically. Without a TTL, every abandoned cart leaks inventory permanently and someone reconciles it by hand.</div>
+  </div>
+</div>
+
+<!-- ============ 7. PAYMENTS ============ -->
+<div class="panel c4">
+  <div class="phead">7 &nbsp;· &nbsp;PAYMENTS <span class="sub">where mistakes are unrecoverable</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The governing fact.</b> A timeout from a payment provider tells you
+      <b>nothing</b> about whether the customer was charged. The request may have succeeded and the response been lost.
+      Every design decision below follows from that one sentence.</div>
+    <div class="h3">Non-negotiables</div>
+    <ul>
+      <li><b>Idempotency key per payment attempt</b>, generated when the intent is formed and sent to the PSP. A retry with the same key returns the original result rather than charging again</li>
+      <li><b>Order created before payment</b>, so a successful charge always has a record to attach to</li>
+      <li><b>Money as integer minor units</b> with an explicit currency. Never floating point</li>
+      <li><b>An append-only ledger</b> — payment state is derived from entries, not overwritten in place</li>
+      <li><b>Card data never touches your services.</b> Tokenise at the PSP; this is what keeps PCI scope small</li>
+    </ul>
+    <div class="h3">The states, and the awkward one</div>
+    <div class="code">INITIATED ─▶ AUTHORISED ─▶ CAPTURED ─▶ SETTLED
+    │             │              └▶ REFUNDED
+    │             └▶ VOIDED
+    └▶ FAILED
+
+<span class="r">UNKNOWN</span>  ← timeout. Not a failure. Must be
+          resolved by query or reconciliation,
+          <span class="r">never by assuming and retrying blindly.</span></div>
+    <div class="h3">Webhooks and reconciliation</div>
+    <ul>
+      <li><b>Verify the signature</b> on every webhook; treat the payload as untrusted otherwise</li>
+      <li><b>Webhooks are at-least-once and can arrive out of order</b> — deduplicate by event id and ignore transitions older than current state</li>
+      <li><b>Never trust a webhook alone.</b> Poll the PSP for anything left in <span class="mono">UNKNOWN</span></li>
+      <li><b>Daily reconciliation</b> against the provider's settlement file, with a report of every mismatch. This is how double charges are actually caught</li>
+    </ul>
+    <div class="callout"><b>Authorise then capture, rather than charging immediately.</b> Authorisation holds the funds
+      while you confirm stock and fraud checks; capture on dispatch. It makes cancellation cheap and is what most retail
+      flows do.</div>
+  </div>
+</div>
+
+<!-- ============ 8. CACHING ============ -->
+<div class="panel c8">
+  <div class="phead">8 &nbsp;· &nbsp;CACHING &amp; SEARCH <span class="sub">absorbing the 100:1 ratio</span></div>
+  <div class="pbody">
+    <div class="h3">Invalidation — the actual hard part</div>
+    <table>
+      <thead><tr><th style="width:112px">Strategy</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><b>Short TTL</b></td><td>Default. Simple, self-correcting, and bounded staleness you can state</td></tr>
+        <tr><td><b>Event-driven</b></td><td>Price and stock changes publish an event; consumers evict. Fast, and the invalidation itself can fail</td></tr>
+        <tr><td><b>Versioned key</b></td><td>Include a version in the key so a new version is a cache miss rather than a delete race</td></tr>
+        <tr><td><b>Write-through</b></td><td>For data that must never be stale — rare on the read path here</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Three failure modes that cause real outages.</b> <b>Stampede</b> — a popular key expires
+      and thousands of requests hit the database at once; fix with jittered TTLs and a single-flight lock. <b>Hot key</b> —
+      one product saturates one Redis node; fix by replicating the key across nodes or caching in-process.
+      <b>Cold start</b> — after a restart the cache is empty and the database receives traffic it was never sized for;
+      warm before taking traffic.</div>
+    <div class="h3">Search indexing pipeline</div>
+    <div class="code">catalogue write ─▶ outbox ─▶ Kafka ─▶ indexer ─▶ OpenSearch
+                                        │
+                                        └▶ vector index
+<span class="c">// never dual-write to DB and index directly:</span>
+<span class="c">// that is the dual-write problem, and it silently</span>
+<span class="c">// leaves the index wrong with no error</span></div>
+    <div class="callout"><b>The index is a projection, never the source of truth.</b> It must be fully rebuildable
+      from the catalogue, and rebuilding should be a routine operation you have actually practised — because you will need
+      it after a mapping change.</div>
+    <div class="callout g"><b>Hybrid retrieval is now standard:</b> keyword search for exact terms, model numbers and
+      brand names; vector search for intent and synonyms. Fuse the two ranked lists. Keyword alone fails on
+      &ldquo;something warm for winter&rdquo;; vector alone fails on a part number.</div>
+  </div>
+</div>
+
+<!-- ============ 9. DEGRADATION ============ -->
+<div class="panel c6">
+  <div class="phead">9 &nbsp;· &nbsp;DEGRADATION MATRIX <span class="sub">what still works when X is down</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.44">Decide this at design time, not during the incident. Each row is a
+      deliberate product decision about what the customer sees.</div>
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:120px">Down</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b>Search</b></td><td>Fall back to category browse and the cached bestseller list. <b>Never a blank page</b></td></tr>
+        <tr><td><b>Recommendations</b></td><td>Hide the widget entirely. It is decoration, and a spinner is worse than an absence</td></tr>
+        <tr><td><b>Reviews</b></td><td>Show the cached aggregate rating; hide the review list</td></tr>
+        <tr><td><b>Cache</b></td><td>Serve from the database with a circuit breaker and load shedding. Expect a hard capacity drop and shed browse first</td></tr>
+        <tr><td><b>Inventory</b></td><td><b>Stop accepting checkout.</b> Selling stock you cannot verify is worse than a clear error</td></tr>
+        <tr><td><b>Payment provider</b></td><td>Offer an alternative provider if integrated; otherwise save the cart, tell the truth, and invite the customer back</td></tr>
+        <tr><td><b>Order service</b></td><td>Checkout is down. Keep browse fully available — it is a different failure domain by design</td></tr>
+        <tr><td><b>Notification</b></td><td>Nothing customer-visible. Events queue and drain later</td></tr>
+        <tr><td><b>Analytics</b></td><td>Nothing customer-visible. Never let analytics block a request</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The principle running through the table.</b> Browse degrades gracefully; checkout fails
+      loudly and safely. Never take money you cannot honour, and never show a customer an empty page when a cached
+      approximation exists.</div>
+    <div class="callout r"><b>Test these paths deliberately.</b> Fallbacks are the least-exercised code in the system
+      and run precisely when everything else is already failing. A fallback that has never been executed is a hypothesis.</div>
+  </div>
+</div>
+
+<!-- ============ 10. API ============ -->
+<div class="panel c7 span3">
+  <div class="phead">10 &nbsp;· &nbsp;API SPECIFICATION
+    <span class="sub">the contract, including the parts usually left off — status codes, pagination, concurrency and errors</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:56px">Method</th><th style="width:170px">Endpoint</th><th style="width:60px">Auth</th><th>Notes &amp; status codes</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td class="mono">/v1/auth/register</td><td>none</td><td><b>201</b> · 409 if email exists · rate limited hard</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/auth/login</td><td>none</td><td><b>200</b> + access &amp; refresh token · 401 · 429 after n attempts</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/products</td><td>optional</td><td><b>200</b> · <b>cursor</b> pagination, not offset · <span class="mono">Cache-Control</span> · <span class="mono">ETag</span></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/products/{id}</td><td>optional</td><td><b>200</b> · 404 · <span class="mono">ETag</span> for conditional GET</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/search</td><td>optional</td><td><b>200</b> · <span class="mono">q, filters, facets, sort, cursor</span> · degrades to catalogue browse on failure</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/cart</td><td>session</td><td><b>200</b> · works for guest via session id</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/cart/items</td><td>session</td><td><b>200</b> · 409 if unavailable · returns the recalculated cart</td></tr>
+          <tr><td>PATCH</td><td class="mono">/v1/cart/items/{id}</td><td>session</td><td><b>200</b> · <span class="mono">If-Match</span> for optimistic concurrency</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/orders</td><td>bearer</td><td><b>201</b> · <b><span class="mono">Idempotency-Key</span> required</b> · 409 stock · 422 price changed</td></tr>
+          <tr><td>GET</td><td class="mono">/v1/orders/{id}</td><td>bearer</td><td><b>200</b> · 403 if not the owner</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/orders/{id}/cancel</td><td>bearer</td><td><b>202</b> — asynchronous · 409 if already shipped</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/payments</td><td>bearer</td><td><b>202</b> · <span class="mono">Idempotency-Key</span> required · returns <span class="mono">PENDING</span></td></tr>
+          <tr><td>GET</td><td class="mono">/v1/payments/{id}</td><td>bearer</td><td><b>200</b> · poll for terminal state</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/webhooks/psp</td><td>signature</td><td><b>200</b> always, after verifying signature · dedupe by event id</td></tr>
+          <tr><td>POST</td><td class="mono">/v1/reviews</td><td>bearer</td><td><b>202</b> — queued for moderation, not published immediately</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Conventions applied to every endpoint</div>
+      <table>
+        <tbody>
+          <tr><td style="width:126px"><b>Versioning</b></td><td>In the path. A breaking change is a new version; existing consumers keep working</td></tr>
+          <tr><td><b>Pagination</b></td><td><b>Cursor, not offset.</b> Offset pagination drifts when data changes underneath and degrades badly at depth</td></tr>
+          <tr><td><b>Idempotency</b></td><td>Required on every unsafe retryable POST. Stored with the result; a repeat returns the original response, not a conflict</td></tr>
+          <tr><td><b>Concurrency</b></td><td><span class="mono">ETag</span> + <span class="mono">If-Match</span> on mutable resources, returning <b>412</b> on mismatch</td></tr>
+          <tr><td><b>Rate limits</b></td><td><span class="mono">X-RateLimit-*</span> headers and <b>429</b> with <span class="mono">Retry-After</span> — tell the client how to behave</td></tr>
+          <tr><td><b>Tracing</b></td><td><span class="mono">X-Request-ID</span> accepted and echoed; propagated to every downstream hop</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">One error envelope, everywhere</div>
+      <div class="code">HTTP/1.1 <span class="r">409 Conflict</span>
+{
+  <span class="k">"code"</span>: <span class="v">"INSUFFICIENT_STOCK"</span>,
+  <span class="k">"message"</span>: <span class="v">"Only 2 units available"</span>,
+  <span class="k">"requestId"</span>: <span class="v">"req_8f3c…"</span>,
+  <span class="k">"details"</span>: [{ <span class="k">"sku"</span>: <span class="v">"A1"</span>, <span class="k">"available"</span>: 2 }]
+}</div>
+      <div class="callout"><b>A stable machine-readable <span class="mono">code</span> is what clients branch on</b> —
+        never the human message, which is free to change and to be localised.</div>
+      <div class="callout g"><b>Note the status codes on the write path.</b> <span class="mono">POST /orders</span>
+        returns <b>201</b> synchronously because the customer must know the order exists; cancel and payment return
+        <b>202</b> because they complete asynchronously. Choosing between them honestly is more informative than any
+        response body.</div>
+    </div>
+    <div>
+      <div class="h3">Place an order — the request that matters</div>
+      <div class="code">POST /v1/orders
+<span class="k">Authorization:</span> Bearer eyJ…
+<span class="k">Idempotency-Key:</span> <span class="v">01J8F3…</span>   <span class="c">← client-generated,</span>
+<span class="k">X-Request-ID:</span> req_8f3c…      <span class="c">  one per intent</span>
+{
+  <span class="k">"cartId"</span>: <span class="v">"c_9912"</span>,
+  <span class="k">"addressId"</span>: <span class="v">"a_44"</span>,
+  <span class="k">"paymentMethodId"</span>: <span class="v">"pm_tok_77"</span>,
+  <span class="k">"expectedTotal"</span>: { <span class="k">"amount"</span>: 249900,
+                      <span class="k">"currency"</span>: <span class="v">"INR"</span> }
+}
+
+HTTP/1.1 <span class="v">201 Created</span>
+{
+  <span class="k">"orderId"</span>: <span class="v">"o_1183"</span>,
+  <span class="k">"status"</span>: <span class="v">"PENDING"</span>,
+  <span class="k">"total"</span>: { <span class="k">"amount"</span>: 249900, <span class="k">"currency"</span>: <span class="v">"INR"</span> },
+  <span class="k">"payment"</span>: { <span class="k">"id"</span>: <span class="v">"pay_552"</span>, <span class="k">"status"</span>: <span class="v">"PENDING"</span> },
+  <span class="k">"reservationExpiresAt"</span>: <span class="v">"2026-09-01T14:15:00Z"</span>
+}</div>
+      <div class="callout"><b><span class="mono">expectedTotal</span> is the important field.</b> The server
+        re-prices authoritatively and compares. A mismatch returns <b>422</b> with the new total rather than silently
+        charging a different amount — which is what turns a stale-price bug into a handled case.</div>
+      <div class="callout r"><b>Money is an object, not a number.</b> Integer minor units plus an explicit currency.
+        A bare <span class="mono">2499.00</span> in JSON invites floating-point handling somewhere down the chain.</div>
+      <div class="callout g"><b>The reservation expiry is returned to the client</b> so the interface can show a
+        countdown. Making the hold visible is what stops customers believing checkout has silently failed.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 11. PRODUCTION ============ -->
+<div class="panel c5 span3">
+  <div class="phead">11 &nbsp;· &nbsp;PRODUCTION PROBLEMS — WHAT ACTUALLY HAPPENS
+    <span class="sub">the questions an interviewer asks after the happy path, and the answers that show you have operated one of these</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.82fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:140px">Problem</th><th>What you see</th><th style="width:200px">Answer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Overselling</b></td><td>Orders confirmed for stock that does not exist; cancellations and compensation</td><td>Conditional atomic decrement, reservations with TTL, sharded counters for hot SKUs</td></tr>
+          <tr><td><b>Double charge</b></td><td>Customer charged twice on a retry after a timeout</td><td>Idempotency key end to end, PSP-side idempotency, daily reconciliation</td></tr>
+          <tr><td><b>Lost order</b></td><td>Payment captured, no order record</td><td>Create the order before charging; outbox so nothing depends on a dual write</td></tr>
+          <tr><td><b>Cache stampede</b></td><td>Latency spike and a database CPU cliff when a popular key expires</td><td>Jittered TTL, single-flight lock, early recompute of hot keys</td></tr>
+          <tr><td><b>Hot partition</b></td><td>One Kafka partition or one Redis node saturated during a sale</td><td>Better partition key, key splitting, local caching of the hot item</td></tr>
+          <tr><td><b>Consumer lag</b></td><td>Search and dashboards silently minutes behind; nobody notices for hours</td><td>Alert on lag, not just on errors; scale consumers with partitions</td></tr>
+          <tr><td><b>Connection exhaustion</b></td><td>Database refuses connections while CPU is idle</td><td>Pooling with a bounded upper limit; a proxy in front; do not scale pods without scaling pool maths</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:140px">Problem</th><th>What you see</th><th style="width:200px">Answer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Retry storm</b></td><td>A slow dependency triggers retries that make it slower still</td><td>Exponential backoff <b>with jitter</b>, circuit breaker, retry budget</td></tr>
+          <tr><td><b>Thundering herd on deploy</b></td><td>New pods start cold and time out under full traffic</td><td>Warm caches and pools before readiness passes; ramp traffic</td></tr>
+          <tr><td><b>Stale price shown</b></td><td>Customer sees one price, is charged another; complaints and chargebacks</td><td>Re-price authoritatively at checkout; honour the shown price within a small tolerance and alert on the delta</td></tr>
+          <tr><td><b>Search index drift</b></td><td>Products missing or wrong; no error anywhere</td><td>Rebuild from the source; reconcile counts nightly; alert on index age</td></tr>
+          <tr><td><b>Migration lock</b></td><td>A schema change locks a large table and takes checkout down</td><td>Expand → migrate → contract; build indexes concurrently; test at production data size</td></tr>
+          <tr><td><b>Flash sale collapse</b></td><td>Everything falls over in the first ninety seconds</td><td>Pre-scale, queue admission, shard the counter, shed browse traffic, cache aggressively, and load test at the real number</td></tr>
+          <tr><td><b>Stuck saga</b></td><td>Orders parked in an intermediate state; discovered when a customer calls</td><td>Alert on anything exceeding its expected window; DLQ with an owner and a runbook</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first — the bottleneck ladder</div>
+      <div style="font-size:12.8px;line-height:1.45">Be ready for this follow-up. Naming the sequence, and how each is
+        detected, is more convincing than any diagram.</div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:34px">#</th><th>Limit</th><th style="width:110px">Detected by</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>Database connection pool.</b> Saturates long before CPU does, and scaling pods makes it worse</td><td>Connection wait time; refused connections while CPU is idle</td></tr>
+          <tr><td><b>2</b></td><td><b>Hot SKU row</b> during a sale — lock contention on one row collapses throughput</td><td>Lock wait time; p99 on one endpoint only</td></tr>
+          <tr><td><b>3</b></td><td><b>Cache capacity and cold start</b> — eviction rate climbs, hit ratio falls, load lands on the database</td><td>Hit ratio; eviction rate; origin request rate</td></tr>
+          <tr><td><b>4</b></td><td><b>Kafka consumer lag</b> on derived systems — silent, and it degrades search and dashboards first</td><td>Lag per consumer group</td></tr>
+          <tr><td><b>5</b></td><td><b>Payment provider rate limit</b> — external, and you cannot scale past it</td><td>429s from the PSP; checkout success rate</td></tr>
+          <tr><td><b>6</b></td><td><b>Single-writer database throughput</b> — the last one, and the one people design for first</td><td>Write latency; replication lag</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> The limit people plan for — write throughput — is last. The one
+        that actually takes systems down is first, and it is a configuration number rather than a hardware one.</div>
+      <div class="callout g"><b>The trade-offs I would revisit.</b> Whether the document store earns its place over
+        JSONB; whether a mesh is justified at this service count; whether Kafka retention is set from cost rather than from
+        replay need. Volunteering what you would reconsider is a stronger close than defending every choice.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 12. TECH CHOICES ============ -->
+<div class="panel c3 span3">
+  <div class="phead">12 &nbsp;· &nbsp;TECHNOLOGY CHOICES — ADVANTAGES, DISADVANTAGES AND THE ALTERNATIVE
+    <span class="sub">every row includes what you would use instead, because &ldquo;why not X?&rdquo; is the second question</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr>
+        <th style="width:132px">Component</th><th style="width:150px">Choice</th><th style="width:250px">Why this one</th>
+        <th>Advantages</th><th style="width:290px">Disadvantages</th><th style="width:280px">Alternative, and when</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>Transactional store</b></td><td>PostgreSQL</td><td>Orders, payments and inventory need real transactions, constraints and isolation levels</td><td>ACID, mature, JSONB, full-text, geospatial, pgvector — often removes three other components</td><td>Single writer; vertical scaling limits; needs pooling and partitioning discipline</td><td><b>Distributed SQL</b> when write throughput genuinely exceeds one node — measured, not projected</td></tr>
+        <tr><td><b>Catalogue store</b></td><td>PostgreSQL JSONB, or a document store</td><td>Category-varying attributes fight a fixed schema</td><td>Flexible schema; fast development; horizontal scaling in the document case</td><td>A second store to operate; no joins; you own denormalisation</td><td><b>Start with JSONB</b> in the database you already run. Add a document store only when it demonstrably falls short</td></tr>
+        <tr><td><b>Cache &amp; session</b></td><td>Redis</td><td>Sub-millisecond cart, session, counters and rate limiting</td><td>Rich types — sorted sets cover leaderboards and rate limits; very fast</td><td><b>AP: can lose acknowledged writes on failover.</b> Memory cost; hot keys; eviction tuning</td><td><b>Memcached</b> for a pure cache. For durable cart, back it with the database</td></tr>
+        <tr><td><b>Search</b></td><td>OpenSearch / Elasticsearch</td><td>Relevance, facets, typo tolerance and autocomplete</td><td>Mature, well understood, scales horizontally, strong aggregations</td><td>Heavy to operate; a second copy of the catalogue; eventually consistent</td><td><b>PostgreSQL full-text</b> below roughly a million products — it removes an entire system</td></tr>
+        <tr><td><b>Event backbone</b></td><td>Kafka</td><td>Retention and replay let many derived systems read the same facts independently</td><td>High throughput, durable, ordered per partition, replayable</td><td>Operationally heavy; ordering only per partition; lag monitoring is mandatory</td><td><b>SQS / RabbitMQ</b> if you need a work queue rather than a replayable log — simpler, and usually enough</td></tr>
+        <tr><td><b>Analytics</b></td><td>ClickHouse</td><td>Aggregating clickstream and order data over billions of rows</td><td>Extremely fast scans and compression; SQL</td><td>Poor at point updates; batch-oriented; another system</td><td><b>The warehouse you already have</b>, or read replicas, until the scan volume justifies it</td></tr>
+        <tr><td><b>Object storage</b></td><td>S3 or equivalent</td><td>Images and invoices are large, immutable and cheap</td><td>Effectively unlimited, durable, integrates with CDN</td><td>Egress cost; eventual listing semantics; lifecycle policies needed</td><td>None sensible. Do not put images in a database</td></tr>
+        <tr><td><b>Recommendations</b></td><td>Precomputed item-to-item + vector</td><td>Read path must be a lookup, not a computation</td><td>Fast, simple, strong baseline, easy to reason about</td><td>Refreshed on a schedule, so new items lag</td><td><b>Graph database</b> only if traversal depth is genuinely the requirement — it is a heavy choice for &ldquo;also viewed&rdquo;</td></tr>
+        <tr><td><b>Service comms</b></td><td>REST external, gRPC internal, events for the rest</td><td>Right protocol per boundary</td><td>REST is universal and cacheable; gRPC is fast and typed; events decouple</td><td>Three styles to maintain and document</td><td><b>REST everywhere</b> is a perfectly defensible simplification at this scale</td></tr>
+        <tr><td><b>Orchestration</b></td><td>Kubernetes</td><td>Bin-packing, autoscaling, rolling deploys, self-healing</td><td>Portable, standard, rich ecosystem</td><td>A platform to operate; genuine complexity; easy to over-adopt</td><td><b>Managed container services</b> — materially less to run, and sufficient for most teams</td></tr>
+        <tr><td><b>Service mesh</b></td><td>Istio or Linkerd</td><td>Uniform mTLS, retries and circuit breaking without code changes</td><td>Consistent policy, strong telemetry, traffic splitting</td><td>Substantial operational and cognitive cost; another failure domain</td><td><b>Libraries and the gateway</b> below roughly a dozen services. Adopt a mesh when you actually have the scale</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The honest summary an interviewer is listening for.</b> At 3,500 rps and a 50 GB catalogue,
+      a well-tuned PostgreSQL, Redis, a CDN and a modular monolith would serve this workload with far less operational
+      surface. Everything above is justified by <b>organisational</b> scale — many teams deploying independently — as much
+      as by traffic. Saying so is a strength, not a concession.</div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;READINESS CHECKLIST <span class="sub">before this platform takes real orders and real money</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Scale, read:write ratio and peak multiple</b> written down and agreed</div>
+      <div>&#9744; <b>Latency targets stated at p99</b>, per endpoint</div>
+      <div>&#9744; <b>Composite availability computed</b> for the checkout dependency chain</div>
+      <div>&#9744; <b>CAP choice recorded per capability</b>, not per system</div>
+      <div>&#9744; <b>Cart re-validated at checkout</b> — price and stock from the source</div>
+      <div>&#9744; <b>Inventory decrement is a conditional atomic update</b>, not read-then-write</div>
+      <div>&#9744; <b>Reservations expire</b>, and expiry rate is monitored</div>
+      <div>&#9744; <b>Hot-SKU strategy exists</b> — sharded counter or admission control</div>
+      <div>&#9744; <b>Order created before payment</b> is attempted</div>
+      <div>&#9744; <b>Idempotency key on every unsafe POST</b>, carried end to end</div>
+      <div>&#9744; <b>Repeat requests return the original result</b>, not a conflict</div>
+      <div>&#9744; <b>Money stored as integer minor units</b> with currency</div>
+      <div>&#9744; <b>Payment <span class="mono">UNKNOWN</span> state modelled</b> and resolved by query, not assumption</div>
+      <div>&#9744; <b>Webhook signatures verified</b>; events deduplicated and order-tolerant</div>
+      <div>&#9744; <b>Daily settlement reconciliation</b> with a mismatch report</div>
+      <div>&#9744; <b>No card data in your systems</b> — tokenised at the provider</div>
+      <div>&#9744; <b>Outbox in every service that publishes</b>; no dual writes anywhere</div>
+      <div>&#9744; <b>Every consumer idempotent</b>, with dedupe in the same transaction</div>
+      <div>&#9744; <b>Topics partitioned by aggregate id</b> where ordering matters</div>
+      <div>&#9744; <b>Consumer lag alerted on</b>, not only errors</div>
+      <div>&#9744; <b>DLQ owned, monitored and drainable</b></div>
+      <div>&#9744; <b>Search index rebuildable</b>, and the rebuild practised</div>
+      <div>&#9744; <b>Cache TTLs jittered</b>; single-flight on hot keys; cold-start plan</div>
+      <div>&#9744; <b>CDN offload ratio measured</b> and tracked</div>
+      <div>&#9744; <b>Degradation matrix agreed</b> with product, and each path tested</div>
+      <div>&#9744; <b>Load shedding prioritises checkout</b> over browse</div>
+      <div>&#9744; <b>Timeout, retry with jitter, circuit breaker</b> on every remote call</div>
+      <div>&#9744; <b>Connection pool sized</b> against database limits and replica count</div>
+      <div>&#9744; <b>Schema changes are expand → migrate → contract</b>, timed at production size</div>
+      <div>&#9744; <b>Load tested at flash-sale volume</b>, not at average</div>
+      <div>&#9744; <b>RTO and RPO defined</b>; restore tested and timed</div>
+      <div>&#9744; <b>PII and payment data handling reviewed</b> against the applicable regime</div>
+      <div>&#9744; <b>Checkout success rate alerted on</b> as the primary business SLI</div>
+      <div>&#9744; <b>Runbooks</b> for oversell, double charge, stuck saga, provider outage, flash sale</div>
+      <div>&#9744; <b>Cost per order tracked</b>, with the largest contributors known</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>walk one order from click to delivery and name, at every
+      hop, what happens if that hop fails — and whether the customer keeps their money, their order, or neither.</b> If any
+      step answers &ldquo;it would probably retry&rdquo;, that is the part of the design that is not finished.</div>
+  </div>
+</div>
+
+</div>
