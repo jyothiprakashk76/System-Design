@@ -1,0 +1,846 @@
+<meta charset="utf-8">
+<title>API Gateway — System Design &amp; Interview Reference</title>
+<style>
+  @page { size: 3400px 5393px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5393px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5363px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 548px 903px 644px 615px 560px 465px 342px 488px 430px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.4px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:13px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.4px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.6px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.8px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>API GATEWAY — SYSTEM DESIGN &amp; INTERVIEW REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">One entry point for API traffic — what belongs in it, what must never, and how it fails<br>
+    <span style="font-size:13.4px;color:#6d80b6">control plane vs data plane · routing · auth · rate limiting · resilience · observability · anti-patterns</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT AN API GATEWAY IS — AND WHAT IT IS CONSTANTLY CONFUSED WITH
+    <span class="sub">start here — the definitions, the neighbouring components, and the one rule that keeps a gateway healthy</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13.2px;line-height:1.47">An API gateway is a <b>reverse proxy that owns the cross-cutting
+        concerns of API traffic</b> — authentication, rate limiting, routing, observability — so that each service behind it
+        does not have to implement them separately.</div>
+      <div class="callout b"><b>The problem it solves, stated as arithmetic.</b> With 40 services, doing auth, rate
+        limiting, request logging, CORS and TLS in each one means 40 implementations, 40 sets of bugs, and 40 places to
+        change when a policy changes. Centralising them makes it one — and that <i>consistency</i>, more than any single
+        feature, is the reason gateways exist.</div>
+      <div class="h3">The one rule</div>
+      <div class="callout r"><b>The gateway handles concerns that are the same for every service. Nothing else.</b>
+        The moment it contains logic that is true for only one service, it has become a shared component that every team
+        must change and no team owns — and it will be the slowest part of your delivery process within a year.</div>
+      <div class="h3">North-south, not east-west</div>
+      <ul>
+        <li><b>North-south</b> — traffic entering the system from outside. This is the gateway's job</li>
+        <li><b>East-west</b> — service-to-service traffic inside the boundary. This is a <b>service mesh's</b> job</li>
+        <li>Routing internal calls through the gateway adds a hop, a bottleneck and a failure domain for no benefit</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">The components it is confused with</div>
+      <table>
+        <thead><tr><th style="width:132px">Component</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><b>Load balancer</b></td><td>Distributes connections across identical backends. <b>L4</b> knows ports; <b>L7</b> knows HTTP. Little or no policy</td></tr>
+          <tr><td><b>Reverse proxy</b></td><td>Terminates TLS, serves static content, forwards requests. The substrate a gateway is built on</td></tr>
+          <tr><td><b>API gateway</b></td><td>A reverse proxy <i>plus</i> API concerns — authN/authZ, quotas, keys, transformation, versioning, per-consumer metering</td></tr>
+          <tr><td><b>Ingress controller</b></td><td>The Kubernetes-native form of the same idea, configured by cluster resources</td></tr>
+          <tr><td><b>Service mesh</b></td><td>Proxies beside <i>every</i> service for east-west traffic: mTLS, retries, traffic splitting, telemetry</td></tr>
+          <tr><td><b>BFF</b></td><td>A backend per client type, owned by that client's team. Contains product logic — which is exactly why it is <b>not</b> the gateway</td></tr>
+          <tr><td><b>CDN / WAF</b></td><td>Sits <i>in front</i> of the gateway: caching, DDoS, bot defence, TLS at the edge</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Most large systems run several of these, not one.</b> CDN and WAF at the edge, a
+        gateway for north-south policy, a mesh for east-west, and a BFF per client where the shaping genuinely differs.
+        Choosing between them is a category error; the question is which concern belongs where.</div>
+    </div>
+    <div>
+      <div class="h3">What belongs in a gateway</div>
+      <table>
+        <thead><tr><th style="width:150px">Yes</th><th>No</th></tr></thead>
+        <tbody>
+          <tr><td>TLS termination</td><td>Business rules or validation beyond schema</td></tr>
+          <tr><td>Authentication and token validation</td><td>Data enrichment from databases</td></tr>
+          <tr><td>Coarse authorisation — is this token allowed here at all</td><td>Fine-grained, resource-level permission checks</td></tr>
+          <tr><td>Rate limiting and quotas</td><td>Orchestrating multi-step workflows</td></tr>
+          <tr><td>Routing, canary and traffic splitting</td><td>Anything specific to one service</td></tr>
+          <tr><td>Request and response transformation</td><td>Heavy aggregation across many services</td></tr>
+          <tr><td>Schema validation, CORS, compression</td><td>Retries that hide a broken upstream</td></tr>
+          <tr><td>Correlation ids, metrics, access logs</td><td>State that makes the gateway non-restartable</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The test to apply to any proposed feature.</b> Would every service behind the gateway
+        need this identically? If yes, it belongs there. If it is true for one service, or it needs to read that service's
+        data to decide, it belongs in the service.</div>
+      <div class="callout r"><b>Availability arithmetic.</b> Every request now traverses one more component, so the
+        gateway's availability multiplies with everything behind it. It must be <b>stateless, horizontally scaled and
+        deployed across zones</b> — otherwise you have centralised a single point of failure along with the policy.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — CONTROL PLANE, DATA PLANE, AND THE REQUEST LIFECYCLE
+    <span class="sub">the separation that determines whether a configuration change is routine or an outage</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 830" width="3320" height="830">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- TOPOLOGY -->
+    <rect x="8" y="6" width="3304" height="180" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16.5" font-weight="700" fill="#1e3a8a">WHERE IT SITS — each layer removes traffic the next one would otherwise handle</text>
+
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="26" y="44" width="152" height="80" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="102" y="66" font-size="12.4" font-weight="700" fill="#1e3a8a">Clients</text>
+      <text x="102" y="86" fill="#42507a">web · mobile · partner</text>
+      <text x="102" y="104" fill="#42507a">server-to-server</text>
+
+      <rect x="192" y="44" width="152" height="80" rx="8" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="268" y="66" font-size="12.4" font-weight="700" fill="#be123c">CDN + WAF</text>
+      <text x="268" y="86" fill="#7f2b2b">static, DDoS, bots</text>
+      <text x="268" y="104" fill="#7f2b2b">TLS at the edge</text>
+
+      <rect x="358" y="44" width="152" height="80" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="434" y="66" font-size="12.4" font-weight="700" fill="#1e3a8a">Load balancer</text>
+      <text x="434" y="86" fill="#42507a">across gateway pods</text>
+      <text x="434" y="104" fill="#42507a">health checks, draining</text>
+
+      <rect x="524" y="44" width="182" height="80" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+      <text x="615" y="66" font-size="12.4" font-weight="700" fill="#b45309">API GATEWAY</text>
+      <text x="615" y="86" fill="#7a3d06">stateless data plane</text>
+      <text x="615" y="104" fill="#7a3d06">n replicas, multi-zone</text>
+
+      <rect x="720" y="44" width="152" height="80" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+      <text x="796" y="66" font-size="12.4" font-weight="700" fill="#0f766e">Services</text>
+      <text x="796" y="86" fill="#2f4f47">re-check authorisation</text>
+      <text x="796" y="104" fill="#2f4f47">own their data</text>
+
+      <rect x="886" y="44" width="152" height="80" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="962" y="66" font-size="12.4" font-weight="700" fill="#7c2d92">Mesh</text>
+      <text x="962" y="86" fill="#4b3a5e">east-west only</text>
+      <text x="962" y="104" fill="#4b3a5e">mTLS between services</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M178,84 L186,84"/><path d="M344,84 L352,84"/><path d="M510,84 L518,84"/><path d="M706,84 L714,84"/>
+    </g>
+
+    <rect x="1058" y="44" width="1080" height="80" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1074" y="64" font-size="12.4" font-weight="700" fill="#b91c1c">THE LAYER PEOPLE COLLAPSE — and why each one earns its place</text>
+    <text x="1074" y="84" font-size="11.2" fill="#7f2b2b">The CDN and WAF absorb volumetric traffic and static content before any policy runs. The load balancer exists so the gateway can be replaced,</text>
+    <text x="1074" y="102" font-size="11.2" fill="#7f2b2b">scaled and drained without clients noticing. Putting a gateway directly on the internet with no layer in front makes deployment a customer-visible event.</text>
+
+    <rect x="2152" y="44" width="1144" height="80" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="2168" y="64" font-size="12.4" font-weight="700" fill="#047857">THE LATENCY BUDGET — what a gateway may cost you</text>
+    <text x="2168" y="84" font-size="11.2" fill="#2f4f47">A well-configured gateway should add <tspan font-weight="700">single-digit milliseconds at p50</tspan>. If it adds more, the cause is almost always a <tspan font-weight="700">synchronous external call</tspan> in the</text>
+    <text x="2168" y="102" font-size="11.2" fill="#2f4f47">request path — token introspection, a remote rate-limit counter, a policy lookup. Measure gateway-added latency separately from upstream latency, or you cannot tell them apart.</text>
+
+    <text x="26" y="152" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#1e3a8a">Deployment shape:</tspan> the data plane is stateless and horizontally scaled behind a load balancer, spread across availability zones, with connection draining on shutdown and readiness gating traffic. Nothing about a request may depend on which replica handled the previous one.</text>
+    <text x="26" y="172" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">The corollary:</tspan> any feature that requires sticky sessions, local state or in-memory accumulation across requests either belongs elsewhere, or must be backed by a shared store that becomes a dependency you now have to keep available.</text>
+
+    <!-- CONTROL VS DATA -->
+    <rect x="8" y="194" width="3304" height="180" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="218" font-size="16.5" font-weight="700" fill="#7c2d92">CONTROL PLANE vs DATA PLANE — the most important structural idea, and the one most often missing from a diagram</text>
+
+    <rect x="26" y="232" width="700" height="128" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="42" y="254" font-size="13" font-weight="700" fill="#7c2d92">CONTROL PLANE — where configuration is authored and validated</text>
+    <g font-size="11.2" fill="#4b3a5e">
+      <text x="42" y="276">· Admin API, config store, and the source of truth for routes and policy</text>
+      <text x="42" y="294">· Validation, authorisation of changes, and an audit trail of who changed what</text>
+      <text x="42" y="312">· Pushes or serves configuration to the data plane</text>
+      <text x="42" y="332" font-weight="700" fill="#be123c">May be down without affecting live traffic — if the data plane is designed for it</text>
+      <text x="42" y="350" fill="#6b7391">Runs at low volume. Availability matters far less than correctness and auditability.</text>
+    </g>
+
+    <rect x="740" y="232" width="700" height="128" rx="8" fill="#fff" stroke="#b45309" stroke-width="2"/>
+    <text x="756" y="254" font-size="13" font-weight="700" fill="#b45309">DATA PLANE — where every request is actually handled</text>
+    <g font-size="11.2" fill="#7a3d06">
+      <text x="756" y="276">· The proxies. Stateless, horizontally scaled, multi-zone</text>
+      <text x="756" y="294">· Holds the last known good configuration <tspan font-weight="700">in memory</tspan></text>
+      <text x="756" y="312">· Must keep serving on the last good config if the control plane is unreachable</text>
+      <text x="756" y="332" font-weight="700" fill="#be123c">Its availability is your API's availability. Nothing may be allowed to block it</text>
+      <text x="756" y="350" fill="#6b7391">Runs at full request volume. Latency and reliability dominate every other concern.</text>
+    </g>
+
+    <rect x="1454" y="232" width="900" height="128" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1470" y="254" font-size="13" font-weight="700" fill="#b91c1c">WHY THE SEPARATION MATTERS IN PRACTICE</text>
+    <text x="1470" y="276" font-size="11.2" fill="#7f2b2b">If the data plane fetches configuration synchronously per request, the config store becomes a dependency of every</text>
+    <text x="1470" y="294" font-size="11.2" fill="#7f2b2b">single API call — and its outage becomes a total outage. Configuration must be pushed or polled and cached, never</text>
+    <text x="1470" y="312" font-size="11.2" fill="#7f2b2b">read inline.</text>
+    <text x="1470" y="334" font-size="11.2" font-weight="700" fill="#b91c1c">And a bad configuration push reaches every replica at once. This is the largest blast radius in the whole system:</text>
+    <text x="1470" y="352" font-size="11.2" font-weight="700" fill="#b91c1c">one malformed route can take down every API simultaneously, which no amount of service redundancy protects against.</text>
+
+    <rect x="2368" y="232" width="928" height="128" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="2384" y="254" font-size="13" font-weight="700" fill="#047857">TREATING CONFIGURATION LIKE CODE</text>
+    <g font-size="11.2" fill="#2f4f47">
+      <text x="2384" y="276">· Declarative config in version control, reviewed like any change</text>
+      <text x="2384" y="294">· Validated in CI — schema, route conflicts, unreachable rules, missing upstreams</text>
+      <text x="2384" y="312">· Rolled out progressively: one replica, then a percentage, then all</text>
+      <text x="2384" y="330">· Automatic rollback on error-rate or latency regression</text>
+      <text x="2384" y="350" font-weight="700" fill="#047857">A gateway change is a production deployment. Anything that can be edited live and applied instantly will eventually be.</text>
+    </g>
+
+    <!-- REQUEST LIFECYCLE -->
+    <rect x="8" y="382" width="3304" height="240" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="406" font-size="16.5" font-weight="700" fill="#0f766e">THE REQUEST LIFECYCLE — an ordered filter chain, and the order is not arbitrary</text>
+
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="26" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="105" y="440" font-size="11.6" font-weight="700" fill="#0f766e">1 · Terminate TLS</text>
+      <text x="105" y="458" fill="#2f4f47">accept connection</text>
+      <text x="105" y="476" fill="#6b7391">HTTP/2, HTTP/3, keep-alive</text>
+
+      <rect x="198" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="277" y="440" font-size="11.6" font-weight="700" fill="#0f766e">2 · Match route</text>
+      <text x="277" y="458" fill="#2f4f47">host, path, method, header</text>
+      <text x="277" y="476" fill="#6b7391">most specific wins</text>
+
+      <rect x="370" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="449" y="440" font-size="11.6" font-weight="700" fill="#be123c">3 · Authenticate</text>
+      <text x="449" y="458" fill="#7f2b2b">verify token / key / mTLS</text>
+      <text x="449" y="476" fill="#be123c">before anything expensive</text>
+
+      <rect x="542" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#be123c" stroke-width="2"/>
+      <text x="621" y="440" font-size="11.6" font-weight="700" fill="#be123c">4 · Coarse authorise</text>
+      <text x="621" y="458" fill="#7f2b2b">scope allows this route?</text>
+      <text x="621" y="476" fill="#be123c">not the final check</text>
+
+      <rect x="714" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="2"/>
+      <text x="793" y="440" font-size="11.6" font-weight="700" fill="#b45309">5 · Rate limit</text>
+      <text x="793" y="458" fill="#7a3d06">per key, user, tenant, route</text>
+      <text x="793" y="476" fill="#b45309">after identity is known</text>
+
+      <rect x="886" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="965" y="440" font-size="11.6" font-weight="700" fill="#0f766e">6 · Validate</text>
+      <text x="965" y="458" fill="#2f4f47">schema, size, content type</text>
+      <text x="965" y="476" fill="#6b7391">reject malformed early</text>
+
+      <rect x="1058" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1137" y="440" font-size="11.6" font-weight="700" fill="#0f766e">7 · Transform</text>
+      <text x="1137" y="458" fill="#2f4f47">headers, path rewrite</text>
+      <text x="1137" y="476" fill="#6b7391">protocol translation</text>
+
+      <rect x="1230" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1309" y="440" font-size="11.6" font-weight="700" fill="#0f766e">8 · Cache lookup</text>
+      <text x="1309" y="458" fill="#2f4f47">on the key, if cacheable</text>
+      <text x="1309" y="476" fill="#6b7391">hit ⇒ return now</text>
+
+      <rect x="1402" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1481" y="440" font-size="11.6" font-weight="700" fill="#0f766e">9 · Select upstream</text>
+      <text x="1481" y="458" fill="#2f4f47">discovery, load balance</text>
+      <text x="1481" y="476" fill="#6b7391">skip unhealthy hosts</text>
+
+      <rect x="1574" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1653" y="440" font-size="11.6" font-weight="700" fill="#0f766e">10 · Proxy</text>
+      <text x="1653" y="458" fill="#2f4f47">timeout, retry, breaker</text>
+      <text x="1653" y="476" fill="#6b7391">stream where possible</text>
+
+      <rect x="1746" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1825" y="440" font-size="11.6" font-weight="700" fill="#0f766e">11 · Response</text>
+      <text x="1825" y="458" fill="#2f4f47">transform, compress</text>
+      <text x="1825" y="476" fill="#6b7391">CORS, cache store</text>
+
+      <rect x="1918" y="420" width="158" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1997" y="440" font-size="11.6" font-weight="700" fill="#0f766e">12 · Emit</text>
+      <text x="1997" y="458" fill="#2f4f47">access log, metrics, span</text>
+      <text x="1997" y="476" fill="#6b7391">correlation id throughout</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M184,458 L192,458"/><path d="M356,458 L364,458"/><path d="M528,458 L536,458"/><path d="M700,458 L708,458"/>
+      <path d="M872,458 L880,458"/><path d="M1044,458 L1052,458"/><path d="M1216,458 L1224,458"/><path d="M1388,458 L1396,458"/>
+      <path d="M1560,458 L1568,458"/><path d="M1732,458 L1740,458"/><path d="M1904,458 L1912,458"/>
+    </g>
+
+    <rect x="2090" y="420" width="1206" height="76" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="2106" y="440" font-size="12.4" font-weight="700" fill="#b91c1c">WHY THIS ORDER — three placements that are commonly wrong</text>
+    <text x="2106" y="460" font-size="11.2" fill="#7f2b2b"><tspan font-weight="700">Authenticate before rate limiting</tspan> — otherwise you can only limit by IP, which is useless behind NAT and trivially evaded. Limiting by identity requires knowing the identity first.</text>
+    <text x="2106" y="480" font-size="11.2" fill="#7f2b2b"><tspan font-weight="700">Validate before transforming</tspan>, and <tspan font-weight="700">reject malformed input before proxying</tspan> — every stage after this point costs upstream capacity, so cheap rejections belong early.</text>
+
+    <rect x="26" y="508" width="3270" height="102" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="42" y="528" font-size="13" font-weight="700" fill="#0f766e">WHAT THE GATEWAY PASSES DOWNSTREAM — the contract with services behind it</text>
+    <text x="42" y="550" font-size="11.6" fill="#42507a">A verified identity (subject, scopes, tenant) in a signed header or an exchanged token · the correlation and request ids · the original client IP · the route and API version matched · consumer identity for metering.</text>
+    <text x="42" y="570" font-size="11.6" fill="#42507a">And it must <tspan font-weight="700">strip</tspan> any of those headers arriving from the client. A client that can set its own identity header has found an authentication bypass, and this is a real and recurring vulnerability class.</text>
+    <text x="42" y="594" font-size="11.6" font-weight="700" fill="#be123c">Services must still verify what they receive. A gateway is a filter, not a guarantee: anything reachable by another route, an internal caller, or a misconfiguration arrives without ever passing through it.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 3. ROUTING ============ -->
+<div class="panel c2">
+  <div class="phead">3 &nbsp;· &nbsp;ROUTING <span class="sub">matching, rewriting, shifting</span></div>
+  <div class="pbody">
+    <div class="h3">What a route can match on</div>
+    <table>
+      <tbody>
+        <tr><td style="width:112px"><b>Host</b></td><td><span class="mono">api.example.com</span> vs <span class="mono">partner.example.com</span> — often the first split</td></tr>
+        <tr><td><b>Path</b></td><td>Prefix, exact, or regex. Prefer prefix and exact; regex routes are slow to evaluate and hard to reason about</td></tr>
+        <tr><td><b>Method</b></td><td>Lets read and write traffic take different policies</td></tr>
+        <tr><td><b>Header</b></td><td>API version, tenant, client type, feature flag</td></tr>
+        <tr><td><b>Weight</b></td><td>Percentage splits for canary and blue/green</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Precedence must be explicit.</b> When two routes could match, the winner should be
+      decided by a documented rule — usually most-specific-wins — not by declaration order in a file that several teams
+      edit. Ambiguous precedence produces routing that changes when an unrelated team adds a rule.</div>
+    <div class="h3">Rewriting, carefully</div>
+    <div class="code"><span class="c"># external contract stays stable…</span>
+/v1/orders/{id}   →  order-service:8080/orders/{id}
+
+<span class="c"># …while the internal shape changes freely</span>
+/v1/orders/{id}   →  order-service-v2:8080/api/orders/{id}</div>
+    <div class="callout g"><b>This indirection is one of the gateway's most valuable properties.</b> Services can be
+      renamed, split, merged or reimplemented without any client changing a URL — which is what makes a strangler migration
+      practical.</div>
+    <div class="h3">Kubernetes: Ingress and Gateway API</div>
+    <ul>
+      <li><b>Ingress</b> — the original resource. Simple, and its limitations pushed almost every capability into vendor-specific annotations</li>
+      <li><b>Gateway API</b> — the successor, with a <b>role-oriented</b> split: cluster admins own the <span class="mono">GatewayClass</span>, platform teams own <span class="mono">Gateway</span>, application teams own <span class="mono">HTTPRoute</span>. <b>GatewayClass, Gateway and HTTPRoute are GA</b>; some route types remain experimental</li>
+      <li><b>They coexist.</b> Most controllers support both, so migration is incremental — new services on HTTPRoute, existing Ingress untouched</li>
+    </ul>
+    <div class="callout b"><b>The role separation is the real advance.</b> It is what lets application teams
+      self-serve routes without being able to change TLS, listeners or which routes are permitted — the exact bottleneck
+      that makes a shared gateway painful.</div>
+  </div>
+</div>
+
+<!-- ============ 4. AUTH ============ -->
+<div class="panel c5 span2">
+  <div class="phead">4 &nbsp;· &nbsp;AUTHENTICATION &amp; AUTHORISATION
+    <span class="sub">what the gateway can decide, what it must not, and the failure that turns a gateway into a vulnerability</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Mechanisms, and where each fits</div>
+      <table>
+        <thead><tr><th style="width:112px">Mechanism</th><th>Character</th></tr></thead>
+        <tbody>
+          <tr><td><b>API key</b></td><td>Identifies an application, not a user. Simple, and it is a long-lived shared secret — fine for metering, weak as authentication</td></tr>
+          <tr><td><b>JWT validation</b></td><td>Verify the signature locally against the issuer's public keys. <b>Stateless and fast</b> — no network call per request</td></tr>
+          <tr><td><b>Token introspection</b></td><td>Ask the authorisation server whether the token is still valid. <b>Accurate, and it adds a synchronous dependency to every request</b></td></tr>
+          <tr><td><b>OAuth 2.x / OIDC</b></td><td>The standard for delegated access. The gateway is the resource server</td></tr>
+          <tr><td><b>mTLS</b></td><td>Certificate-based. Strong, and it suits partner and server-to-server traffic</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The stateless-versus-revocable trade-off.</b> Local JWT validation is fast but a token
+        stays valid until it expires — you cannot revoke it. Introspection is revocable but puts the authorisation server
+        in the path of every call. The usual resolution is <b>short-lived tokens</b> plus introspection or a revocation
+        list only for high-value operations.</div>
+      <div class="h3">Validating a JWT properly</div>
+      <ul>
+        <li><b>Pin the accepted algorithms.</b> Never trust the <span class="mono">alg</span> header — accepting <span class="mono">none</span>, or letting an attacker downgrade RS256 to HS256, is a classic and still-seen bypass</li>
+        <li><b>Verify issuer and audience</b>, not only the signature. A valid token for a different service is still a valid token</li>
+        <li><b>Cache the JWKS, and handle key rotation</b> by <span class="mono">kid</span>. Refetch on an unknown key id, with a rate limit so rotation cannot become a stampede against the identity provider</li>
+        <li><b>Allow small clock skew</b> on expiry, and no more</li>
+        <li><b>Check scopes</b> against the route</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The single most important rule on this panel.</b> The gateway
+        performs <b>coarse</b> authorisation — is this token valid, and is this route permitted for its scopes. It cannot
+        perform <b>fine-grained</b> authorisation, because &ldquo;may this user read <i>this</i> order?&rdquo; requires the
+        order service's own data. Any design where the gateway is the only authorisation point is one internal call, one
+        misconfigured route, or one alternative ingress away from full exposure.</div>
+      <div class="h3">Defence in depth, concretely</div>
+      <table>
+        <thead><tr><th style="width:118px">Layer</th><th>Decides</th></tr></thead>
+        <tbody>
+          <tr><td><b>Gateway</b></td><td>Is the token genuine, unexpired, and does its scope cover this route at all?</td></tr>
+          <tr><td><b>Service</b></td><td>Does <i>this</i> subject own or have rights to <i>this</i> resource? Re-derived from the token, never from a request parameter</td></tr>
+          <tr><td><b>Data layer</b></td><td>Tenant filter on every query, and a test proving cross-tenant access fails</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Identity propagation.</b> The gateway forwards the verified identity in a signed
+        header or, better, exchanges the client token for a <b>downscoped internal token</b> bound to a single audience.
+        That way a compromised internal service holds a credential valid for one hop, not for everything.</div>
+      <div class="h3">The header-stripping requirement</div>
+      <div class="code"><span class="c"># the gateway MUST remove these if a client sent them</span>
+X-User-Id: <span class="r">1  ← attacker-supplied</span>
+X-Tenant-Id: <span class="r">acme</span>
+X-Internal-Auth: <span class="r">true</span>
+
+<span class="c"># then set them itself, from the verified token</span>
+X-User-Id: <span class="v">u_8813</span>          <span class="c">(derived, trusted)</span>
+X-Correlation-Id: <span class="v">req_…</span></div>
+      <div class="callout r"><b>Forgetting to strip is a full authentication bypass</b>, and it is a recurring
+        vulnerability class rather than a theoretical one. Deny-list is the wrong approach here — build the forwarded header
+        set explicitly from the verified context, and drop everything else in that namespace.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 5. RATE LIMITING ============ -->
+<div class="panel c4 span2">
+  <div class="phead">5 &nbsp;· &nbsp;RATE LIMITING, QUOTAS AND LOAD SHEDDING
+    <span class="sub">the algorithms, what each actually guarantees, and the distributed-counter decision nobody documents</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The algorithms</div>
+      <table>
+        <thead><tr><th style="width:132px">Algorithm</th><th>Behaviour · trade-off</th></tr></thead>
+        <tbody>
+          <tr><td><b>Fixed window</b></td><td>Count per calendar window. Trivial and memory-light. <b>Allows a double burst at the boundary</b> — the tail of one window plus the head of the next</td></tr>
+          <tr><td><b>Sliding window log</b></td><td>Store a timestamp per request. Exact, and the memory cost scales with traffic</td></tr>
+          <tr><td><b>Sliding window counter</b></td><td>Weighted blend of the previous and current window. Approximate, cheap, no boundary burst. <b>The usual practical choice</b></td></tr>
+          <tr><td><b>Token bucket</b></td><td>Tokens refill at a steady rate; a request costs one. <b>Permits bursts up to the bucket size</b> — usually what you want for a public API</td></tr>
+          <tr><td><b>Leaky bucket</b></td><td>Requests drain at a fixed rate. <b>Smooths output</b> and protects a fragile upstream, at the cost of queueing latency</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Choose by what you are protecting.</b> Token bucket when clients legitimately burst
+        and the upstream can absorb it. Leaky bucket when the upstream cannot — a legacy system with a fixed connection
+        pool, for instance. Sliding window counter when you simply want a fair, cheap, general-purpose limit.</div>
+      <div class="h3">Dimensions to limit on</div>
+      <ul>
+        <li><b>Per API key or client</b> — the commercial dimension, and what quotas are billed against</li>
+        <li><b>Per user</b> — fairness within one client application</li>
+        <li><b>Per tenant</b> — stops one customer starving the others</li>
+        <li><b>Per route</b> — an expensive endpoint deserves a tighter limit than a cheap one</li>
+        <li><b>Per IP</b> — only useful before authentication, and weak behind NAT or a proxy</li>
+      </ul>
+      <div class="callout g"><b>Rate limit and quota are different things.</b> A <b>rate limit</b> is short-term
+        protection — requests per second. A <b>quota</b> is a commercial allowance — calls per month. They are enforced
+        differently, breached differently, and should return different errors.</div>
+    </div>
+    <div>
+      <div class="h3">Distributed counting — the part usually skipped</div>
+      <div style="font-size:13px;line-height:1.44">With many gateway replicas, &ldquo;100 requests per second&rdquo;
+        needs shared state. Three approaches, and the choice has real consequences:</div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:112px">Approach</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr><td><b>Local only</b></td><td>No coordination, no latency. Actual limit is <i>n</i> × the configured value, and it moves as replicas scale</td></tr>
+          <tr><td><b>Central store</b></td><td>Accurate. Adds a network call per request and makes the store a hard dependency of every API call</td></tr>
+          <tr><td><b>Local + async sync</b></td><td>Approximate but close, with no per-request latency. <b>What most production gateways actually do</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The decision nobody writes down: fail open or fail closed?</b> If the counter store
+        is unreachable, do you allow traffic through unlimited, or reject everything? <b>Fail open</b> risks overwhelming
+        upstreams during exactly the incident that took the store down. <b>Fail closed</b> turns a rate-limiter outage into
+        a total API outage. Most choose fail open with a conservative local fallback limit — but it must be a decision,
+        made in advance and written down.</div>
+      <div class="h3">Telling the client what happened</div>
+      <div class="code">HTTP/1.1 <span class="r">429 Too Many Requests</span>
+<span class="k">Retry-After:</span> 12
+<span class="k">RateLimit-Limit:</span> 1000
+<span class="k">RateLimit-Remaining:</span> 0
+<span class="k">RateLimit-Reset:</span> 12
+{ <span class="k">"code"</span>: <span class="v">"RATE_LIMIT_EXCEEDED"</span>,
+  <span class="k">"message"</span>: <span class="v">"1000 req/min exceeded for this key"</span>,
+  <span class="k">"requestId"</span>: <span class="v">"req_8f3c"</span> }</div>
+      <div class="callout"><b>Return the headers on successful responses too</b>, not only on rejection. A
+        well-behaved client can then slow down <i>before</i> being limited — which is far better for both sides than
+        discovering the limit by hitting it.</div>
+      <div class="callout b"><b>Load shedding is a different tool.</b> Rate limiting enforces an agreed contract per
+        client; load shedding protects the system when it is genuinely overloaded, by rejecting the lowest-value traffic
+        regardless of whose limit it is within. You need both, and they should be tuned independently.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. CACHING ============ -->
+<div class="panel c8">
+  <div class="phead">6 &nbsp;· &nbsp;CACHING &amp; PERFORMANCE <span class="sub">where the milliseconds are</span></div>
+  <div class="pbody">
+    <div class="h3">What is safely cacheable</div>
+    <table>
+      <tbody>
+        <tr><td style="width:112px"><b>Good</b></td><td>Public reference data, catalogues, configuration, anything identical for all callers</td></tr>
+        <tr><td><b>Careful</b></td><td>Per-user responses — only with the identity in the cache key, and a short TTL</td></tr>
+        <tr><td><b>Never</b></td><td>Anything that mutates state, and anything whose authorisation could change between requests</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The cache-key mistake that leaks data.</b> Omit the identity or tenant from the key and
+      one user's response is served to another. It is the highest-severity bug a gateway can have, it is invisible in
+      testing with a single account, and it is found by customers. Include every dimension the response varies on — and
+      test with two accounts.</div>
+    <div class="h3">Connection handling</div>
+    <ul>
+      <li><b>Keep-alive to upstreams</b> — a fresh TCP and TLS handshake per request is pure added latency</li>
+      <li><b>Bounded connection pools per upstream</b>, so one slow service cannot consume every connection</li>
+      <li><b>HTTP/2 to backends</b> for multiplexing; be aware that one connection then carries many streams and a stall affects all of them</li>
+      <li><b>Stream rather than buffer</b> large payloads — buffering a 100 MB upload in the gateway is memory you did not budget for</li>
+    </ul>
+    <div class="h3">Watch these</div>
+    <ul>
+      <li><b>Gateway-added latency</b>, measured separately from upstream time — the only way to know whose problem it is</li>
+      <li><b>Any synchronous external call</b> in the request path; each one adds its p99 to yours</li>
+      <li><b>Regex-heavy route tables</b>, evaluated per request</li>
+      <li><b>Response compression cost</b> — sometimes it is cheaper not to</li>
+    </ul>
+    <div class="callout g"><b>The realistic target</b> is single-digit milliseconds added at p50 and a tight p99.
+      If the gateway is contributing more than that, look for a network call in the filter chain before looking at CPU.</div>
+  </div>
+</div>
+
+<!-- ============ 7. RESILIENCE ============ -->
+<div class="panel c6">
+  <div class="phead">7 &nbsp;· &nbsp;RESILIENCE <span class="sub">and how it backfires</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:118px">Control</th><th>Purpose · setting</th></tr></thead>
+      <tbody>
+        <tr><td><b>Timeout</b></td><td><b>Per route</b>, not one global value. A report endpoint and a health check have nothing in common</td></tr>
+        <tr><td><b>Retry</b></td><td>Idempotent methods only, with backoff and jitter. Two attempts, not five</td></tr>
+        <tr><td><b>Circuit breaker</b></td><td>Stop calling an upstream that is already failing; fail fast instead</td></tr>
+        <tr><td><b>Outlier detection</b></td><td>Eject a single unhealthy instance from the pool rather than failing the whole route</td></tr>
+        <tr><td><b>Bulkhead</b></td><td>Cap concurrency per upstream so one cannot exhaust the gateway's capacity</td></tr>
+        <tr><td><b>Load shedding</b></td><td>Reject early under overload, preserving capacity for what matters most</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Retry amplification is the classic gateway-caused outage.</b> The client retries three
+      times, the gateway retries three times, and the service mesh retries three times — <b>27 requests</b> arrive at a
+      service that is already struggling, and the retries themselves keep it down. Decide which single layer owns retry,
+      and disable it explicitly everywhere else.</div>
+    <div class="callout"><b>A retry budget is better than a retry count.</b> Cap retries at a small percentage of
+      total traffic, so retries cannot exceed a fraction of load no matter how many requests are failing. This is what
+      stops a partial outage becoming a full one.</div>
+    <div class="h3">Health checking</div>
+    <ul>
+      <li><b>Active</b> — the gateway probes upstreams on a schedule</li>
+      <li><b>Passive</b> — it observes real responses and ejects hosts that fail. Cheaper and faster to react</li>
+      <li><b>Do not fail a readiness check because a downstream is down</b>, or one dependency's outage removes every gateway replica simultaneously</li>
+    </ul>
+    <div class="callout g"><b>Degrade rather than fail where the domain allows.</b> A stale cached response, an
+      empty list, or a partial payload is usually better than a 502 — but this must be an explicit per-route decision, not
+      an accident of configuration.</div>
+  </div>
+</div>
+
+<!-- ============ 8. OBSERVABILITY ============ -->
+<div class="panel c7">
+  <div class="phead">8 &nbsp;· &nbsp;OBSERVABILITY <span class="sub">the best vantage point you have</span></div>
+  <div class="pbody">
+    <div style="font-size:13px;line-height:1.44">Every external request passes through the gateway, which makes it the
+      one place that sees <b>all</b> API traffic. It is the cheapest and most complete telemetry in the system.</div>
+    <div class="h3">What to emit</div>
+    <ul>
+      <li><b>Access log</b> — route, status, latency, upstream, consumer, bytes, and the request id</li>
+      <li><b>RED metrics per route</b> — rate, errors, duration, at percentiles</li>
+      <li><b>A span per request</b>, with the trace context propagated to the upstream</li>
+      <li><b>Correlation id</b> — accept the client's if present, generate one if not, and always return it in the response</li>
+    </ul>
+    <div class="callout r"><b>The mistake that quietly ruins a metrics bill: cardinality.</b> Labelling metrics with
+      the <b>raw path</b> means <span class="mono">/orders/1</span>, <span class="mono">/orders/2</span> and a million more
+      become a million time series. Always label with the <b>route template</b> —
+      <span class="mono">/orders/{id}</span> — never the resolved path. The same applies to user id, request id and any
+      unbounded value.</div>
+    <div class="h3">What to alert on</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>5xx rate per route</b></td><td>The primary signal that something broke</td></tr>
+        <tr><td><b>4xx spike</b></td><td>Usually a client deploy, a contract change or an attack</td></tr>
+        <tr><td><b>401/403 spike</b></td><td>Key rotation gone wrong, or credential stuffing</td></tr>
+        <tr><td><b>429 rate</b></td><td>A limit set too tight, or genuine abuse — the two look identical without context</td></tr>
+        <tr><td><b>Gateway-added latency</b></td><td>Isolates gateway problems from upstream ones</td></tr>
+        <tr><td><b>Config version skew</b></td><td>Replicas running different configurations is a real and confusing failure</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Sample traces, log every request.</b> Full tracing at high volume is expensive and
+      rarely proportionate; access logs are cheap and complete. Sample traces at a few percent, and raise the rate for
+      errors and slow requests where the detail actually helps.</div>
+  </div>
+</div>
+
+<!-- ============ 9. CONTRACTS ============ -->
+<div class="panel c3">
+  <div class="phead">9 &nbsp;· &nbsp;VERSIONING &amp; CONTRACTS <span class="sub">the promise to consumers</span></div>
+  <div class="pbody">
+    <div class="h3">Where the version goes</div>
+    <table>
+      <thead><tr><th style="width:112px">Style</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><b>Path</b><br><span style="color:#6b7391"><span class="mono">/v1/orders</span></span></td><td>Explicit, cacheable, obvious in logs and dashboards. <b>The pragmatic default</b></td></tr>
+        <tr><td><b>Header</b></td><td>Keeps URLs clean; harder to debug, and easy to omit by accident</td></tr>
+        <tr><td><b>Content negotiation</b></td><td>Formally correct, and unfamiliar to most consumers</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Version the contract, not the implementation.</b> A new internal service version does not
+      need a new API version — the gateway's rewriting is exactly what lets those change independently. Bump the API
+      version only when the <i>consumer-visible</i> contract breaks.</div>
+    <div class="h3">Breaking versus non-breaking</div>
+    <ul>
+      <li><b>Safe</b> — adding an optional field, adding an endpoint, adding an enum value <i>if</i> clients tolerate unknowns</li>
+      <li><b>Breaking</b> — removing or renaming a field, tightening validation, changing a type, changing a status code, altering pagination</li>
+      <li><b>Silently breaking</b> — changing default behaviour, or the meaning of an existing field. The worst kind, because nothing errors</li>
+    </ul>
+    <div class="h3">Deprecating properly</div>
+    <ul>
+      <li><b>Announce with a date</b>, and return <span class="mono">Deprecation</span> and <span class="mono">Sunset</span> headers so it is discoverable from the response itself</li>
+      <li><b>Know who is calling</b> — per-consumer metrics per version is what makes a retirement decision possible</li>
+      <li><b>Contact the remaining callers</b> individually; a changelog nobody reads is not a migration plan</li>
+      <li><b>Brownout before switch-off</b> — return errors for short windows to surface the dependency while it is still recoverable</li>
+    </ul>
+    <div class="callout g"><b>Validate against the schema at the edge.</b> Rejecting malformed requests at the
+      gateway means every service behind it can assume well-formed input — and OpenAPI then becomes an enforced contract
+      rather than documentation that drifts.</div>
+  </div>
+</div>
+
+<!-- ============ 10. OPERATIONS ============ -->
+<div class="panel c1 span3">
+  <div class="phead">10 &nbsp;· &nbsp;OPERATING IT — OWNERSHIP, BLAST RADIUS AND THE ORGANISATIONAL FAILURE
+    <span class="sub">the part that decides whether a gateway accelerates delivery or becomes the thing everyone waits on</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The organisational failure mode</div>
+      <div class="callout r" style="margin-top:0"><b>A shared gateway with a central owning team becomes a
+        bottleneck, and it happens gradually enough that nobody notices until it is severe.</b> Every new route, every
+        limit change and every header tweak becomes a ticket to one team, who are also on call for it. Delivery for forty
+        teams throttles to the throughput of one.</div>
+      <div class="h3">What fixes it</div>
+      <ul>
+        <li><b>Self-service within guard rails.</b> Teams own their own routes; the platform team owns the listeners, TLS, defaults and what is permitted</li>
+        <li><b>Policy as code, reviewed in the owning team's repository</b> — not a form request into a queue</li>
+        <li><b>Validation in CI</b> that catches conflicts, unreachable rules and missing upstreams before merge</li>
+        <li><b>Sensible defaults</b> so the common case needs no decision — a route with no explicit timeout still gets one</li>
+      </ul>
+      <div class="callout b"><b>This is precisely what the role-oriented split in Kubernetes Gateway API encodes</b> —
+        cluster admin, platform team and application team as distinct resources with distinct owners. The idea works
+        outside Kubernetes too, and is worth adopting whatever the product.</div>
+    </div>
+    <div>
+      <div class="h3">Blast radius — the thing to design against</div>
+      <table>
+        <thead><tr><th style="width:150px">Change</th><th>Reaches</th></tr></thead>
+        <tbody>
+          <tr><td>One service's route</td><td>That service. Acceptable</td></tr>
+          <tr><td>A shared plugin or filter</td><td><b>Every route</b> using it</td></tr>
+          <tr><td>Global configuration</td><td><b>Every API, simultaneously</b></td></tr>
+          <tr><td>A gateway version upgrade</td><td>Everything, including behaviour you did not know you relied on</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Because of that last row, the gateway itself must be deployed like a risky service:</b>
+        canary a small percentage of traffic, watch error rate and latency, and roll back automatically. Upgrading a gateway
+        in place across all replicas is one of the more reliable ways to cause a total outage.</div>
+      <div class="h3">Shared or dedicated?</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>One shared gateway</b></td><td>Consistent policy, one thing to operate, one place to look. And one blast radius, one bottleneck, one upgrade that affects everyone</td></tr>
+          <tr><td><b>Per-domain gateways</b></td><td>Isolation and independent change. More to run, and policy drifts between them unless the configuration is generated from something common</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>A common middle path</b> is a shared gateway product and configuration standard,
+        deployed as separate instances per domain or criticality tier — so public, partner and internal traffic cannot take
+        each other down while the policy stays uniform.</div>
+    </div>
+    <div>
+      <div class="h3">Multi-tenancy and isolation</div>
+      <ul>
+        <li><b>Separate listeners</b> for public, partner and internal traffic; different policy, different exposure, different limits</li>
+        <li><b>Per-tenant rate limits</b>, so one customer's burst cannot degrade another's service</li>
+        <li><b>Per-upstream connection pools</b>, so a slow backend cannot consume gateway capacity that other routes need</li>
+        <li><b>Consider dedicated capacity</b> for the highest-value traffic — a checkout path should not queue behind a partner's bulk export</li>
+      </ul>
+      <div class="h3">Capacity and scaling</div>
+      <ul>
+        <li><b>Scale on connections and CPU</b>, not request rate alone — long-lived connections and streaming change the shape entirely</li>
+        <li><b>Watch file descriptors and connection limits</b>; they bind before CPU does</li>
+        <li><b>Pre-scale for known events</b>. Autoscaling reacts after the queue has already built</li>
+        <li><b>Load test the gateway separately</b> from the services, or you cannot attribute the limit</li>
+      </ul>
+      <div class="callout r"><b>What breaks first, in order.</b> Connection and file-descriptor limits, then any
+        synchronous external call in the filter chain, then TLS handshake CPU under a connection storm, then the rate-limit
+        store, then raw throughput. Only the last is solved by adding replicas — the rest are configuration and design.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 11. ANTI-PATTERNS ============ -->
+<div class="panel c5 span3">
+  <div class="phead">11 &nbsp;· &nbsp;ANTI-PATTERNS AND PRODUCTION FAILURES
+    <span class="sub">how a gateway goes from useful to load-bearing in the worst sense</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Design anti-patterns</div>
+      <table>
+        <thead><tr><th style="width:150px">Anti-pattern</th><th>Why it hurts</th></tr></thead>
+        <tbody>
+          <tr><td><b>Business logic in the gateway</b></td><td>The one to refuse first. Logic that belongs to a service ends up owned by no team, tested by nobody, and deployed on someone else's schedule</td></tr>
+          <tr><td><b>Heavy aggregation</b></td><td>One request fanning out to eight services makes the gateway a distributed monolith with the worst availability in the system. If a client needs a composed view, that is a <b>BFF</b> owned by the client team</td></tr>
+          <tr><td><b>Sole authorisation point</b></td><td>Any path that bypasses the gateway — an internal caller, a second ingress, a misconfiguration — is unauthenticated access</td></tr>
+          <tr><td><b>Doing the mesh's job</b></td><td>Routing east-west traffic through the gateway adds a hop and a shared failure domain for no benefit</td></tr>
+          <tr><td><b>Stateful gateway</b></td><td>Session affinity or local accumulation prevents free scaling and restarts, which is the property that made it safe</td></tr>
+          <tr><td><b>Live editing</b></td><td>An admin UI that applies changes instantly guarantees an unreviewed change reaches production</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Production failures</div>
+      <table>
+        <thead><tr><th style="width:140px">Failure</th><th>What you see &amp; the fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Bad config push</b></td><td>Every API fails at once. Validate in CI, roll out progressively, roll back automatically</td></tr>
+          <tr><td><b>JWKS fetch failure</b></td><td>All authentication fails after a key rotation. Cache keys, refresh proactively, tolerate a stale cache briefly</td></tr>
+          <tr><td><b>Rate-limit store down</b></td><td>Either unlimited traffic or none. Decide fail-open versus fail-closed in advance, with a local fallback</td></tr>
+          <tr><td><b>Retry amplification</b></td><td>A struggling service is kept down by retries. Retry budget, and one owning layer</td></tr>
+          <tr><td><b>Connection exhaustion</b></td><td>New requests refused while CPU is idle. Raise limits, bound pools per upstream, tune keep-alive</td></tr>
+          <tr><td><b>Cardinality explosion</b></td><td>Metrics cost and query time both spike. Label with route templates, never raw paths</td></tr>
+          <tr><td><b>Cache key omission</b></td><td>One user receives another's data. Include identity in the key; test with two accounts</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">The questions to be ready for</div>
+      <table>
+        <tbody>
+          <tr><td style="width:14px">·</td><td><b>&ldquo;Is the gateway a single point of failure?&rdquo;</b> Structurally yes, which is why it is stateless, multi-replica, multi-zone, fronted by a load balancer, and holds last-known-good config so a control-plane outage does not stop traffic</td></tr>
+          <tr><td>·</td><td><b>&ldquo;Why not put auth in every service?&rdquo;</b> You still do — the gateway does coarse validation for consistency and early rejection; services do fine-grained authorisation because only they hold the data to decide</td></tr>
+          <tr><td>·</td><td><b>&ldquo;Gateway or service mesh?&rdquo;</b> Different traffic. North-south versus east-west. Large systems run both</td></tr>
+          <tr><td>·</td><td><b>&ldquo;Would you build one?&rdquo;</b> Almost never. The proxy is the easy part; the control plane, hot reload, observability and edge cases are years of work that mature products have already done</td></tr>
+          <tr><td>·</td><td><b>&ldquo;What would you remove?&rdquo;</b> Aggregation, any business logic, and any synchronous external call in the filter chain</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The summary worth ending on.</b> A gateway is valuable exactly in proportion to how
+        <b>boring</b> it is. Uniform policy, no per-service special cases, no logic that needs testing, and a configuration
+        that teams change themselves. The moment it becomes interesting, it has become a distributed monolith at the front
+        door of the system.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 12. PRODUCTS ============ -->
+<div class="panel c3 span3">
+  <div class="phead">12 &nbsp;· &nbsp;PRODUCT CHOICES — ADVANTAGES, DISADVANTAGES AND WHEN
+    <span class="sub">the differences that matter are the control plane and the operating model, not the feature list</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr>
+        <th style="width:170px">Product</th><th style="width:190px">Character</th><th>Advantages</th>
+        <th style="width:290px">Disadvantages</th><th style="width:300px">Choose it when</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><b>NGINX</b></td><td>Reverse proxy with gateway capability added</td><td>Extremely fast and well understood; tiny footprint; ubiquitous operational knowledge</td><td>Configuration is files and reloads; API-management features need the commercial edition or bolt-ons</td><td>You need a proxy more than a gateway, and want the fewest moving parts</td></tr>
+        <tr><td><b>Envoy</b></td><td>Modern proxy with a dynamic configuration API</td><td>Hot reload without dropping connections; outstanding observability; xDS makes it programmable; the substrate under many other products</td><td>Raw Envoy is low-level. You will build or adopt a control plane, which is the real work</td><td>You are building a platform, or already run Istio or a similar mesh</td></tr>
+        <tr><td><b>Kong</b></td><td>Envoy-era gateway with a plugin ecosystem</td><td>Rich plugins, declarative config, good Kubernetes integration, strong API-management features</td><td>Plugin quality varies; a database-backed mode adds a dependency; the useful features are often commercial</td><td>You want API management out of the box without building a control plane</td></tr>
+        <tr><td><b>Traefik</b></td><td>Configuration discovered from the platform</td><td>Automatic service discovery, automatic certificates, very quick to adopt</td><td>Fewer API-management capabilities; less predictable at the largest scales</td><td>Container-native environments where low friction matters more than depth</td></tr>
+        <tr><td><b>Managed cloud gateway</b></td><td>Fully hosted, provider-integrated</td><td>Nothing to operate, scales itself, integrates with the provider's identity, logging and functions</td><td>Per-request pricing becomes significant at volume; limited extensibility; portability cost; cold-start and payload limits</td><td>Small teams, spiky traffic, or a serverless architecture where it is the natural fit</td></tr>
+        <tr><td><b>Full API management</b><br><span style="color:#6b7391">Apigee, Tyk and similar</span></td><td>Gateway plus portal, monetisation and lifecycle</td><td>Developer portal, key and plan management, analytics, monetisation — the business side of an API programme</td><td>Heavier and more expensive; considerable configuration surface; often more than an internal platform needs</td><td>APIs are a <b>product</b> sold to external consumers, not just an internal boundary</td></tr>
+        <tr><td><b>Gateway API implementation</b><br><span style="color:#6b7391">any conformant controller</span></td><td>Kubernetes-native, role-oriented</td><td>Standard resources across vendors; clean separation of admin, platform and application ownership; portable</td><td>Kubernetes only; some route types still experimental; ecosystem maturity varies by controller</td><td>You are on Kubernetes and want the ownership split enforced by the API itself</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The honest position on building your own.</b> Writing a proxy that forwards a request is a
+      weekend. Writing hot configuration reload, graceful draining, connection pooling, retry budgets, distributed rate
+      limiting, JWKS rotation, TLS management, per-route observability and the operational tooling around all of it is
+      several years — and every one of those is a place to get it subtly wrong in production. Adopt a product, and spend the
+      effort on the configuration and the ownership model instead, which is where the outcomes actually differ.</div>
+  </div>
+</div>
+
+<!-- ============ 13. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">13 &nbsp;· &nbsp;READINESS CHECKLIST <span class="sub">before a gateway sits in front of production traffic</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Data plane is stateless</b>, multi-replica and spread across zones</div>
+      <div>&#9744; <b>Serves last-known-good config</b> when the control plane is unreachable</div>
+      <div>&#9744; <b>No synchronous config read</b> in the request path</div>
+      <div>&#9744; <b>Configuration is version-controlled</b> and reviewed like code</div>
+      <div>&#9744; <b>Config validated in CI</b> — schema, route conflicts, unreachable rules, missing upstreams</div>
+      <div>&#9744; <b>Config rollout is progressive</b>, with automatic rollback</div>
+      <div>&#9744; <b>Gateway upgrades canaried</b>, never applied in place to all replicas</div>
+      <div>&#9744; <b>Route precedence documented</b> and deterministic</div>
+      <div>&#9744; <b>Timeout set per route</b>, derived from measurement</div>
+      <div>&#9744; <b>Retries only on idempotent methods</b>, with backoff and jitter</div>
+      <div>&#9744; <b>One layer owns retry</b>; a retry budget caps amplification</div>
+      <div>&#9744; <b>Circuit breaker and outlier detection</b> configured per upstream</div>
+      <div>&#9744; <b>Connection pools bounded per upstream</b></div>
+      <div>&#9744; <b>Readiness does not fail</b> because a downstream is down</div>
+      <div>&#9744; <b>Connection draining on shutdown</b>, verified under load</div>
+      <div>&#9744; <b>JWT algorithms pinned</b>; <span class="mono">alg</span> header never trusted</div>
+      <div>&#9744; <b>Issuer and audience verified</b>, not only the signature</div>
+      <div>&#9744; <b>JWKS cached with rotation by <span class="mono">kid</span></b>, and refetch rate-limited</div>
+      <div>&#9744; <b>Client-supplied identity headers stripped</b> before forwarding</div>
+      <div>&#9744; <b>Forwarded headers built from verified context</b>, allow-listed not deny-listed</div>
+      <div>&#9744; <b>Services re-authorise</b> — the gateway is not the only check</div>
+      <div>&#9744; <b>Cross-tenant access test exists</b> and passes</div>
+      <div>&#9744; <b>Rate limits per key, user, tenant and route</b></div>
+      <div>&#9744; <b>Fail-open vs fail-closed decided</b> for the limiter store, and documented</div>
+      <div>&#9744; <b>Rate-limit headers returned</b> on success as well as on 429</div>
+      <div>&#9744; <b>Quotas distinguished from rate limits</b>, with different errors</div>
+      <div>&#9744; <b>Load shedding configured</b> independently of rate limiting</div>
+      <div>&#9744; <b>Cache keys include every varying dimension</b>, identity included</div>
+      <div>&#9744; <b>Cache tested with two accounts</b> for cross-user leakage</div>
+      <div>&#9744; <b>Metrics labelled with route templates</b>, never raw paths</div>
+      <div>&#9744; <b>Correlation id accepted, generated, propagated and returned</b></div>
+      <div>&#9744; <b>Gateway-added latency measured</b> separately from upstream</div>
+      <div>&#9744; <b>Alerts on 5xx, 4xx spikes, 401/403 spikes, 429 rate and config skew</b></div>
+      <div>&#9744; <b>Request schema validated at the edge</b> against the published contract</div>
+      <div>&#9744; <b>Deprecation and sunset headers</b> emitted for retiring versions</div>
+      <div>&#9744; <b>Per-consumer, per-version usage tracked</b> so retirement is possible</div>
+      <div>&#9744; <b>Teams self-serve routes</b> within platform-owned guard rails</div>
+      <div>&#9744; <b>Public, partner and internal traffic isolated</b> by listener and policy</div>
+      <div>&#9744; <b>Load tested independently</b> of the services behind it</div>
+      <div>&#9744; <b>No business logic, no heavy aggregation</b>, no per-service special cases</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>take the gateway out of the path for one route and ask
+      what a client could now do that they could not before.</b> If the answer is &ldquo;reach the service without
+      authentication&rdquo;, the security model depends on a proxy rather than on the services — and every internal caller,
+      second ingress and future misconfiguration is already an exposure.</div>
+  </div>
+</div>
+
+</div>
