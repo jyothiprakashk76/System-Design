@@ -34,7 +34,7 @@ expanded card per branch — and an end-to-end operations guide.
 | 🔀 | **[Kafka — Architecture & Configuration](Kafka_Architecture_And_Configuration/)** | Cluster architecture and KRaft, the log storage model, replication and ISR, write and read paths, consumer groups and liveness, the durability model, producer / consumer / topic configuration, configuration profiles per use case, exactly-once, security and sizing, and the misconfigurations that reach production. |
 | ⚡ | **[Circuit Breaker Framework in Java — Resilience4j](Circuit_Breakers_In_Java/)** | The six circuit breaker states, how the open decision is actually made, sliding window sizing, the decorator order (`Retry → CircuitBreaker → RateLimiter → TimeLimiter → Bulkhead`), working synchronous and asynchronous code, fallbacks, metrics, testing, and eighteen production traps. |
 | 🗄️ | **[Columnar Databases](Columnar_Databases/)** | Physical file anatomy (file → row group → column chunk → page), encodings vs compression codecs, data skipping and why sort order decides everything, vectorized execution, partitioning, the write path and table formats, and a worked query end to end. |
-| 🛒 | **[Recommendation Engine — System Design](Recommendation_Engine/)** | Item-to-item collaborative filtering, two-stage candidate generation and ranking, embeddings and ANN, cold start, training data and position bias, evaluation, and failure modes. |
+| 🛒 | **[Recommendation Engine — System Design](Recommendation_Engine/)** | What the engine is and the two ideas behind its shape, then the reference architecture, item-to-item collaborative filtering, embeddings and ANN, cold start, ranking and position bias, evaluation, twelve silent failure modes, build order and a readiness checklist. |
 
 ## AI Engineering
 
@@ -64,6 +64,5 @@ blank images for three posters before the pipeline was changed — see commit `0
   can be checked against the source rather than taken on trust.
 - Figures that are workload-dependent — compression ratios, speed-ups, latency budgets — are
   presented as illustrative with the reasoning shown, not asserted as fact.
-- `Recommendation_Engine` predates the convention of shipping `*.source.html` and has PDF and
-  PNG only. It is therefore the one sheet without an introduction panel — it cannot be edited
-  without rebuilding it.
+- `Recommendation_Engine` was rebuilt as V2 to add its introduction panel and ship `*.source.html`
+  alongside the PDF and PNG, so every sheet in the repository is now editable and re-renderable.

@@ -1,0 +1,764 @@
+<meta charset="utf-8">
+<title>E-Commerce Recommendation Engine — System Design</title>
+<style>
+  @page { size: 3400px 4327px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:4327px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:4297px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 498px 804px 684px 612px 687px 359px 329px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:36px;letter-spacing:.9px;font-weight:700}
+  .title .tag{font-size:16.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.35}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:22px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:14px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:13.4px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.8px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14.4px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:13.4px;line-height:1.45} li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.8px;line-height:1.47;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:13px;
+           line-height:1.44;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:13.2px;line-height:1.46}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>E-COMMERCE RECOMMENDATION ENGINE — SYSTEM DESIGN<span class="v">V2</span></h1>
+  <div class="tag">&ldquo;Customers viewing this also viewed&rdquo; — item-to-item at catalogue scale<br>
+    <span style="font-size:14.5px;color:#6d80b6">Two-stage retrieval &amp; ranking · sub-200 ms · cold start · feedback loops · evaluation</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A RECOMMENDATION ENGINE IS, AND WHY IT IS BUILT THIS WAY
+    <span class="sub">start here — the problem, the vocabulary, and the two ideas that shape every design decision on this sheet</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The problem</div>
+      <div style="font-size:13.6px;line-height:1.48">A customer is looking at one product. You have a catalogue of hundreds
+        of thousands. You have <b>about 100 milliseconds</b> to choose eight items to show alongside it, and the customer will
+        judge the shop by whether they make sense.</div>
+      <div class="callout b"><b>Stated precisely:</b> given an anchor item P — and whatever else you know about this
+        session — rank the entire catalogue by how likely each item is to be useful next, and return the top handful. Doing
+        that literally is impossible in the time available, which is why the architecture looks the way it does.</div>
+      <div class="h3">Why it is worth building</div>
+      <ul>
+        <li><b>Discovery.</b> Customers reach one product from search or an ad; recommendations are how they find the rest of the catalogue.</li>
+        <li><b>Basket size.</b> Complements — the lens for the camera — raise order value directly.</li>
+        <li><b>The long tail.</b> Without recommendations, demand concentrates on whatever is already popular, and most of the catalogue is never seen.</li>
+        <li><b>It compounds.</b> Every impression and click is training data for the next model, provided you logged it.</li>
+      </ul>
+      <div class="h3">The vocabulary used throughout</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Anchor item</b></td><td>The product being viewed — written <span class="mono">P</span> on this sheet</td></tr>
+          <tr><td><b>Candidate</b></td><td>An item retrieved as a possible recommendation</td></tr>
+          <tr><td><b>Impression</b></td><td>A record that an item was <i>shown</i>, at a position. The basis of all training data</td></tr>
+          <tr><td><b>Substitute</b></td><td>An alternative to P — another camera</td></tr>
+          <tr><td><b>Complement</b></td><td>Something that goes with P — a lens, a bag</td></tr>
+          <tr><td><b>Coverage</b></td><td>What share of the catalogue is ever recommended to anyone</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Idea one — two stages, not one</div>
+      <div style="font-size:13.6px;line-height:1.48">You cannot score a whole catalogue per request. So the work is split
+        into a cheap wide pass and an expensive narrow one.</div>
+      <table style="margin-top:8px">
+        <thead><tr><th style="width:150px">Stage</th><th>Job</th></tr></thead>
+        <tbody>
+          <tr><td><b>Candidate generation</b><br><span style="color:#6b7391">millions → a few hundred</span></td><td>Cheap, recall-oriented, several independent sources in parallel. Its only job is to <b>not miss</b> the good items.</td></tr>
+          <tr><td><b>Ranking</b><br><span style="color:#6b7391">a few hundred → tens</span></td><td>Expensive per item, precision-oriented. A learned model scores what survived, using far richer features.</td></tr>
+          <tr><td><b>Policy</b><br><span style="color:#6b7391">tens → the eight shown</span></td><td>Deterministic rules — stock, exclusions, diversity. <b>Never a model.</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Why the split is not optional.</b> Ranking cost scales with candidate count, so stage 1
+        must cut aggressively. But anything stage 1 misses can never be recovered — no ranker can promote an item it was
+        never given. That asymmetry is why recall is measured separately from ranking quality.</div>
+      <div class="h3">Idea two — offline builds, online reads</div>
+      <div style="font-size:13.6px;line-height:1.48">Everything expensive — building the co-occurrence matrix, training
+        embeddings, fitting the ranker — happens <b>offline</b> and writes into stores. The request path only reads.</div>
+      <div class="callout r"><b>The consequence to accept.</b> Recommendations are only as fresh as the last pipeline
+        run. A product launched an hour ago is invisible to co-occurrence until it rebuilds — which is exactly why the
+        content-based and streaming-trending sources exist alongside it.</div>
+    </div>
+    <div>
+      <div class="h3">The approaches, and when each applies</div>
+      <table>
+        <thead><tr><th style="width:150px">Approach</th><th>How it decides</th></tr></thead>
+        <tbody>
+          <tr><td><b>Item-to-item CF</b><br><span style="color:#6b7391">the workhorse</span></td><td>Items that appear together in sessions or orders are related. No model needed — just counting, normalised. Handles most of the value.</td></tr>
+          <tr><td><b>Content-based</b></td><td>Items with similar text, attributes or images are related. Works on day one with <b>zero interactions</b>, which is why it carries cold start.</td></tr>
+          <tr><td><b>Embeddings + ANN</b></td><td>Learned vectors place items in a space where nearby means related; approximate search retrieves neighbours in milliseconds.</td></tr>
+          <tr><td><b>Learned ranker</b></td><td>A model scoring candidates on rich features. Adds precision — but only over candidates something else retrieved.</td></tr>
+          <tr><td><b>Popularity</b></td><td>The fallback that always returns. Unglamorous and essential.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Start with the simplest thing that works.</b> Normalised item-to-item co-occurrence
+        plus a popularity fallback captures a large share of the achievable value for a fraction of the effort — and becomes
+        the baseline every later model has to beat. A neural ranker is phase five, not phase one.</div>
+      <div class="h3">What makes this harder than it looks</div>
+      <ul>
+        <li><b>The feedback loop.</b> What you show determines what is clicked, which becomes tomorrow's training data. Uncorrected, it concentrates demand on the head of the catalogue.</li>
+        <li><b>Most failures are silent.</b> The widget renders, latency is fine, dashboards are green — and the results are quietly wrong.</li>
+        <li><b>Most traffic is anonymous.</b> If the design assumes a rich user profile, the common case falls through to a fallback.</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">2 &nbsp;· &nbsp;REFERENCE ARCHITECTURE
+    <span class="sub">online serving path above, offline training path below — they meet at the stores</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 730" width="3320" height="730">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#0f766e"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+      <marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7c2d92"/></marker>
+    </defs>
+
+    <!-- ONLINE BAND -->
+    <rect x="8" y="8" width="3304" height="300" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="34" font-size="17" font-weight="700" fill="#1e3a8a">ONLINE — synchronous, budget ≈ 150 ms p99, runs on every product-page view</text>
+
+    <rect x="26" y="48" width="180" height="96" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="116" y="72" font-size="14.5" font-weight="700" fill="#1e3a8a" text-anchor="middle">Product page</text>
+    <text x="116" y="94" font-size="12" fill="#42507a" text-anchor="middle">viewing item P</text>
+    <text x="116" y="114" font-size="12" fill="#42507a" text-anchor="middle">user U (or anon)</text>
+    <text x="116" y="134" font-size="12" fill="#42507a" text-anchor="middle">session S</text>
+
+    <rect x="230" y="48" width="190" height="96" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="325" y="72" font-size="14.5" font-weight="700" fill="#1e3a8a" text-anchor="middle">Recommendation API</text>
+    <text x="325" y="94" font-size="12" fill="#42507a" text-anchor="middle">context assembly</text>
+    <text x="325" y="114" font-size="12" fill="#42507a" text-anchor="middle">cache lookup</text>
+    <text x="325" y="134" font-size="12" fill="#42507a" text-anchor="middle">experiment assignment</text>
+
+    <rect x="444" y="42" width="980" height="240" rx="9" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="462" y="66" font-size="15.5" font-weight="700" fill="#0f766e">STAGE 1 — CANDIDATE GENERATION &nbsp;·&nbsp; millions → ~500 &nbsp;·&nbsp; cheap, recall-oriented, run in parallel</text>
+    <g font-size="11.8">
+      <rect x="462" y="80" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="572" y="100" font-weight="700" fill="#0f766e" text-anchor="middle">Item-to-item CF</text>
+      <text x="572" y="117" fill="#2f4f47" text-anchor="middle">co-view / co-purchase</text>
+      <text x="572" y="133" fill="#6b7391" text-anchor="middle">precomputed top-N per item</text>
+
+      <rect x="698" y="80" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="808" y="100" font-weight="700" fill="#0f766e" text-anchor="middle">Embedding kNN</text>
+      <text x="808" y="117" fill="#2f4f47" text-anchor="middle">vector ANN on item P</text>
+      <text x="808" y="133" fill="#6b7391" text-anchor="middle">semantic / visual similarity</text>
+
+      <rect x="934" y="80" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="1044" y="100" font-weight="700" fill="#0f766e" text-anchor="middle">Content-based</text>
+      <text x="1044" y="117" fill="#2f4f47" text-anchor="middle">category · brand · price band</text>
+      <text x="1044" y="133" fill="#6b7391" text-anchor="middle">works with zero interactions</text>
+
+      <rect x="1170" y="80" width="236" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="1288" y="100" font-weight="700" fill="#0f766e" text-anchor="middle">Session sequence</text>
+      <text x="1288" y="117" fill="#2f4f47" text-anchor="middle">last N views this session</text>
+      <text x="1288" y="133" fill="#6b7391" text-anchor="middle">the only signal for anons</text>
+
+      <rect x="462" y="152" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="572" y="172" font-weight="700" fill="#0f766e" text-anchor="middle">Complementary</text>
+      <text x="572" y="189" fill="#2f4f47" text-anchor="middle">bought-together / basket</text>
+      <text x="572" y="205" fill="#6b7391" text-anchor="middle">accessories, consumables</text>
+
+      <rect x="698" y="152" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="808" y="172" font-weight="700" fill="#0f766e" text-anchor="middle">User history</text>
+      <text x="808" y="189" fill="#2f4f47" text-anchor="middle">personalised, logged-in</text>
+      <text x="808" y="205" fill="#6b7391" text-anchor="middle">two-tower retrieval</text>
+
+      <rect x="934" y="152" width="220" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="1044" y="172" font-weight="700" fill="#0f766e" text-anchor="middle">Popularity / trending</text>
+      <text x="1044" y="189" fill="#2f4f47" text-anchor="middle">category-scoped</text>
+      <text x="1044" y="205" fill="#6b7391" text-anchor="middle">the fallback that always works</text>
+
+      <rect x="1170" y="152" width="236" height="62" rx="6" fill="#fff" stroke="#0f766e" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="1288" y="172" font-weight="700" fill="#0f766e" text-anchor="middle">Merchandised</text>
+      <text x="1288" y="189" fill="#2f4f47" text-anchor="middle">hand-curated slots</text>
+      <text x="1288" y="205" fill="#6b7391" text-anchor="middle">campaigns, new launches</text>
+    </g>
+    <text x="462" y="238" font-size="11.6" fill="#2f4f47">Every source returns a scored list. Union them, dedupe by item id, keep the max score per source. Sources are independent — one failing must degrade the</text>
+    <text x="462" y="256" font-size="11.6" fill="#2f4f47">result, not the request. Each has its own timeout; whatever returned inside the budget goes forward.</text>
+
+    <!-- STAGE 2 -->
+    <rect x="1436" y="42" width="248" height="240" rx="9" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1560" y="66" font-size="15" font-weight="700" fill="#7c2d92" text-anchor="middle">STAGE 2 — RANKING</text>
+    <text x="1560" y="84" font-size="11.8" fill="#4b3a5e" text-anchor="middle">~500 → ~50 · precision</text>
+    <rect x="1452" y="96" width="216" height="104" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+    <text x="1560" y="116" font-size="12.6" font-weight="700" fill="#7c2d92" text-anchor="middle">Learned ranker</text>
+    <text x="1560" y="134" font-size="11.2" fill="#4b3a5e" text-anchor="middle">features: item, user, context,</text>
+    <text x="1560" y="150" font-size="11.2" fill="#4b3a5e" text-anchor="middle">pair (P → candidate), source</text>
+    <text x="1560" y="166" font-size="11.2" fill="#4b3a5e" text-anchor="middle">score, price delta, CTR priors</text>
+    <text x="1560" y="188" font-size="11.4" font-weight="700" fill="#7c2d92" text-anchor="middle">predicts P(click) / P(purchase)</text>
+    <text x="1452" y="222" font-size="11.4" fill="#4b3a5e">Expensive per item — which is</text>
+    <text x="1452" y="238" font-size="11.4" fill="#4b3a5e">why stage 1 must cut first</text>
+
+    <!-- STAGE 3 -->
+    <rect x="1698" y="42" width="248" height="240" rx="9" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="1822" y="66" font-size="15" font-weight="700" fill="#b45309" text-anchor="middle">STAGE 3 — POLICY</text>
+    <text x="1822" y="84" font-size="11.8" fill="#7a3d06" text-anchor="middle">~50 → 8 shown</text>
+    <g font-size="11.6" fill="#7a3d06">
+      <text x="1714" y="106">▸ drop out-of-stock</text>
+      <text x="1714" y="126">▸ drop the item being viewed</text>
+      <text x="1714" y="146">▸ drop already-purchased</text>
+      <text x="1714" y="166">▸ diversity: cap per brand/category</text>
+      <text x="1714" y="186">▸ price-band sanity vs P</text>
+      <text x="1714" y="206">▸ blocked / restricted items</text>
+      <text x="1714" y="226">▸ margin or campaign boost</text>
+    </g>
+    <text x="1822" y="256" font-size="12" font-weight="700" fill="#be123c" text-anchor="middle">Deterministic. Never a model.</text>
+
+    <!-- RESPONSE -->
+    <rect x="1960" y="42" width="216" height="240" rx="9" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="2068" y="66" font-size="15" font-weight="700" fill="#047857" text-anchor="middle">RESPONSE</text>
+    <text x="2068" y="88" font-size="11.8" fill="#2f4f47" text-anchor="middle">8 items + reason</text>
+    <text x="2068" y="106" font-size="11.8" fill="#2f4f47" text-anchor="middle">+ impression id</text>
+    <text x="2068" y="132" font-size="11.6" fill="#2f4f47" text-anchor="middle">&ldquo;Because you viewed</text>
+    <text x="2068" y="148" font-size="11.6" fill="#2f4f47" text-anchor="middle">this item&rdquo;</text>
+    <rect x="1974" y="164" width="188" height="104" rx="6" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+    <text x="2068" y="184" font-size="11.6" font-weight="700" fill="#047857" text-anchor="middle">The impression id is what</text>
+    <text x="2068" y="200" font-size="11.4" fill="#2f4f47" text-anchor="middle">joins this response to the</text>
+    <text x="2068" y="216" font-size="11.4" fill="#2f4f47" text-anchor="middle">click that may follow —</text>
+    <text x="2068" y="234" font-size="11.4" font-weight="700" fill="#be123c" text-anchor="middle">without it you cannot</text>
+    <text x="2068" y="250" font-size="11.4" font-weight="700" fill="#be123c" text-anchor="middle">measure anything.</text>
+
+    <!-- LATENCY -->
+    <rect x="2190" y="42" width="1106" height="240" rx="9" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="2206" y="66" font-size="15" font-weight="700" fill="#1e3a8a">LATENCY BUDGET — the constraint that dictates the architecture</text>
+    <g font-size="12.4">
+      <text x="2206" y="92" font-weight="700" fill="#1f2a63">Stage</text>
+      <text x="2620" y="92" font-weight="700" fill="#1f2a63">Budget (p99)</text>
+      <text x="2820" y="92" font-weight="700" fill="#1f2a63">Why</text>
+      <line x1="2206" y1="100" x2="3280" y2="100" stroke="#c7cbdd" stroke-width="1.4"/>
+      <text x="2206" y="120" fill="#42507a">Cache lookup</text><text x="2620" y="120" fill="#42507a">5 ms</text><text x="2820" y="120" fill="#6b7391">hit ⇒ return immediately</text>
+      <text x="2206" y="142" fill="#42507a">Feature fetch</text><text x="2620" y="142" fill="#42507a">15 ms</text><text x="2820" y="142" fill="#6b7391">online store, batched</text>
+      <text x="2206" y="164" fill="#42507a">Candidate generation</text><text x="2620" y="164" fill="#42507a">30 ms</text><text x="2820" y="164" fill="#6b7391">parallel, each source capped</text>
+      <text x="2206" y="186" fill="#42507a">Ranking</text><text x="2620" y="186" fill="#42507a">40 ms</text><text x="2820" y="186" fill="#6b7391">scales with candidate count</text>
+      <text x="2206" y="208" fill="#42507a">Policy + assembly</text><text x="2620" y="208" fill="#42507a">10 ms</text><text x="2820" y="208" fill="#6b7391">pure computation</text>
+      <line x1="2206" y1="218" x2="3280" y2="218" stroke="#c7cbdd" stroke-width="1.4"/>
+      <text x="2206" y="238" font-weight="700" fill="#1f2a63">Total</text><text x="2620" y="238" font-weight="700" fill="#1f2a63">≈ 100 ms</text>
+      <text x="2820" y="238" font-weight="700" fill="#be123c">50 ms headroom to 150</text>
+      <text x="2206" y="264" font-size="11.4" fill="#6b7391">Illustrative starting budget — measure against your catalogue and hardware, then set per-stage timeouts from the measurements.</text>
+    </g>
+
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M206,96 L224,96"/><path d="M420,96 L438,96"/>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2.4" fill="none" marker-end="url(#p)"><path d="M1424,162 L1430,162"/></g>
+    <g stroke="#b45309" stroke-width="2.4" fill="none" marker-end="url(#o)"><path d="M1684,162 L1692,162"/></g>
+    <g stroke="#047857" stroke-width="2.4" fill="none" marker-end="url(#g)"><path d="M1946,162 L1954,162"/></g>
+
+    <!-- SERVING STORES -->
+    <rect x="8" y="316" width="3304" height="128" rx="10" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="26" y="340" font-size="17" font-weight="700" fill="#b45309">SERVING STORES — read-only at request time; written only by the offline path</text>
+    <g font-size="11.4">
+      <rect x="26" y="352" width="380" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="216" y="372" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Item-to-item store (KV)</text>
+      <text x="216" y="390" fill="#7a3d06" text-anchor="middle">item → top-N similar, scored</text>
+      <text x="216" y="410" fill="#be123c" text-anchor="middle">the single highest-value structure here</text>
+
+      <rect x="420" y="352" width="380" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="610" y="372" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Vector index (ANN)</text>
+      <text x="610" y="390" fill="#7a3d06" text-anchor="middle">item embeddings, HNSW / IVF</text>
+      <text x="610" y="410" fill="#6b7391" text-anchor="middle">approximate by design — measure recall</text>
+
+      <rect x="814" y="352" width="400" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="1014" y="372" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Online feature store</text>
+      <text x="1014" y="390" fill="#7a3d06" text-anchor="middle">user, item and context features</text>
+      <text x="1014" y="410" fill="#6b7391" text-anchor="middle">must be point-in-time consistent with training</text>
+
+      <rect x="1228" y="352" width="360" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="1408" y="372" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Item catalogue snapshot</text>
+      <text x="1408" y="390" fill="#7a3d06" text-anchor="middle">price, stock, status, attributes</text>
+      <text x="1408" y="410" fill="#6b7391" text-anchor="middle">drives the policy filters</text>
+
+      <rect x="1602" y="352" width="340" height="76" rx="7" fill="#fff" stroke="#b45309" stroke-width="1.8"/>
+      <text x="1772" y="372" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Model registry</text>
+      <text x="1772" y="390" fill="#7a3d06" text-anchor="middle">versioned ranker artefacts</text>
+      <text x="1772" y="410" fill="#6b7391" text-anchor="middle">rollback is a config change</text>
+
+      <rect x="1956" y="352" width="1340" height="76" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+      <text x="1972" y="372" font-size="12.4" font-weight="700" fill="#047857">Response cache — keyed by (item, segment, experiment, model version)</text>
+      <text x="1972" y="392" fill="#2f4f47">Recommendations for a popular item are identical for most anonymous users. Cache aggressively with a short TTL.</text>
+      <text x="1972" y="412" font-weight="700" fill="#047857">Include the model version in the key, or a deploy silently serves stale results from the previous model until the TTL expires.</text>
+    </g>
+
+    <!-- OFFLINE -->
+    <rect x="8" y="452" width="3304" height="180" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="476" font-size="17" font-weight="700" fill="#0f766e">OFFLINE &amp; STREAMING — asynchronous; nothing here is on the request path</text>
+    <g font-size="11">
+      <rect x="26" y="488" width="180" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="116" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Clickstream events</text>
+      <text x="116" y="524" fill="#2f4f47" text-anchor="middle">view · click · add-to-cart</text>
+      <text x="116" y="540" fill="#2f4f47" text-anchor="middle">purchase · impression</text>
+      <text x="116" y="556" fill="#be123c" text-anchor="middle">with impression id + position</text>
+
+      <rect x="220" y="488" width="150" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="295" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Kafka</text>
+      <text x="295" y="526" fill="#2f4f47" text-anchor="middle">event backbone</text>
+      <text x="295" y="544" fill="#6b7391" text-anchor="middle">partitioned by user</text>
+
+      <rect x="384" y="488" width="180" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="474" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Stream processing</text>
+      <text x="474" y="524" fill="#2f4f47" text-anchor="middle">session features, counters</text>
+      <text x="474" y="540" fill="#2f4f47" text-anchor="middle">trending, recent views</text>
+      <text x="474" y="556" fill="#6b7391" text-anchor="middle">seconds-fresh</text>
+
+      <rect x="578" y="488" width="190" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="673" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Batch: co-occurrence</text>
+      <text x="673" y="524" fill="#2f4f47" text-anchor="middle">build item→item matrix</text>
+      <text x="673" y="540" fill="#2f4f47" text-anchor="middle">normalise, prune, top-N</text>
+      <text x="673" y="556" fill="#6b7391" text-anchor="middle">hourly / daily</text>
+
+      <rect x="782" y="488" width="180" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="872" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Batch: embeddings</text>
+      <text x="872" y="524" fill="#2f4f47" text-anchor="middle">train item vectors</text>
+      <text x="872" y="540" fill="#2f4f47" text-anchor="middle">index build → ANN</text>
+      <text x="872" y="556" fill="#6b7391" text-anchor="middle">daily / weekly</text>
+
+      <rect x="976" y="488" width="180" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1066" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Train ranker</text>
+      <text x="1066" y="524" fill="#2f4f47" text-anchor="middle">labels from impressions</text>
+      <text x="1066" y="540" fill="#2f4f47" text-anchor="middle">+ clicks + conversions</text>
+      <text x="1066" y="556" fill="#be123c" text-anchor="middle">position-bias corrected</text>
+
+      <rect x="1170" y="488" width="180" height="76" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1260" y="506" font-size="11.8" font-weight="700" fill="#0f766e" text-anchor="middle">Offline evaluation</text>
+      <text x="1260" y="524" fill="#2f4f47" text-anchor="middle">Recall@K · NDCG</text>
+      <text x="1260" y="540" fill="#2f4f47" text-anchor="middle">coverage · diversity</text>
+      <text x="1260" y="556" fill="#6b7391" text-anchor="middle">gate before deploy</text>
+
+      <rect x="1364" y="488" width="180" height="76" rx="7" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="1454" y="506" font-size="11.8" font-weight="700" fill="#047857" text-anchor="middle">Deploy + A/B</text>
+      <text x="1454" y="524" fill="#2f4f47" text-anchor="middle">shadow → % rollout</text>
+      <text x="1454" y="540" fill="#2f4f47" text-anchor="middle">online metrics decide</text>
+      <text x="1454" y="556" fill="#6b7391" text-anchor="middle">rollback on guardrail breach</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M206,526 L214,526"/><path d="M370,526 L378,526"/><path d="M564,526 L572,526"/>
+      <path d="M768,526 L776,526"/><path d="M962,526 L970,526"/><path d="M1156,526 L1164,526"/><path d="M1350,526 L1358,526"/>
+    </g>
+    <g stroke="#b45309" stroke-width="2.2" fill="none" marker-end="url(#o)" stroke-dasharray="6 4">
+      <path d="M770,488 L770,444"/>
+    </g>
+    <text x="784" y="470" font-size="11.4" fill="#b45309">writes the stores</text>
+
+    <rect x="1560" y="488" width="1736" height="76" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+    <text x="1576" y="508" font-size="12.6" font-weight="700" fill="#b91c1c">THE FEEDBACK LOOP — and why it is dangerous</text>
+    <text x="1576" y="528" font-size="11.6" fill="#7f2b2b">The model decides what is shown. What is shown determines what is clicked. Clicks become tomorrow's training data.</text>
+    <text x="1576" y="548" font-size="11.6" fill="#7f2b2b">Left uncorrected, popular items get shown more, earn more clicks, and are ranked higher still — while the long tail becomes unreachable regardless of relevance. Correct with position-bias weighting, exploration, and a coverage guardrail.</text>
+
+    <rect x="26" y="576" width="3270" height="46" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="42" y="596" font-size="12.6" font-weight="700" fill="#0f766e">THE SEPARATION THAT MAKES THIS WORK</text>
+    <text x="42" y="614" font-size="11.6" fill="#42507a">A recommendation request never trains, never scans the catalogue, and never joins across services. If it does any of those, the latency budget is already lost — and no amount of caching recovers it.</text>
+
+    <rect x="8" y="640" width="3304" height="82" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="664" font-size="13.4" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM</text>
+    <text x="26" y="686" font-size="11.8" fill="#42507a">Follow one request left to right along the top band: the API assembles context, six sources retrieve in parallel and are unioned, a ranker scores what survived, deterministic policy trims to eight, and the response carries an impression id.</text>
+    <text x="26" y="708" font-size="11.8" fill="#42507a">Everything in the bottom band runs on its own schedule and writes into the middle band. The two never meet at request time — which is the property that keeps the budget in panel 2 achievable at all.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 3. ITEM-TO-ITEM ============ -->
+<div class="panel c2 span2">
+  <div class="phead">3 &nbsp;· &nbsp;ITEM-TO-ITEM COLLABORATIVE FILTERING
+    <span class="sub">the workhorse for &ldquo;customers who viewed this also viewed&rdquo;</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Why item-to-item, not user-to-user</div>
+      <div style="font-size:13.4px;line-height:1.46">The classic alternative finds users similar to you, then recommends what
+        they liked. It does not scale: user vectors change constantly and there are more users than items. <b>Item-to-item
+        inverts this</b> — compute item similarity offline, look it up online. Item pairs are far more stable than user
+        preferences, so the expensive part is computed rarely and the online step is a key lookup. This is the approach
+        published in 2003 and it remains the baseline every newer method is measured against.</div>
+      <div class="h3">The computation</div>
+      <div class="code"><span class="c"># 1 · co-occurrence from session or order data</span>
+count(i,j) = sessions where i and j both appear
+
+<span class="c"># 2 · normalise — raw counts just rank popularity</span>
+sim(i,j) = count(i,j) / sqrt(count(i) × count(j))
+           <span class="c">cosine on binary interaction vectors</span>
+
+<span class="c"># 3 · prune, then keep top-N</span>
+drop pairs with count(i,j) &lt; min_support
+store item → [(j, sim) … top 100]</div>
+      <div class="callout r"><b>Step 2 is the one that gets skipped, and skipping it breaks everything.</b> Raw
+        co-occurrence recommends the best-selling item on every page, because it co-occurs with everything. Normalising by
+        each item's own frequency is what converts &ldquo;popular&rdquo; into &ldquo;actually related&rdquo;.</div>
+      <div class="callout"><b>Scale note.</b> The full item&times;item matrix is quadratic and unnecessary. Build it
+        from inverted session lists, prune aggressively, and keep only top-N per item. Most catalogues reduce to a few
+        hundred megabytes — small enough to serve from a plain key-value store.</div>
+    </div>
+    <div>
+      <div class="h3">Choosing the signal</div>
+      <table>
+        <thead><tr><th style="width:118px">Signal</th><th>Character</th></tr></thead>
+        <tbody>
+          <tr><td><b>Co-view</b></td><td>Dense, fast to accumulate, noisy. Finds <b>substitutes</b> — alternatives to what you are looking at</td></tr>
+          <tr><td><b>Co-purchase</b></td><td>Sparse, high intent. Finds <b>complements</b> — what goes with it</td></tr>
+          <tr><td><b>View→purchase</b></td><td>&ldquo;Viewed this, bought that&rdquo; — strong signal for the conversion goal</td></tr>
+          <tr><td><b>Same-basket</b></td><td>Explicit complements; best for accessories and consumables</td></tr>
+        </tbody>
+      </table>
+      <div class="callout p"><b>Substitutes and complements are different products and belong in different widgets.</b>
+        On a camera page, co-view gives other cameras; co-purchase gives lenses, bags and cards. Mixing them into one list
+        produces a widget that does neither job. Compute both, and label the slot.</div>
+      <div class="h3">Practical parameters — tune, don't copy</div>
+      <table>
+        <thead><tr><th style="width:126px">Knob</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><b>min_support</b></td><td>Too low: noise from coincidence. Too high: the long tail loses all recommendations</td></tr>
+          <tr><td><b>Session window</b></td><td>What counts as &ldquo;together&rdquo; — a session, a day, an order</td></tr>
+          <tr><td><b>Top-N stored</b></td><td>Storage vs downstream room to re-rank; 50–200 typical</td></tr>
+          <tr><td><b>Rebuild cadence</b></td><td>Freshness vs compute cost</td></tr>
+          <tr><td><b>Decay</b></td><td>Weight recent interactions higher so seasonality is tracked</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>These are starting points, not settings.</b> Optimal values are a property of your
+        catalogue and your traffic — a grocery store with repeat purchases and a furniture store with one order a year want
+        very different windows and decay. Vary one, and measure recall and coverage against a held-out period.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 4. EMBEDDINGS ============ -->
+<div class="panel c3">
+  <div class="phead">4 &nbsp;· &nbsp;EMBEDDINGS &amp; ANN <span class="sub">where co-occurrence runs out</span></div>
+  <div class="pbody">
+    <div style="font-size:13.4px;line-height:1.46">Co-occurrence can only relate items that have <b>already been seen
+      together</b>. A new product, or one in the long tail, has no pairs — so it is invisible. Embeddings solve exactly that:
+      they place every item in a vector space by <i>content</i>, so similarity exists before any interaction does.</div>
+    <div class="h3">Where the vectors come from</div>
+    <table>
+      <thead><tr><th style="width:112px">Source</th><th>Captures</th></tr></thead>
+      <tbody>
+        <tr><td><b>Behavioural</b><br><span style="color:#6b7391">sequence models over sessions</span></td><td>Learned relatedness — items viewed in similar contexts land close together</td></tr>
+        <tr><td><b>Text</b><br><span style="color:#6b7391">title, description, attributes</span></td><td>Semantic similarity; <b>works on day one</b>, no interactions needed</td></tr>
+        <tr><td><b>Visual</b><br><span style="color:#6b7391">product imagery</span></td><td>Look-alike — decisive in fashion, furniture, décor</td></tr>
+        <tr><td><b>Hybrid</b></td><td>Concatenate or learn a joint space; usually the strongest</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Serving</div>
+    <div class="code">query = embedding(item P)
+ANN.search(query, k=200, filter=tenant/catalogue)
+  → 200 nearest items in ~5–15 ms</div>
+    <div class="callout"><b>Filter before you search, not after.</b> Post-filtering an ANN result for stock, category
+      or price can leave you with far fewer than k items — sometimes zero. Push the filter into the index so the k returned
+      are already valid.</div>
+    <div class="callout r"><b>ANN is approximate by construction.</b> A genuinely similar item can simply not be
+      returned. Measure recall against exact search on a sample before assuming the retrieval layer is exhaustive — the
+      tuning knob is in the search-effort parameter, and it trades recall against latency.</div>
+    <div class="callout r"><b>Embeddings go stale silently.</b> Nothing errors when the index is a week old and the
+      catalogue has moved — results just quietly get worse. Track index age and item coverage as first-class metrics, and
+      alert on both.</div>
+  </div>
+</div>
+
+<!-- ============ 5. COLD START ============ -->
+<div class="panel c4">
+  <div class="phead">5 &nbsp;· &nbsp;COLD START <span class="sub">three different problems</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:112px">Case</th><th>Problem &amp; approach</th></tr></thead>
+      <tbody>
+        <tr><td><b>New item</b></td><td>No interactions, so no co-occurrence pairs exist. Content and text embeddings from metadata; borrow from the nearest catalogue neighbours; give it forced exposure to bootstrap signal</td></tr>
+        <tr><td><b>New / anonymous user</b></td><td>No history to personalise from — the majority of storefront traffic. <b>Session-based</b>: the current item plus the last few views is enough. This is the default path, not the exception</td></tr>
+        <tr><td><b>New catalogue</b><br><span style="color:#6b7391">a new merchant</span></td><td>No behavioural data at all. Content similarity only; category popularity priors; consider a shared cross-tenant model only where privacy permits</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Design for anonymous first.</b> A large share of product-page views are from users with no
+      profile. If the design assumes a rich user history, the common case falls through to a popularity fallback and the
+      feature underperforms while looking fine in offline evaluation on logged-in users.</div>
+    <div class="h3">The exposure problem</div>
+    <div style="font-size:13.4px;line-height:1.46">A new item cannot earn interactions until it is shown, and it will not be
+      shown until it has interactions. Breaking that loop needs deliberate <b>exploration</b>: reserve a slot, or add a small
+      randomised component, so new items get impressions they have not yet earned.</div>
+    <div class="callout"><b>Exploration costs measurable revenue in the short term</b> and pays back through catalogue
+      coverage. Budget it explicitly — a percentage of slots — rather than leaving it implicit, so the cost is visible and
+      tunable rather than argued about.</div>
+    <div class="h3">Fallback chain</div>
+    <div class="code">item-to-item   → if empty ↓
+embedding kNN  → if empty ↓
+same category top → if empty ↓
+category trending → if empty ↓
+store bestsellers  ← always returns</div>
+    <div class="callout g"><b>The widget must never render empty.</b> An empty recommendation slot on a product page
+      is a visible defect. The last link in the chain must be something that always returns.</div>
+  </div>
+</div>
+
+<!-- ============ 6. RANKING ============ -->
+<div class="panel c5 span2">
+  <div class="phead">6 &nbsp;· &nbsp;RANKING &amp; TRAINING DATA
+    <span class="sub">where most of the quality — and most of the subtle error — lives</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Feature families</div>
+      <table>
+        <thead><tr><th style="width:112px">Family</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td><b>Item</b></td><td>Price, rating, review count, age, category, brand, historical CTR and conversion</td></tr>
+          <tr><td><b>Pair (P → c)</b></td><td>Co-occurrence score, embedding distance, same brand, price ratio, category relation</td></tr>
+          <tr><td><b>User</b></td><td>Purchase history, category affinity, price sensitivity, recency</td></tr>
+          <tr><td><b>Context</b></td><td>Device, time of day, referrer, session depth</td></tr>
+          <tr><td><b>Source</b></td><td>Which retriever produced it, and its rank within that source</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The pair features carry most of the signal.</b> &ldquo;How related is this candidate to
+        the item being viewed&rdquo; is the actual question on a product page — item-level popularity features will otherwise
+        dominate and quietly turn the widget into a bestseller list.</div>
+      <div class="h3">Objective</div>
+      <table>
+        <thead><tr><th style="width:126px">Optimise for</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td><b>Click</b></td><td>Abundant labels; drifts toward clickbait and cheap items</td></tr>
+          <tr><td><b>Add-to-cart</b></td><td>Intermediate intent; a reasonable proxy</td></tr>
+          <tr><td><b>Purchase</b></td><td>Sparse labels; aligned with the business</td></tr>
+          <tr><td><b>Weighted blend</b></td><td>Usually the practical answer — weights are a business decision, not a modelling one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Position bias — the defect that silently poisons training</div>
+      <div style="font-size:13.4px;line-height:1.46">Items in slot 1 get clicked far more than slot 8 <b>regardless of
+        relevance</b>, simply because they are seen first. Train naively on click logs and the model learns &ldquo;things we
+        ranked highly get clicked&rdquo; — a self-confirming loop that mistakes its own past decisions for user preference.</div>
+      <div class="callout r"><b>You must log the position and correct for it.</b> Weight each impression inversely to
+        its position's examination probability, or estimate that probability from randomisation. A ranker trained on
+        uncorrected logs looks excellent offline and fails to improve anything online — the most common way a recommender
+        project produces no measurable lift.</div>
+      <div class="h3">What to log per impression</div>
+      <div class="code">{ impression_id, session_id, user_id|null,
+  anchor_item: <span class="v">"P"</span>,
+  shown: [{item, position, source, score}…],
+  model_version, experiment_arm, timestamp }
+
+<span class="c">// then, joined later by impression_id:</span>
+click / add_to_cart / purchase events</div>
+      <div class="callout r"><b>Log what was shown, not only what was clicked.</b> Negatives are the items displayed
+        and ignored. Without the impression record there are no true negatives, and the training set is unusable no matter
+        how much click data accumulates.</div>
+      <div class="callout p"><b>Log the model version and experiment arm too.</b> Without them you cannot attribute a
+        metric movement to a change, and every A/B result becomes unfalsifiable.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 7. EVALUATION ============ -->
+<div class="panel c7">
+  <div class="phead">7 &nbsp;· &nbsp;EVALUATION <span class="sub">offline gates, online decides</span></div>
+  <div class="pbody">
+    <div class="h3">Offline — a gate, never a verdict</div>
+    <table>
+      <thead><tr><th style="width:132px">Metric</th><th>Answers</th></tr></thead>
+      <tbody>
+        <tr><td><b>Recall@K</b></td><td>Did the candidate set contain the item the user actually engaged with?</td></tr>
+        <tr><td><b>NDCG@K</b></td><td>Was it ranked near the top?</td></tr>
+        <tr><td><b>Catalogue coverage</b></td><td>What share of the catalogue is ever recommended?</td></tr>
+        <tr><td><b>Intra-list diversity</b></td><td>Are the eight shown meaningfully different from each other?</td></tr>
+        <tr><td><b>Novelty</b></td><td>Are we surfacing anything the user would not have found alone?</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Offline metrics are computed on logged data the previous model produced</b>, so they
+      systematically favour models that behave like the incumbent. Treat them as a gate that blocks obvious regressions —
+      never as evidence that a change is an improvement.</div>
+    <div class="h3">Online — the only real evidence</div>
+    <table>
+      <thead><tr><th style="width:132px">Metric</th><th>Watch for</th></tr></thead>
+      <tbody>
+        <tr><td><b>Widget CTR</b></td><td>Easy to move by showing cheap items; never read alone</td></tr>
+        <tr><td><b>Attributed conversion</b></td><td>The metric that matters</td></tr>
+        <tr><td><b>Revenue per session</b></td><td>Catches cannibalisation that CTR hides</td></tr>
+        <tr><td><b>AOV impact</b></td><td>Complements should raise basket size</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Guardrails — abort regardless of lift</div>
+    <ul>
+      <li>p99 latency within budget</li>
+      <li>Coverage not collapsing onto a few thousand items</li>
+      <li>Empty-widget rate near zero</li>
+      <li>Out-of-stock rate in shown results at zero</li>
+    </ul>
+    <div class="callout"><b>A variant that lifts CTR while halving catalogue coverage is not a win.</b> It has
+      concentrated demand onto the head of the catalogue, and the damage compounds through the feedback loop long after the
+      experiment concludes.</div>
+  </div>
+</div>
+
+<!-- ============ 8. FAILURE MODES ============ -->
+<div class="panel c5 span2">
+  <div class="phead">8 &nbsp;· &nbsp;FAILURE MODES
+    <span class="sub">most are silent — the widget renders, the results are just quietly wrong</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:180px">Failure</th><th>Symptom &amp; fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Raw co-occurrence, unnormalised</b></td><td>Bestsellers on every page. Normalise by item frequency</td></tr>
+          <tr><td><b>Popularity feedback loop</b></td><td>Coverage shrinks each retrain. Position-bias correction + exploration + coverage guardrail</td></tr>
+          <tr><td><b>Position bias untreated</b></td><td>Great offline metrics, no online lift. Log position, weight accordingly</td></tr>
+          <tr><td><b>Out-of-stock recommended</b></td><td>Click leads to a dead end. Filter in stage 3 against a fresh catalogue snapshot</td></tr>
+          <tr><td><b>Self-recommendation</b></td><td>The viewed item appears in its own widget. Explicit exclusion</td></tr>
+          <tr><td><b>Stale index</b></td><td>Quality degrades with no error. Alert on index age and coverage</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:180px">Failure</th><th>Symptom &amp; fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>No diversity cap</b></td><td>Eight near-identical variants of one product. Cap per brand and per category</td></tr>
+          <tr><td><b>Substitutes in a complements slot</b></td><td>Cameras beside a camera instead of lenses. Separate the models, label the slot</td></tr>
+          <tr><td><b>Cache keyed without model version</b></td><td>Deploy changes nothing until TTL expiry. Include version in the key</td></tr>
+          <tr><td><b>Training / serving feature skew</b></td><td>Offline good, online bad. Compute features once, share the definition</td></tr>
+          <tr><td><b>Recommending just-purchased items</b></td><td>Another washing machine. Filter recent purchases for durables</td></tr>
+          <tr><td><b>No impression logging</b></td><td>Cannot train, cannot measure. Log shown-and-ignored from day one</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">How each one is actually caught</div>
+      <table>
+        <thead><tr><th style="width:160px">Signal</th><th>Catches</th></tr></thead>
+        <tbody>
+          <tr><td><b>Catalogue coverage</b></td><td>Feedback loop, unnormalised co-occurrence, collapse onto the head</td></tr>
+          <tr><td><b>Empty-widget rate</b></td><td>Broken fallback chain, over-aggressive filters, ANN post-filtering</td></tr>
+          <tr><td><b>Out-of-stock rate in results</b></td><td>Stale catalogue snapshot, policy stage skipped</td></tr>
+          <tr><td><b>Intra-list diversity</b></td><td>Missing diversity cap, near-duplicate variants</td></tr>
+          <tr><td><b>Index age</b></td><td>Stale embeddings, failed pipeline run</td></tr>
+          <tr><td><b>Offline-online gap</b></td><td>Position bias, feature skew</td></tr>
+          <tr><td><b>Human spot-check</b></td><td>Substitutes in a complements slot — no metric reliably catches this</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Sample real pages weekly, by eye.</b> Pick a head product, a long-tail product and a
+        newly-listed one, and look at what the widget returns. Several failures above are obvious in two seconds to a person
+        and invisible to every dashboard you have.</div>
+      <div class="callout r"><b>The unifying property: none of these throw an error.</b> The page renders, the widget
+        fills, latency is fine, dashboards are green — and the recommendations are worse than random in a way only a metric
+        or a human eye will catch. Build the metrics before the model.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 9. BUILD ORDER ============ -->
+<div class="panel c6 span3">
+  <div class="phead">9 &nbsp;· &nbsp;BUILD ORDER <span class="sub">what to ship first, and why the order matters</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout g" style="margin-top:0"><b>Do not start with a neural ranker.</b> Normalised item-to-item
+        co-occurrence plus a popularity fallback captures a large share of the achievable value for a fraction of the effort
+        — and it becomes the baseline every later model must beat. Without that baseline you cannot tell whether the
+        sophisticated version is helping.</div>
+      <table style="margin-top:7px">
+        <thead><tr><th style="width:60px">Phase</th><th>Ship</th></tr></thead>
+        <tbody>
+          <tr><td><b>0</b></td><td><b>Instrumentation.</b> Impression logging with position, model version and experiment arm. Nothing else works without it</td></tr>
+          <tr><td><b>1</b></td><td>Normalised co-view item-to-item + popularity fallback. Cache. Measure CTR and conversion</td></tr>
+          <tr><td><b>2</b></td><td>Policy layer: stock, self, purchased, diversity cap</td></tr>
+          <tr><td><b>3</b></td><td>Co-purchase model for a separate complements slot</td></tr>
+          <tr><td><b>4</b></td><td>Content and text embeddings + ANN for cold start and the long tail</td></tr>
+          <tr><td><b>5</b></td><td>Learned ranker over the union, position-bias corrected</td></tr>
+          <tr><td><b>6</b></td><td>Personalisation from user history; session sequence models</td></tr>
+          <tr><td><b>7</b></td><td>Exploration budget and coverage guardrails</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout p" style="margin-top:0"><b>Phase 0 is not optional and cannot be retrofitted cheaply.</b>
+        Every later phase trains on data logged in phase 0. Start logging impressions before the first model ships, even
+        while the widget is still showing a hard-coded bestseller list — the data you fail to collect now is a gap you
+        cannot fill later.</div>
+      <div class="callout"><b>A note on scale.</b> Everything here assumes a catalogue where the item-to-item
+        structure fits comfortably in a key-value store and the ANN index fits in memory. Most SMB and mid-market catalogues
+        do. Re-derive the numbers before assuming they hold at a different order of magnitude.</div>
+      <div class="callout g"><b>Ship phases 1 and 2 together.</b> A working item-to-item model without the policy
+        layer will recommend out-of-stock items and the product being viewed — which reads as broken to a customer
+        regardless of how good the underlying relevance is.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 10. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">10 &nbsp;· &nbsp;PRODUCTION READINESS CHECKLIST <span class="sub">confirm before the widget goes on the product page</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Impressions logged</b> with item, position, source, score</div>
+      <div>&#9744; <b>Model version and experiment arm</b> on every impression</div>
+      <div>&#9744; <b>Impression id joins</b> to click, cart and purchase events</div>
+      <div>&#9744; <b>Co-occurrence normalised</b>, not raw counts</div>
+      <div>&#9744; <b>min_support tuned</b> against long-tail coverage</div>
+      <div>&#9744; <b>Substitutes and complements</b> served in separate slots</div>
+      <div>&#9744; <b>Every retrieval source has a timeout</b> and degrades independently</div>
+      <div>&#9744; <b>Fallback chain terminates</b> in something that always returns</div>
+      <div>&#9744; <b>Widget never renders empty</b></div>
+      <div>&#9744; <b>Viewed item excluded</b> from its own results</div>
+      <div>&#9744; <b>Out-of-stock filtered</b> against a fresh catalogue snapshot</div>
+      <div>&#9744; <b>Recently purchased filtered</b> for durables</div>
+      <div>&#9744; <b>Diversity cap</b> per brand and per category</div>
+      <div>&#9744; <b>ANN recall measured</b> against exact search on a sample</div>
+      <div>&#9744; <b>ANN filters applied pre-search</b>, not post</div>
+      <div>&#9744; <b>Index age and item coverage</b> monitored and alerted</div>
+      <div>&#9744; <b>Cache key includes model version</b></div>
+      <div>&#9744; <b>Position bias corrected</b> in training</div>
+      <div>&#9744; <b>Feature definitions shared</b> between training and serving</div>
+      <div>&#9744; <b>p99 latency within budget</b> under peak load</div>
+      <div>&#9744; <b>Per-stage timeouts</b> derived from measurement</div>
+      <div>&#9744; <b>Offline gate blocks regressions</b> before deploy</div>
+      <div>&#9744; <b>A/B framework</b> with guardrail auto-abort</div>
+      <div>&#9744; <b>Catalogue coverage tracked</b> as a first-class metric</div>
+      <div>&#9744; <b>Exploration budget</b> explicit and tunable</div>
+      <div>&#9744; <b>Rollback is a config change</b>, not a redeploy</div>
+    </div>
+    <div class="callout r"><b>The test that summarises the sheet.</b> Take a product with exactly one historical
+      co-view, a brand-new product with none, and your best-selling product. Ask for recommendations on all three. If any
+      returns an empty widget, an out-of-stock item, itself, or eight near-identical variants, the system is not ready —
+      and none of those cases will raise an error to tell you.</div>
+  </div>
+</div>
+
+</div>
