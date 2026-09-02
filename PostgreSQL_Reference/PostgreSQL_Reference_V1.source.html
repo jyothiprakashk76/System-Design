@@ -1,0 +1,994 @@
+<meta charset="utf-8">
+<title>PostgreSQL — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 6043px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:6043px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:6013px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 385px 631px 931px 634px 587px 617px 475px 477px 458px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>POSTGRESQL — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">MVCC and everything that follows from it — bloat, vacuum, wraparound, and the locks that stop a migration<br>
+    <span style="font-size:13.4px;color:#6d80b6">MVCC &amp; vacuum · isolation · planning · indexing · replication · pooling · locking · operations
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT POSTGRESQL IS — AND THE TWO ARCHITECTURAL FACTS THAT SHAPE EVERY OPERATIONAL PROBLEM
+    <span class="sub">start here — MVCC and the process-per-connection model explain almost everything else on this sheet</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A <b>fully ACID relational database</b> with an unusually deep
+        type system and an extension mechanism that lets it absorb workloads other databases exist to serve — geospatial,
+        document, time-series, full-text and vector search. It is <b>genuinely open source</b> under the PostgreSQL
+        Licence, with no commercial tier withheld from the core.</div>
+      <div class="callout b"><b>The reframe worth carrying into any design discussion.</b> The question is rarely
+        &ldquo;PostgreSQL or a specialist database&rdquo; on day one. It is <b>&ldquo;can PostgreSQL carry this until the
+        scale genuinely demands something else?&rdquo;</b> — and the answer is yes far more often than architecture
+        diagrams suggest. One database you operate well beats four you operate adequately.</div>
+      <div class="h3">The two facts that explain the operations</div>
+      <table>
+        <tbody>
+          <tr><td style="width:24px"><b>1</b></td><td><b>MVCC: writes never modify a row in place.</b> An update writes a <i>new</i> row version and marks the old one dead. Readers never block writers and writers never block readers — and the dead versions must later be reclaimed. <b>Bloat, vacuum and transaction ID wraparound all follow from this one design choice</b></td></tr>
+          <tr><td><b>2</b></td><td><b>One operating-system process per connection.</b> Each carries real memory and startup cost, so a few thousand connections is not a configuration setting — it is a resource problem. <b>This is why a connection pooler is not optional at scale</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Nearly every PostgreSQL incident traces back to one of those two.</b> Panels 2 and 8
+        cover them directly; most of the failure table in panel 15 is downstream of them.</div>
+    </div>
+    <div>
+      <div class="h3">Use it when</div>
+      <ul>
+        <li><b>You need real ACID transactions</b> and referential integrity — this is its core competence and it is very good at it</li>
+        <li><b>The data is relational</b>, with joins and constraints that should be enforced by the database</li>
+        <li><b>Mixed workloads</b> — relational tables alongside JSONB documents, geospatial data or vectors, all in one transaction</li>
+        <li><b>Correctness matters more than raw write throughput</b></li>
+        <li><b>You want one system to operate well</b> rather than several specialised ones</li>
+      </ul>
+      <div class="h3">Look elsewhere when</div>
+      <ul>
+        <li><b>Write volume genuinely exceeds one primary</b> and cannot be partitioned by tenant or key — PostgreSQL has no built-in sharding</li>
+        <li><b>Large-scale analytical scans</b> over billions of rows — a columnar engine is the right tool, though extensions narrow this considerably</li>
+        <li><b>Sub-millisecond key-value lookups at very high rates</b> — an in-memory store is a better fit in front of it</li>
+        <li><b>Full-text search at large scale with heavy relevance tuning</b> — built-in search is capable, a dedicated search engine is more so</li>
+      </ul>
+      <div class="callout r"><b>A note on the throughput ceiling.</b> Figures like &ldquo;switch away above <i>N</i>
+        operations per second&rdquo; circulate widely and are not meaningful — the real ceiling depends entirely on row
+        size, index count, transaction shape and storage. <b>Measure your workload</b>; well-tuned PostgreSQL on modern
+        hardware handles far more than most such rules of thumb suggest.</div>
+    </div>
+    <div>
+      <div class="h3">What it does not have, stated plainly</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>No built-in sharding</b></td><td>Horizontal write scale needs application-level partitioning or an extension such as Citus</td></tr>
+          <tr><td><b>No automatic failover in core</b></td><td>Replication is built in; <b>promoting a replica requires external tooling</b> — Patroni, repmgr or pg_auto_failover. A cluster without one has no automatic failover, whatever the diagram says</td></tr>
+          <tr><td><b>No multi-master in core</b></td><td>Logical replication is one-directional. Bidirectional setups are possible and <b>bring conflicts you must resolve yourself</b> — this is not equivalent to multi-master, and treating it as such loses writes</td></tr>
+          <tr><td><b>No built-in connection pooling</b></td><td>PgBouncer or an equivalent sits in front. See panel 8</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b><span class="lvl sr">STAFF</span> Version context.</b> <b>PostgreSQL 18</b> was
+        released in September 2025 and is the current major line. It brought a reworked asynchronous I/O subsystem with
+        substantial read improvements, <b>skip scans on multicolumn B-tree indexes</b>, virtual generated columns, a native
+        <span class="mono">uuidv7()</span>, OAuth 2.0 authentication, and faster major-version upgrades. Major releases
+        arrive annually each September, and each is supported for five years.</div>
+      <div class="callout p"><b>Upgrades are worth planning as routine work.</b> Each major version brings planner
+        and performance improvements that are free once you take them, and running an unsupported version is a security
+        position rather than a stability one.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. MVCC ============ -->
+<div class="panel c5 span2">
+  <div class="phead">2 &nbsp;· &nbsp;MVCC, VACUUM, BLOAT AND TRANSACTION ID WRAPAROUND
+    <span class="sub">the single most important operational topic · <span class="lvl mid">MID</span> why bloat happens · <span class="lvl sr">STAFF</span> the failure that stops the database</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The mechanism.</b> Every row version carries the transaction id
+        that created it and the one that deleted it. An <b><span class="mono">UPDATE</span> writes a new version and marks
+        the old one dead</b>; a <span class="mono">DELETE</span> only marks it dead. Each transaction sees the versions
+        valid for its snapshot. <b>Readers never block writers, and writers never block readers</b> — which is the great
+        strength of the design.</div>
+      <div class="callout r"><b>The cost: dead row versions accumulate.</b> They occupy space in the table and in
+        every index on it, and they must be reclaimed. That reclamation is <b>vacuum</b>, and understanding when it cannot
+        run is the difference between a database that stays healthy and one that quietly degrades for months.</div>
+      <div class="h3">What vacuum does</div>
+      <ul>
+        <li><b>Reclaims dead tuples</b> so the space is reusable — it does <b>not</b> return space to the operating system</li>
+        <li><b>Updates the visibility map</b>, which is what makes index-only scans possible</li>
+        <li><b>Freezes old transaction ids</b>, which is what prevents wraparound</li>
+        <li><b>Autovacuum runs it automatically</b>, triggered by the proportion of a table that is dead</li>
+      </ul>
+      <div class="callout"><b><span class="mono">VACUUM FULL</span> is a different operation entirely.</b> It
+        rewrites the whole table, genuinely returns space, and takes an <b>ACCESS EXCLUSIVE lock for the duration</b> —
+        blocking all reads and writes. It is a last resort, not routine maintenance. <span class="mono">pg_repack</span>
+        achieves a similar result without the long exclusive lock.</div>
+      <div class="h3">Reducing bloat at the source</div>
+      <ul>
+        <li><b>HOT updates</b> avoid touching indexes when no indexed column changes and the new version fits on the same page — a large win, and one reason to drop unused indexes</li>
+        <li><b>Lower <span class="mono">fillfactor</span></b> on heavily updated tables leaves room on each page for HOT updates</li>
+        <li><b>Batch large deletes</b>, or use partitioning so removal is dropping a partition rather than deleting rows</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Why autovacuum stops being able to clean — the thing to
+        actually watch.</b> Vacuum can only remove a row version once <b>no transaction could still need to see it</b>.
+        Anything holding an old snapshot pins that horizon, and <b>dead tuples accumulate across the entire database</b>
+        even though vacuum appears to be running normally.</div>
+      <div class="h3">The three things that hold the horizon back</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Long-running transactions</b></td><td>Including a session sitting <span class="mono">idle in transaction</span> — an application that opened a transaction and went to lunch. <b>The most common cause by far</b></td></tr>
+          <tr><td><b>Inactive replication slots</b></td><td>A slot for a replica that no longer exists pins the horizon <i>and</i> retains WAL indefinitely. See panel 7 — this fills disks</td></tr>
+          <tr><td><b><span class="mono">hot_standby_feedback</span></b></td><td>Lets a replica's long queries hold back vacuum <b>on the primary</b>. It prevents query cancellations on the replica and this is the price</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Set <span class="mono">idle_in_transaction_session_timeout</span> and
+        <span class="mono">statement_timeout</span>.</b> These two settings prevent the most common cause of unbounded
+        bloat, and they cost nothing. Monitor the oldest transaction age continuously.</div>
+      <div class="callout r"><b><span class="lvl sr">STAFF</span> Transaction ID wraparound — the failure that
+        stops the database.</b> Transaction ids are a finite 32-bit space of about two billion. Old ids must be
+        <b>frozen</b> by vacuum before the counter laps them. If freezing falls far enough behind, PostgreSQL issues
+        escalating warnings and then <b>refuses new write transactions entirely</b> to avoid losing data — the database
+        stops until an offline vacuum completes, which on a large table can take hours.</div>
+      <div class="callout"><b>It is entirely preventable and it still happens.</b> The causes are always the same:
+        autovacuum disabled or throttled too aggressively, a very long transaction left open, an abandoned replication
+        slot, or a table whose autovacuum settings were overridden and forgotten. <b>Alert on the maximum age of any
+        table's oldest unfrozen transaction</b>, long before the database starts warning — by the time it does, the
+        remaining margin is measured in hours of work.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. ISOLATION ============ -->
+<div class="panel c3">
+  <div class="phead">3 &nbsp;· &nbsp;ISOLATION LEVELS <span class="sub">three behaviours, not four</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>PostgreSQL accepts all four standard levels in syntax, but
+      <span class="mono">READ UNCOMMITTED</span> behaves identically to <span class="mono">READ COMMITTED</span></b> —
+      MVCC never exposes uncommitted data, so a dirty read is not possible at any level. There are <b>three distinct
+      behaviours</b>, and knowing that is worth stating in an interview.</div>
+    <table>
+      <thead><tr><th style="width:132px">Level</th><th>What a transaction sees</th></tr></thead>
+      <tbody>
+        <tr><td><b>Read Committed</b><br><span style="color:#6b7391">the default</span></td><td>A <b>fresh snapshot at the start of each statement</b>. Two identical queries in one transaction can return different results if another transaction commits between them</td></tr>
+        <tr><td><b>Repeatable Read</b></td><td><b>One snapshot for the whole transaction</b> — true snapshot isolation. Consistent reads throughout, and a write conflict raises a serialization failure the application must retry</td></tr>
+        <tr><td><b>Serializable</b></td><td>Snapshot isolation plus <b>predicate locking</b> to detect dependency cycles. Guarantees the result matches <i>some</i> serial execution, and aborts transactions that would not</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">The anomalies each one permits</div>
+    <table>
+      <thead><tr><th style="width:132px">Anomaly</th><th>RC</th><th>RR</th><th>S</th></tr></thead>
+      <tbody>
+        <tr><td>Dirty read</td><td>no</td><td>no</td><td>no</td></tr>
+        <tr><td>Non-repeatable read</td><td><b style="color:#be123c">yes</b></td><td>no</td><td>no</td></tr>
+        <tr><td>Phantom read</td><td><b style="color:#be123c">yes</b></td><td>no</td><td>no</td></tr>
+        <tr><td><b>Write skew</b></td><td><b style="color:#be123c">yes</b></td><td><b style="color:#be123c">yes</b></td><td>no</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Write skew is the one that catches people.</b> Two transactions each read a
+      consistent state, each decide their write is safe, and both commit — leaving an invariant broken that neither
+      violated alone. The classic case is two on-call engineers each checking that someone else is still on duty before
+      removing themselves, and both succeeding. <b>Repeatable Read does not prevent this. Only Serializable does.</b></div>
+    <div class="callout g"><b>If you use Serializable, you must handle retries.</b> It will abort transactions with
+      a serialization failure, and the application is expected to retry them. Code that treats that as a fatal error turns
+      a correctness feature into an outage. The cost is real and usually smaller than expected — measure it rather than
+      assuming.</div>
+    <div class="callout"><b>The pragmatic middle ground</b> is Read Committed with explicit
+      <span class="mono">SELECT ... FOR UPDATE</span> on the rows an invariant depends on. That takes real row locks and
+      is often simpler to reason about than raising the isolation level globally.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — PROCESSES, SHARED MEMORY, THE WAL, AND HOW A QUERY EXECUTES
+    <span class="sub">what runs inside a server, why durability comes from the WAL, and where every replication feature originates</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 858" width="3320" height="858">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+    </defs>
+
+    <!-- PROCESSES -->
+    <rect x="8" y="6" width="1650" height="396" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">INSIDE A POSTGRESQL SERVER — a process model, not a thread model, and that has direct operational consequences</text>
+
+    <rect x="26" y="44" width="184" height="122" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="118" y="66" font-size="12.4" font-weight="700" fill="#1e3a8a" text-anchor="middle">Clients</text>
+    <g font-size="10.6" fill="#42507a" text-anchor="middle">
+      <text x="118" y="86">application servers</text>
+      <text x="118" y="104">wire protocol over TCP</text>
+      <text x="118" y="122">default port 5432</text>
+      <text x="118" y="144">almost always through</text>
+      <text x="118" y="158">a connection pooler</text>
+    </g>
+
+    <rect x="226" y="44" width="200" height="122" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="326" y="66" font-size="12.4" font-weight="700" fill="#be123c" text-anchor="middle">Postmaster</text>
+    <g font-size="10.6" fill="#7f2b2b" text-anchor="middle">
+      <text x="326" y="86">the supervisor process</text>
+      <text x="326" y="104">accepts connections and</text>
+      <text x="326" y="120">forks a backend for each</text>
+      <text x="326" y="142" font-weight="700">One OS process per</text>
+      <text x="326" y="156" font-weight="700">connection — see panel 8</text>
+    </g>
+
+    <rect x="442" y="44" width="240" height="122" rx="8" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+    <text x="562" y="66" font-size="12.4" font-weight="700" fill="#0f766e" text-anchor="middle">Backend process</text>
+    <g font-size="10.6" fill="#2f4f47">
+      <text x="456" y="86">· Parse the SQL into a tree</text>
+      <text x="456" y="104">· Rewrite — apply views and rules</text>
+      <text x="456" y="122">· <tspan font-weight="700">Plan</tspan> — the cost-based optimiser</text>
+      <text x="456" y="140">· Execute against shared buffers</text>
+      <text x="456" y="160" font-weight="700" fill="#be123c">Its private work_mem lives here</text>
+    </g>
+
+    <rect x="698" y="44" width="320" height="122" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="858" y="66" font-size="12.4" font-weight="700" fill="#7c2d92" text-anchor="middle">Shared memory — one region, all backends</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="712" y="86">· <tspan font-weight="700">Shared buffers</tspan> — the page cache for tables and indexes</text>
+      <text x="712" y="104">· <tspan font-weight="700">WAL buffers</tspan> — write-ahead log records before flush</text>
+      <text x="712" y="122">· <tspan font-weight="700">Lock table</tspan> — every lock currently held or waited on</text>
+      <text x="712" y="140">· <tspan font-weight="700">Commit log</tspan> — the status of every transaction id</text>
+      <text x="712" y="160" font-weight="700" fill="#7c2d92">Sized by shared_buffers, typically 25% of RAM</text>
+    </g>
+
+    <rect x="1034" y="44" width="608" height="122" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="1048" y="64" font-size="12.4" font-weight="700" fill="#b45309">BACKGROUND PROCESSES — the ones whose behaviour you will eventually have to tune</text>
+    <g font-size="10.6" fill="#7a3d06">
+      <text x="1048" y="84">· <tspan font-weight="700">Checkpointer</tspan> — periodically writes dirty pages to the data files, bounding recovery time</text>
+      <text x="1048" y="102">· <tspan font-weight="700">Background writer</tspan> — trickles dirty pages out so backends rarely have to write themselves</text>
+      <text x="1048" y="120">· <tspan font-weight="700">WAL writer</tspan> — flushes the WAL buffers to disk</text>
+      <text x="1048" y="138">· <tspan font-weight="700">Autovacuum launcher and workers</tspan> — reclaim dead tuples and freeze transaction ids</text>
+      <text x="1048" y="156">· <tspan font-weight="700">Archiver</tspan>, <tspan font-weight="700">WAL senders</tspan>, <tspan font-weight="700">logical replication launcher</tspan> — continuous archiving and replication</text>
+    </g>
+
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M210,105 L220,105"/><path d="M426,105 L436,105"/><path d="M682,105 L692,105"/>
+    </g>
+
+    <rect x="26" y="178" width="1616" height="102" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2.5"/>
+    <text x="42" y="198" font-size="12.6" font-weight="700" fill="#b91c1c">THE WRITE-AHEAD LOG — where durability actually comes from, and the origin of every replication and recovery feature</text>
+    <text x="42" y="218" font-size="11" fill="#7f2b2b">A change is written to the WAL <tspan font-style="italic">before</tspan> it is applied to the data files. On commit the WAL record is flushed to disk; the data pages are written later by the checkpointer. A crash replays the WAL</text>
+    <text x="42" y="238" font-size="11" fill="#7f2b2b">from the last checkpoint, so committed transactions survive and uncommitted ones do not. This single mechanism underlies <tspan font-weight="700">crash recovery, streaming replication, logical replication</tspan></text>
+    <text x="42" y="258" font-size="11" fill="#7f2b2b"><tspan font-weight="700">and point-in-time recovery</tspan> — all four are ways of reading or shipping the same log.</text>
+    <text x="42" y="276" font-size="11" font-weight="700" fill="#b91c1c">Consequence worth holding on to: if WAL cannot be removed — because a replication slot still needs it, or archiving is failing — the disk fills and the database stops. See panel 7.</text>
+
+    <rect x="26" y="292" width="1616" height="100" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="42" y="312" font-size="12.6" font-weight="700" fill="#047857">HOW A QUERY EXECUTES — and where each tuning knob applies</text>
+    <text x="42" y="332" font-size="11" fill="#2f4f47"><tspan font-weight="700">Parse</tspan> → <tspan font-weight="700">Rewrite</tspan> → <tspan font-weight="700">Plan</tspan> → <tspan font-weight="700">Execute</tspan>. The planner is <tspan font-weight="700">cost-based</tspan>: it estimates the cost of each access path from table statistics and picks the cheapest. It does not remember what was</text>
+    <text x="42" y="352" font-size="11" fill="#2f4f47">fast last time, which is why a plan can change when statistics change — and why stale statistics produce bad plans with no code change at all.</text>
+    <text x="42" y="374" font-size="11" font-weight="700" fill="#047857">Pages are read through shared buffers, then the operating system page cache, then disk. Sorts and hashes use the backend's private work_mem and spill to disk when it is exceeded —</text>
+    <text x="42" y="390" font-size="11" font-weight="700" fill="#047857">which is the single most common reason a query is unexpectedly slow while everything else looks healthy.</text>
+
+    <!-- TOPOLOGIES -->
+    <rect x="1670" y="6" width="1642" height="396" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1688" y="30" font-size="16" font-weight="700" fill="#7c2d92">DEPLOYMENT TOPOLOGIES — what each one gives you, and what it does not</text>
+
+    <rect x="1688" y="44" width="392" height="160" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="1704" y="64" font-size="12.4" font-weight="700" fill="#7c2d92">1 · SINGLE INSTANCE</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="1704" y="84">One primary, no replicas.</text>
+      <text x="1704" y="104" font-weight="700" fill="#047857">Solves: everything, up to one machine.</text>
+      <text x="1704" y="124" font-weight="700" fill="#be123c">Does not solve: availability, or read scale.</text>
+      <text x="1704" y="146">Correct for far more workloads than people expect.</text>
+      <text x="1704" y="166">Recovery means restoring a backup, so the recovery</text>
+      <text x="1704" y="182">objective is however long a restore takes.</text>
+      <text x="1704" y="200" font-weight="700" fill="#7c2d92">Backups are the entire availability story here.</text>
+    </g>
+
+    <rect x="2096" y="44" width="392" height="160" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="2112" y="64" font-size="12.4" font-weight="700" fill="#7c2d92">2 · PRIMARY + STREAMING REPLICAS</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="2112" y="84">Replicas replay the primary's WAL and can serve reads.</text>
+      <text x="2112" y="104" font-weight="700" fill="#047857">Solves: read scale, and a warm standby.</text>
+      <text x="2112" y="124" font-weight="700" fill="#be123c">Does not solve: automatic failover — core has none.</text>
+      <text x="2112" y="146">Replicas are byte-identical copies of the whole cluster;</text>
+      <text x="2112" y="162">you cannot replicate a subset this way.</text>
+      <text x="2112" y="182">Reads may be stale by the replication lag.</text>
+      <text x="2112" y="200" font-weight="700" fill="#7c2d92">Promotion is manual unless you add tooling.</text>
+    </g>
+
+    <rect x="2504" y="44" width="392" height="160" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="2520" y="64" font-size="12.4" font-weight="700" fill="#7c2d92">3 · MANAGED HIGH AVAILABILITY</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="2520" y="84">The same replication, plus <tspan font-weight="700">Patroni</tspan>, <tspan font-weight="700">repmgr</tspan> or</text>
+      <text x="2520" y="100"><tspan font-weight="700">pg_auto_failover</tspan> to detect failure and promote.</text>
+      <text x="2520" y="122" font-weight="700" fill="#047857">Solves: automatic failover with a real quorum.</text>
+      <text x="2520" y="142">Needs a distributed store — etcd or Consul — and a</text>
+      <text x="2520" y="158">virtual IP or proxy so clients find the new primary.</text>
+      <text x="2520" y="180" font-weight="700" fill="#be123c">This is the production answer. Streaming replication</text>
+      <text x="2520" y="196" font-weight="700" fill="#be123c">alone is not high availability.</text>
+    </g>
+
+    <rect x="2912" y="44" width="384" height="160" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="2928" y="64" font-size="12.4" font-weight="700" fill="#7c2d92">4 · LOGICAL REPLICATION</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="2928" y="84">Publish and subscribe at <tspan font-weight="700">table granularity</tspan>, decoded</text>
+      <text x="2928" y="100">from the WAL into row changes.</text>
+      <text x="2928" y="122" font-weight="700" fill="#047857">Solves: selective replication, cross-version</text>
+      <text x="2928" y="138" font-weight="700" fill="#047857">upgrades, feeding downstream systems.</text>
+      <text x="2928" y="160" font-weight="700" fill="#be123c">It is one-directional. Bidirectional setups create</text>
+      <text x="2928" y="176" font-weight="700" fill="#be123c">conflicts you must resolve yourself — this is</text>
+      <text x="2928" y="192" font-weight="700" fill="#be123c">not multi-master, and should not be sold as it.</text>
+    </g>
+
+    <rect x="1688" y="216" width="1608" height="82" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1704" y="236" font-size="12.6" font-weight="700" fill="#b91c1c">THE CORRECTION WORTH MAKING EXPLICITLY — PostgreSQL has no multi-master and no automatic failover in core</text>
+    <text x="1704" y="256" font-size="11" fill="#7f2b2b">Architecture diagrams routinely label a logical replication topology &ldquo;multi-master&rdquo;. Core PostgreSQL provides <tspan font-weight="700">no conflict detection and no conflict resolution</tspan>. Two nodes accepting</text>
+    <text x="1704" y="274" font-size="11" fill="#7f2b2b">writes to the same rows will diverge, silently, and reconciling them afterwards is a manual exercise with no correct answer.</text>
+    <text x="1704" y="292" font-size="11" font-weight="700" fill="#b91c1c">Likewise, streaming replication gives you a standby, not high availability. Something must decide the primary has failed and promote — and that something is Patroni or an equivalent, not PostgreSQL.</text>
+
+    <rect x="1688" y="310" width="1608" height="82" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="1704" y="330" font-size="12.6" font-weight="700" fill="#047857">SCALING — in the order to actually try things</text>
+    <text x="1704" y="350" font-size="11" fill="#2f4f47"><tspan font-weight="700">1 · Fix the queries.</tspan> An index or a rewritten query routinely beats any hardware change, and is cheaper. &nbsp;<tspan font-weight="700">2 · Tune memory and the planner</tspan> — shared_buffers, work_mem, statistics targets.</text>
+    <text x="1704" y="368" font-size="11" fill="#2f4f47"><tspan font-weight="700">3 · Vertical scale</tspan> — PostgreSQL uses large machines well. &nbsp;<tspan font-weight="700">4 · Read replicas</tspan> for read-heavy work that tolerates lag. &nbsp;<tspan font-weight="700">5 · Partition</tspan> large tables. &nbsp;<tspan font-weight="700">6 · Cache</tspan> in front for hot reads.</text>
+    <text x="1704" y="386" font-size="11" font-weight="700" fill="#047857">7 · Shard by tenant or key in the application, or adopt an extension such as Citus. This is genuinely the last resort — it changes the application, not just the deployment.</text>
+
+    <!-- READING -->
+    <rect x="8" y="414" width="3304" height="200" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="438" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — five properties that explain the rest of this sheet</text>
+    <text x="26" y="464" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · MVCC means writes create new row versions.</tspan> Readers and writers never block each other, and dead versions accumulate. Bloat, vacuum tuning and transaction id wraparound are all consequences of this, not separate topics.</text>
+    <text x="26" y="492" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · One process per connection.</tspan> Connections are expensive in memory and scheduling. A pooler is required equipment above a few hundred, and max_connections set high is a symptom rather than a solution.</text>
+    <text x="26" y="520" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The WAL is the source of durability and of every replication feature.</tspan> It also means anything preventing WAL removal — an abandoned slot, failing archiving — will fill the disk and stop the database.</text>
+    <text x="26" y="548" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · The planner is cost-based and statistics-driven.</tspan> It has no memory of previous runs, so plans change when statistics do. Most &ldquo;the query suddenly got slow&rdquo; incidents are a statistics or parameter problem, not a code change.</text>
+    <text x="26" y="576" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Locks queue, and a blocked lock blocks everything behind it.</tspan> This is why a routine schema change can take an application down while the table itself is perfectly healthy — see panel 11.</text>
+    <text x="26" y="604" font-size="11.8" fill="#6b7391">Useful interrogation of any PostgreSQL deployment: what is the oldest open transaction, is any replication slot inactive, what is max_connections and is there a pooler, when was the last successful backup restored, and what is the largest table's unfrozen age?</text>
+
+    <!-- STORAGE -->
+    <rect x="8" y="626" width="3304" height="224" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="650" font-size="16" font-weight="700" fill="#0f766e">ON-DISK STRUCTURE — the parts that show up in diagnostics</text>
+    <g font-size="10.9">
+      <rect x="26" y="662" width="800" height="176" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="42" y="682" font-size="12.2" font-weight="700" fill="#0f766e">HEAP, INDEXES AND THE VISIBILITY MAP</text>
+      <text x="42" y="702" fill="#2f4f47">· The <tspan font-weight="700">heap</tspan> holds row versions in 8 KB pages, in no particular order</text>
+      <text x="42" y="720" fill="#2f4f47">· <tspan font-weight="700">Indexes</tspan> point at page and offset. Every index must be updated on insert,</text>
+      <text x="54" y="736" fill="#2f4f47">and on any update that is not HOT — so indexes cost writes, not just space</text>
+      <text x="42" y="756" fill="#2f4f47">· The <tspan font-weight="700">visibility map</tspan> records pages where every row is visible to everyone</text>
+      <text x="42" y="776" fill="#2f4f47">· <tspan font-weight="700">Index-only scans</tspan> depend on it: if the page is marked all-visible the heap</text>
+      <text x="54" y="792" fill="#2f4f47">need not be consulted at all. Vacuum is what maintains that map</text>
+      <text x="42" y="814" font-weight="700" fill="#be123c">Which is why a table that has not been vacuumed loses index-only scans and</text>
+      <text x="42" y="830" font-weight="700" fill="#be123c">gets slower in a way that no query change explains.</text>
+
+      <rect x="842" y="662" width="800" height="176" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="858" y="682" font-size="12.2" font-weight="700" fill="#0f766e">TOAST — oversized values</text>
+      <text x="858" y="702" fill="#2f4f47">· A row must fit within one 8 KB page. Larger values are compressed and, if</text>
+      <text x="870" y="718" fill="#2f4f47">still too large, moved to an associated TOAST table transparently</text>
+      <text x="858" y="738" fill="#2f4f47">· This applies to long text, large JSONB documents, arrays and bytea</text>
+      <text x="858" y="758" fill="#2f4f47">· Reading a toasted value costs an extra fetch, so <tspan font-weight="700">SELECT * on a table with</tspan></text>
+      <text x="870" y="774" fill="#2f4f47"><tspan font-weight="700">large documents is far more expensive</tspan> than selecting the columns you need</text>
+      <text x="858" y="796" font-weight="700" fill="#047857">· It is transparent and automatic — but it explains why a table with a few</text>
+      <text x="858" y="812" font-weight="700" fill="#047857">large JSONB columns behaves differently from its row count alone</text>
+      <text x="858" y="832" fill="#2f4f47">· Storing large binary blobs in the database at all is usually the wrong call</text>
+
+      <rect x="1658" y="662" width="1638" height="176" rx="7" fill="#fff7ea" stroke="#e9b669" stroke-width="1.8"/>
+      <text x="1674" y="682" font-size="12.2" font-weight="700" fill="#a35c00">CHECKPOINTS — a periodic cost that shows up as latency spikes if left untuned</text>
+      <text x="1674" y="704" fill="#7a3d06">A checkpoint writes all dirty shared buffers to the data files so that crash recovery need only replay WAL written since. It is the mechanism that bounds recovery time.</text>
+      <text x="1674" y="726" fill="#7a3d06">Checkpoints are triggered by elapsed time (<tspan font-family="Menlo,monospace" font-size="10.4">checkpoint_timeout</tspan>) or by WAL volume (<tspan font-family="Menlo,monospace" font-size="10.4">max_wal_size</tspan>), whichever comes first.</text>
+      <text x="1674" y="750" font-weight="700" fill="#be123c">Checkpoints that are too frequent cause repeated I/O storms and, because each page's first change after a checkpoint writes the whole page to WAL, they inflate WAL volume considerably.</text>
+      <text x="1674" y="770" fill="#7a3d06">Checkpoints that are too infrequent make crash recovery long and produce a large burst of writes when one does occur.</text>
+      <text x="1674" y="794" font-weight="700" fill="#047857">The practical settings: raise max_wal_size so checkpoints are driven by time rather than volume, keep checkpoint_completion_target high so writes are spread across the interval rather than</text>
+      <text x="1674" y="812" font-weight="700" fill="#047857">arriving as a spike, and watch the log for checkpoints occurring &ldquo;too frequently&rdquo; — PostgreSQL says so explicitly, and it is one of the few warnings that names its own fix.</text>
+      <text x="1674" y="832" fill="#7a3d06">If write latency shows a regular sawtooth, checkpoint tuning is the first place to look — before storage, before indexes, before the queries themselves.</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. INDEXING ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;INDEXES — THE TYPES, AND WHEN EACH IS THE RIGHT ANSWER
+    <span class="sub"><span class="lvl jr">JUNIOR</span> B-tree covers most cases · <span class="lvl mid">MID</span> the specialised types · <span class="lvl sr">STAFF</span> what indexes cost</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:88px">Type</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td><b>B-tree</b><br><span style="color:#6b7391">the default</span></td><td>Equality, ranges, sorting, uniqueness. <b>Covers the large majority of needs</b>. From PostgreSQL 18 it can also skip-scan a multicolumn index when a leading column is not constrained</td></tr>
+          <tr><td><b>GIN</b></td><td><b>Values containing multiple items</b> — JSONB keys, arrays, full-text vectors, trigram search. Slower to update than B-tree; excellent for containment queries</td></tr>
+          <tr><td><b>GiST</b></td><td>Geometric and range types, nearest-neighbour search, and the basis for PostGIS indexing</td></tr>
+          <tr><td><b>SP-GiST</b></td><td>Non-balanced structures — quadtrees, radix trees. Useful for particular spatial and text-prefix patterns</td></tr>
+          <tr><td><b>BRIN</b></td><td><b>Very large tables with natural physical ordering</b>, typically append-only time-series. Stores only min and max per block range, so it is <b>minuscule</b> compared with a B-tree — and useless if the data is not physically ordered</td></tr>
+          <tr><td><b>Hash</b></td><td>Equality only. Rarely the right answer over B-tree</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">The variants that matter more than the types</div>
+      <ul>
+        <li><b>Multicolumn</b> — column order matters. The index serves queries on a <b>leading prefix</b> of its columns</li>
+        <li><b>Partial</b> — <span class="mono">WHERE status = 'active'</span>. Far smaller and cheaper when queries always carry that predicate</li>
+        <li><b>Expression</b> — <span class="mono">ON t (lower(email))</span>, matching a query that filters the same way</li>
+        <li><b>Covering</b> — <span class="mono">INCLUDE (...)</span> carries extra columns so a query can be answered from the index alone</li>
+        <li><b>Unique</b> — a constraint that is enforced by an index</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Indexes are not free, and the cost lands on writes.</b> Every
+        index must be updated on insert and delete, and on any update that touches its columns — or that cannot be
+        performed as a HOT update. Each one also consumes cache and needs vacuuming. <b>An unused index is a permanent tax
+        on every write</b> with no compensating benefit.</div>
+      <div class="callout g"><b>Find unused indexes with <span class="mono">pg_stat_user_indexes</span>.</b> Scan
+        counts near zero after a full business cycle means the index is not earning its cost. Drop them — but check
+        replicas too, since a reporting replica may be the only user.</div>
+      <div class="h3">Index-only scans</div>
+      <div style="font-size:12.9px;line-height:1.45">The fastest read available: the query is answered from the index
+        without touching the heap. It requires <b>every requested column to be in the index</b> and the page to be marked
+        all-visible in the visibility map — which is maintained by vacuum. <b>A poorly vacuumed table silently loses
+        index-only scans</b>, and the query gets slower with no change to the code.</div>
+      <div class="h3">Building and maintaining them safely</div>
+      <ul>
+        <li><b><span class="mono">CREATE INDEX CONCURRENTLY</span></b> in production. A plain <span class="mono">CREATE INDEX</span> takes a lock that blocks writes for the whole build</li>
+        <li><b>It is slower and can fail</b>, leaving an invalid index behind that must be dropped and retried — check for these afterwards</li>
+        <li><b><span class="mono">REINDEX CONCURRENTLY</span></b> rebuilds a bloated index without the long lock</li>
+        <li><b>Indexes bloat too</b>, particularly under heavy updates — monitor size against table size</li>
+      </ul>
+      <div class="callout"><b>Before adding an index, check whether one already serves the query.</b> A
+        multicolumn index on <span class="mono">(a, b)</span> already handles queries on <span class="mono">a</span>, so
+        adding a separate index on <span class="mono">a</span> adds write cost for nothing. Duplicated and overlapping
+        indexes accumulate quietly over years.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. PLANNING ============ -->
+<div class="panel c4">
+  <div class="phead">6 &nbsp;· &nbsp;QUERY PLANNING &amp; EXPLAIN <span class="sub">how to diagnose a slow query</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>The planner is cost-based and driven by statistics.</b> It
+      estimates rows at each step and picks the cheapest plan. It has <b>no memory of previous executions</b> — so a plan
+      changes when the statistics change, which is why a query can turn slow overnight with no deployment.</div>
+    <div class="code">EXPLAIN (ANALYZE, BUFFERS) SELECT …
+
+<span class="c">-- ANALYZE actually runs it, giving real timings</span>
+<span class="c">-- BUFFERS shows pages hit vs read from disk</span>
+<span class="c">-- the key signal:</span>
+Seq Scan on orders
+  (cost=… rows=<span class="k">100</span>) (actual … rows=<span class="r">840000</span>)
+       estimated ↑            actual ↑
+<span class="c">-- a large gap means the statistics are wrong,</span>
+<span class="c">-- and every choice above this node is suspect</span></div>
+    <div class="h3">Reading the plan nodes</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>Seq Scan</b></td><td>Reads the whole table. <b>Correct for small tables or when returning most rows</b> — not automatically a fault</td></tr>
+        <tr><td><b>Index Scan</b></td><td>Walks the index, then fetches rows from the heap</td></tr>
+        <tr><td><b>Index Only Scan</b></td><td>Answered entirely from the index. The fastest case</td></tr>
+        <tr><td><b>Bitmap Heap Scan</b></td><td>Collects matches from the index, then reads the heap in physical order. Efficient for medium-sized result sets</td></tr>
+        <tr><td><b>Nested Loop</b></td><td>Good when one side is small; <b>disastrous when the row estimate was wrong</b> and it is actually large</td></tr>
+        <tr><td><b>Hash Join</b></td><td>Builds a hash of one side. Needs <span class="mono">work_mem</span>, or it spills</td></tr>
+        <tr><td><b>Merge Join</b></td><td>Both inputs sorted — good for large, already-ordered sets</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The first thing to look for is not the slowest node — it is the largest gap between
+      estimated and actual rows.</b> The planner made every subsequent choice on that estimate. Fix the estimate, with
+      <span class="mono">ANALYZE</span>, a higher statistics target, or extended statistics for correlated columns, and the
+      plan often corrects itself.</div>
+    <div class="callout"><b><span class="mono">work_mem</span> is per sort or hash operation, not per query or
+      per connection.</b> One query with several sorts can use it several times over, and many concurrent connections
+      multiply that again. Setting it globally high is a well-known route to running the machine out of memory — raise it
+      for the specific session or query that needs it.</div>
+  </div>
+</div>
+
+<!-- ============ 7. REPLICATION ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;REPLICATION, HIGH AVAILABILITY AND THE SLOT THAT FILLS YOUR DISK
+    <span class="sub"><span class="lvl mid">MID</span> physical versus logical · <span class="lvl sr">STAFF</span> what core does not provide, and the classic outage</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Physical versus logical</div>
+      <table>
+        <thead><tr><th style="width:88px"></th><th>Physical (streaming)</th><th>Logical</th></tr></thead>
+        <tbody>
+          <tr><td><b>Ships</b></td><td>Raw WAL — byte-level changes</td><td>Decoded row changes</td></tr>
+          <tr><td><b>Granularity</b></td><td><b>The entire cluster</b>, all or nothing</td><td><b>Per table</b>, via publications</td></tr>
+          <tr><td><b>Versions</b></td><td>Must match</td><td>Can differ — the basis of near-zero-downtime major upgrades</td></tr>
+          <tr><td><b>Replica writes</b></td><td>Read-only</td><td>Writable — which is what creates conflicts</td></tr>
+          <tr><td><b>Use for</b></td><td>High availability, read replicas, disaster recovery</td><td>Selective replication, upgrades, feeding other systems</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Synchronous or asynchronous</div>
+      <ul>
+        <li><b>Asynchronous is the default.</b> The primary commits and replies before any replica has the change — so a failover <b>can lose recently acknowledged writes</b></li>
+        <li><b><span class="mono">synchronous_commit</span></b> controls how far a commit must get before returning. It can require a replica to have received, flushed, or applied the record — each stronger and slower than the last</li>
+        <li><b>Quorum commit</b> allows &ldquo;any two of these three&rdquo;, which avoids one slow replica stalling all commits</li>
+        <li><b>Synchronous replication trades availability for durability</b>: if the required replicas are unreachable, commits <b>wait</b>. Always configure more candidates than the quorum requires</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The classic PostgreSQL outage: an inactive replication
+        slot.</b> A slot guarantees the primary retains WAL until the consumer has it — which is exactly what you want
+        while the replica exists. When that replica is decommissioned, or a logical subscriber stops consuming,
+        <b>the slot remains and WAL accumulates without limit until the disk fills and the database stops</b>. It is
+        entirely silent until it is critical.</div>
+      <div class="callout g"><b>The prevention is three lines of monitoring.</b> Alert on any slot where
+        <span class="mono">active</span> is false, on the retained WAL size per slot, and on the WAL directory as a
+        proportion of the volume. Set <span class="mono">max_slot_wal_keep_size</span> so a stuck slot is invalidated
+        rather than allowed to take the primary down — losing a replica is much better than losing the primary.</div>
+      <div class="h3">High availability needs tooling</div>
+      <ul>
+        <li><b>Core PostgreSQL will not promote a replica for you.</b> Streaming replication gives a standby; something else must decide the primary is gone and act</li>
+        <li><b>Patroni</b> with etcd or Consul is the common choice — quorum-based leader election with fencing to prevent two primaries</li>
+        <li><b>repmgr</b> and <b>pg_auto_failover</b> are lighter alternatives with less coordination machinery</li>
+        <li><b>Clients must find the new primary</b> — a virtual IP, a proxy such as HAProxy or PgBouncer, or multi-host connection strings with target session attributes</li>
+        <li><b>Test failover deliberately</b>, including that the application reconnects and that the old primary cannot come back as a second writer</li>
+      </ul>
+      <div class="callout"><b>Replicas are not a backup.</b> A mistaken <span class="mono">DELETE</span> or a bad
+        migration replicates in milliseconds. Only backups with point-in-time recovery let you go back to just before the
+        mistake — see panel 13.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. POOLING ============ -->
+<div class="panel c5">
+  <div class="phead">8 &nbsp;· &nbsp;CONNECTIONS &amp; POOLING <span class="sub">not optional at scale</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Each connection is a separate operating-system process</b> with
+      its own memory and scheduling cost. Idle connections still consume resources. This is why
+      <b><span class="mono">max_connections</span> set to a large number is a symptom, not a solution</b> — a database
+      configured for a thousand direct connections will spend a large share of its time on context switching and lock
+      contention rather than on queries.</div>
+    <div class="callout b"><b>The shape of the right answer:</b> keep <span class="mono">max_connections</span>
+      modest — commonly in the low hundreds — and put a <b>pooler</b> in front to multiplex many application connections
+      onto few database ones. Applications open connections to the pooler, which is cheap; the database sees a small,
+      steady number.</div>
+    <div class="h3">PgBouncer pool modes</div>
+    <table>
+      <thead><tr><th style="width:104px">Mode</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b>Session</b></td><td>A server connection is held for the client's whole session. <b>Safest, least pooling benefit</b></td></tr>
+        <tr><td><b>Transaction</b></td><td>Returned to the pool after each transaction. <b>The usual production choice</b> — very high multiplexing</td></tr>
+        <tr><td><b>Statement</b></td><td>Returned after every statement. Multi-statement transactions are impossible</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Transaction mode breaks anything that assumes a persistent session.</b> Because a
+      different backend may serve your next transaction: <b>session-level <span class="mono">SET</span>, advisory locks,
+      <span class="mono">LISTEN</span>/<span class="mono">NOTIFY</span>, <span class="mono">WITH HOLD</span> cursors and
+      temporary tables</b> all misbehave. Server-side prepared statements need matching support on both sides. These
+      failures are intermittent and confusing precisely because they depend on which backend you land on.</div>
+    <div class="h3">Getting the sizing right</div>
+    <ul>
+      <li><b>The database pool should be small</b> — a common starting point relates it to CPU cores rather than to application instances</li>
+      <li><b>Application pools must sum to less</b> than the pooler's limit, or connections queue in the wrong place</li>
+      <li><b>Set <span class="mono">idle_in_transaction_session_timeout</span></b> so a leaked transaction cannot hold a server connection and block vacuum</li>
+      <li><b>Reserve superuser connections</b> so an administrator can still get in when the pool is exhausted</li>
+    </ul>
+    <div class="callout g"><b>Connection exhaustion usually presents as a slow application, not a database
+      error.</b> Requests queue waiting for a connection while the database itself looks idle. Monitor pool wait time on
+      the application side — the database will not tell you.</div>
+  </div>
+</div>
+
+<!-- ============ 9. TYPES ============ -->
+<div class="panel c8">
+  <div class="phead">9 &nbsp;· &nbsp;DATA TYPES &amp; JSONB <span class="sub">the depth that distinguishes it</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Type</th><th>Notes worth knowing</th></tr></thead>
+      <tbody>
+        <tr><td><b>text / varchar</b></td><td><b>No performance difference</b> in PostgreSQL. <span class="mono">varchar(n)</span> only adds a length check — use <span class="mono">text</span> unless the limit is a real business rule</td></tr>
+        <tr><td><b>numeric</b></td><td>Exact decimal arithmetic. <b>Use it for money</b>; slower than floating point, and correct</td></tr>
+        <tr><td><b>timestamptz</b></td><td><b>Almost always the right choice</b> over <span class="mono">timestamp</span>. It stores an absolute instant; the plain type stores a wall-clock reading with no time zone and quietly causes bugs</td></tr>
+        <tr><td><b>uuid</b></td><td>Native 16-byte type. <b>PostgreSQL 18 adds <span class="mono">uuidv7()</span></b>, which is time-ordered and therefore far better for index locality than random v4</td></tr>
+        <tr><td><b>jsonb</b></td><td>Binary, indexable, deduplicates keys, does not preserve key order. <b>Prefer it over <span class="mono">json</span></b>, which stores the original text and reparses on every access</td></tr>
+        <tr><td><b>arrays</b></td><td>First-class, indexable with GIN. Useful, and not a substitute for a related table</td></tr>
+        <tr><td><b>ranges</b></td><td>Ranges of numbers or timestamps, with <b>exclusion constraints</b> that can prevent overlapping bookings declaratively</td></tr>
+        <tr><td><b>enum</b>, <b>domain</b></td><td>Constrained values and reusable constrained types</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Using JSONB well</div>
+    <ul>
+      <li><b>Index it with GIN.</b> The default operator class supports containment and key existence; <span class="mono">jsonb_path_ops</span> is smaller and faster for containment alone</li>
+      <li><b>Index a specific path with a B-tree expression index</b> when queries always filter on the same field — much cheaper than a whole-document GIN index</li>
+      <li><b>Large documents get TOASTed</b>, so retrieving them costs an extra fetch. Select the fields you need</li>
+    </ul>
+    <div class="callout r"><b>The trap: JSONB used to avoid schema design.</b> Fields that every row has, that are
+      queried and constrained, belong in columns — where they get types, constraints, statistics and cheap indexes. JSONB
+      is the right answer for <b>genuinely variable, sparse or caller-defined structure</b>, alongside proper columns for
+      everything else.</div>
+    <div class="callout"><b>The planner's statistics on JSONB contents are limited</b>, so row estimates for
+      containment predicates are weaker than for ordinary columns. That means worse plans on complex queries — another
+      reason to promote heavily queried fields to real columns.</div>
+  </div>
+</div>
+
+<!-- ============ 10. PARTITIONING ============ -->
+<div class="panel c4">
+  <div class="phead">10 &nbsp;· &nbsp;PARTITIONING <span class="sub">what it does and does not fix</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">Declarative partitioning splits one logical table into physical
+      partitions by a key. The application queries the parent table and PostgreSQL routes reads and writes to the relevant
+      partitions.</div>
+    <table>
+      <thead><tr><th style="width:88px">Strategy</th><th>Use for</th></tr></thead>
+      <tbody>
+        <tr><td><b>Range</b></td><td><b>The common case</b> — by date, for time-series data with retention</td></tr>
+        <tr><td><b>List</b></td><td>Discrete values — region, tenant, category</td></tr>
+        <tr><td><b>Hash</b></td><td>Even distribution when no natural key exists</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">What it genuinely buys</div>
+    <ul>
+      <li><b>Retention becomes <span class="mono">DETACH</span> or <span class="mono">DROP</span> of a partition</b> — near-instant, and no bloat. Compare with deleting millions of rows, which creates dead tuples and demands vacuum</li>
+      <li><b>Partition pruning</b> — queries filtering on the key skip irrelevant partitions entirely, at plan time or execution time</li>
+      <li><b>Maintenance operates per partition</b> — vacuum, analyze and index builds work on manageable pieces</li>
+      <li><b>Bulk loading</b> into a fresh partition, indexed afterwards and then attached</li>
+    </ul>
+    <div class="callout r"><b>What it does not buy: it is not a general performance fix.</b> A query that does not
+      filter on the partition key must touch <b>every partition</b>, and is usually slower than it would have been against
+      one table. Partitioning solves manageability and retention first, and query performance only for key-aligned access.</div>
+    <div class="h3">The constraints to plan around</div>
+    <ul>
+      <li><b>Unique constraints must include the partition key</b> — you cannot enforce global uniqueness on another column</li>
+      <li><b>Foreign keys referencing a partitioned table</b> have historically been restricted; confirm behaviour for your version</li>
+      <li><b>Too many partitions costs planning time</b> — thousands is a real burden. Match granularity to retention</li>
+      <li><b>Partitions must be created ahead of time</b> — <span class="mono">pg_partman</span> or a scheduled job. A missing partition means failing inserts, usually at midnight</li>
+    </ul>
+    <div class="callout g"><b>The signal that you need it</b> is a large table where old data is dropped on a
+      schedule, or where vacuum and index maintenance no longer complete in a sensible window. Partition then — not
+      preemptively.</div>
+  </div>
+</div>
+
+<!-- ============ 11. LOCKING ============ -->
+<div class="panel c6">
+  <div class="phead">11 &nbsp;· &nbsp;LOCKING &amp; SAFE MIGRATIONS <span class="sub">how a schema change causes an outage</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The mechanism that surprises people: locks queue, and a waiting
+      lock blocks everything behind it.</b> An <span class="mono">ALTER TABLE</span> needing an ACCESS EXCLUSIVE lock waits
+      for a long-running query to finish — and <b>every subsequent query on that table queues behind the waiting
+      ALTER</b>, including simple reads that would otherwise have been fine. A one-second schema change becomes a total
+      outage on that table.</div>
+    <div class="callout g"><b>The defence is one line.</b> Set <span class="mono">lock_timeout</span> before any DDL
+      so the statement gives up quickly rather than accumulating a queue behind it. Retry in a loop if needed — failing
+      fast repeatedly is far safer than waiting once.</div>
+    <div class="code"><span class="c">-- the safe pattern for any production DDL</span>
+SET lock_timeout = <span class="v">'3s'</span>;
+ALTER TABLE orders ADD COLUMN note text;
+<span class="c">-- fails fast instead of queueing the world behind it</span></div>
+    <div class="h3">Operations and what they take</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>ADD COLUMN, nullable or with a constant default</b></td><td><b>Fast</b> — metadata only since PostgreSQL 11. It does not rewrite the table</td></tr>
+        <tr><td><b>ADD COLUMN with a volatile default</b></td><td><b>Rewrites the whole table</b> under an exclusive lock</td></tr>
+        <tr><td><b>Changing a column type</b></td><td>Usually a full rewrite. Prefer a new column, backfill, then swap</td></tr>
+        <tr><td><b>SET NOT NULL</b></td><td>Scans the table. Add a validated <span class="mono">CHECK</span> constraint first to make it cheap</td></tr>
+        <tr><td><b>Adding a foreign key</b></td><td>Add it <span class="mono">NOT VALID</span>, then <span class="mono">VALIDATE</span> separately — the validation takes a much weaker lock</td></tr>
+        <tr><td><b>CREATE INDEX</b></td><td>Blocks writes. <b>Always use <span class="mono">CONCURRENTLY</span></b> in production</td></tr>
+        <tr><td><b>VACUUM FULL</b></td><td>Blocks everything. Use <span class="mono">pg_repack</span> instead</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Deadlocks are detected and resolved automatically</b> — PostgreSQL aborts one
+      transaction with a clear error. They are almost always caused by two code paths taking the same locks in different
+      orders. <b>Acquire locks in a consistent order</b> and they largely disappear; the log names both statements
+      involved.</div>
+  </div>
+</div>
+
+<!-- ============ 12. CONFIG ============ -->
+<div class="panel c7 span2">
+  <div class="phead">12 &nbsp;· &nbsp;MEMORY AND CONFIGURATION — THE SETTINGS THAT ACTUALLY MATTER
+    <span class="sub"><span class="lvl sr">STAFF</span> what each one does, and the one that is per-operation rather than per-server</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">Setting</th><th>Guidance and reasoning</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">shared_buffers</td><td><b>Around 25% of RAM</b> is the usual starting point. PostgreSQL relies on the operating system page cache as well, so giving it everything is counter-productive</td></tr>
+          <tr><td class="mono">effective_cache_size</td><td><b>Around 50–75% of RAM.</b> This allocates nothing — it <b>tells the planner</b> how much cache it can assume, which changes whether it favours index scans</td></tr>
+          <tr><td class="mono">work_mem</td><td><b>Per sort or hash operation</b>, not per query and not per connection. See the warning opposite</td></tr>
+          <tr><td class="mono">maintenance_work_mem</td><td>Used by vacuum, index builds and restores. <b>Set it generously</b> — it makes autovacuum materially faster</td></tr>
+          <tr><td class="mono">max_connections</td><td><b>Keep it modest and add a pooler.</b> A high value is a symptom rather than a solution</td></tr>
+          <tr><td class="mono">random_page_cost</td><td>Default assumes spinning disks. <b>Lower it to around 1.1 on SSD</b>, or the planner will avoid index scans it should be choosing</td></tr>
+          <tr><td class="mono">effective_io_concurrency</td><td>Raise on SSD so bitmap heap scans can prefetch</td></tr>
+          <tr><td class="mono">max_wal_size<br>checkpoint_timeout</td><td>Together they set checkpoint frequency. Too frequent means I/O storms and inflated WAL</td></tr>
+          <tr><td class="mono">wal_level</td><td><span class="mono">replica</span> for streaming; <span class="mono">logical</span> if logical replication or change capture is needed</td></tr>
+          <tr><td class="mono">autovacuum_*</td><td><b>Never disable it.</b> On large tables, lower the scale factor so vacuum triggers on a sensible absolute row count rather than a percentage</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b><span class="mono">work_mem</span> is the setting most often
+        misunderstood, and it is worth being precise about.</b> It is the limit for <b>each individual sort, hash or
+        similar operation</b>. A single query with several sorts and a hash join can allocate it several times over, and
+        every concurrent connection does the same independently. <b>Total consumption is roughly work_mem × operations ×
+        connections</b> — which is how a value that looked reasonable takes a machine out of memory under load.</div>
+      <div class="callout g"><b>The safe approach:</b> keep the global value conservative and raise it for the
+        specific session, role or query that genuinely needs it. A reporting job can set it high for itself without putting
+        the whole server at risk.</div>
+      <div class="h3">Settings worth setting on day one</div>
+      <ul>
+        <li><b><span class="mono">statement_timeout</span></b> — no query should run forever. Set it per role, higher for reporting than for the application</li>
+        <li><b><span class="mono">idle_in_transaction_session_timeout</span></b> — <b>prevents the most common cause of unbounded bloat</b></li>
+        <li><b><span class="mono">lock_timeout</span></b> — set before DDL so a schema change cannot queue the world behind it</li>
+        <li><b><span class="mono">log_min_duration_statement</span></b> — log slow queries. The cheapest observability available</li>
+        <li><b><span class="mono">log_checkpoints</span>, <span class="mono">log_lock_waits</span>, <span class="mono">log_autovacuum_min_duration</span></b> — each turns a silent problem into a log line</li>
+        <li><b><span class="mono">shared_preload_libraries = 'pg_stat_statements'</span></b> — requires a restart, so do it before you need it</li>
+      </ul>
+      <div class="callout"><b>Host settings matter too.</b> Configure huge pages for large shared buffers, tune
+        the kernel's dirty-page thresholds so checkpoints do not collide with the operating system's own flushing, and
+        <b>disable the OOM killer's attention on the postmaster</b> — if it kills that process, the whole cluster restarts.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">13 &nbsp;· &nbsp;SECURITY &amp; BACKUP <span class="sub">and the difference between them</span></div>
+  <div class="pbody">
+    <div class="h3">Access control</div>
+    <ul>
+      <li><b><span class="mono">pg_hba.conf</span> is the first gate</b> — it decides who may connect, from where, and how. It is evaluated top to bottom, first match wins, and it is where accidental <span class="mono">trust</span> entries hide</li>
+      <li><b>Use <span class="mono">scram-sha-256</span></b>, not the older md5 method</li>
+      <li><b>Roles, not users</b> — grant to group roles and make people and services members</li>
+      <li><b>Never let the application connect as a superuser or as the table owner.</b> The owner can drop the tables; the application only needs to read and write them</li>
+      <li><b>Row-level security</b> enforces per-row visibility in the database — the mechanism for real multi-tenancy</li>
+      <li><b>TLS for all connections</b>, and verify the certificate on the client rather than merely enabling encryption</li>
+      <li><b>Revoke the default public schema rights</b> on new databases</li>
+    </ul>
+    <div class="h3">Backups — three distinct things</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b><span class="mono">pg_dump</span></b></td><td><b>Logical.</b> Portable across versions and architectures, restores selected objects, and is <b>slow to restore</b> at large sizes</td></tr>
+        <tr><td><b><span class="mono">pg_basebackup</span></b></td><td><b>Physical.</b> A byte-level copy of the cluster — fast to restore, tied to the version</td></tr>
+        <tr><td><b>PITR</b></td><td>A physical base backup <b>plus continuously archived WAL</b>, allowing recovery to any moment. <b>The only thing that undoes a bad migration at 14:32</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Replication is not backup.</b> It faithfully copies your mistakes. Point-in-time
+      recovery is what lets you go back to just before one — and it is the difference between an incident and a
+      catastrophe.</div>
+    <div class="callout g"><b>Use <span class="mono">pgBackRest</span> or <span class="mono">barman</span></b>
+      rather than hand-rolled scripts. They handle parallelism, compression, retention, encryption and — importantly —
+      <b>verification</b>. Then restore from them on a schedule and time it: an untested backup is a hypothesis, and
+      restore duration is the number your recovery objective actually depends on.</div>
+  </div>
+</div>
+
+<!-- ============ 14. EXTENSIONS ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;EXTENSIONS AND OBSERVABILITY
+    <span class="sub">what the ecosystem adds, the views that answer real questions, and what to watch</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Extensions worth knowing by name</div>
+      <table>
+        <thead><tr><th style="width:132px">Extension</th><th>What it adds</th></tr></thead>
+        <tbody>
+          <tr><td><b>pg_stat_statements</b></td><td><b>The single most valuable one.</b> Aggregate statistics per normalised query — total time, calls, rows, I/O. It answers &ldquo;what is actually slow&rdquo; directly. Requires a restart to enable, so do it early</td></tr>
+          <tr><td><b>PostGIS</b></td><td>Full geospatial support — geometry and geography types, spatial indexing, and a very large function library. The reference implementation in open source</td></tr>
+          <tr><td><b>pgvector</b></td><td>Vector similarity search for embeddings — semantic search and retrieval for language-model applications, in the same database as your relational data</td></tr>
+          <tr><td><b>pg_trgm</b></td><td>Trigram matching — fuzzy search and, importantly, index support for <span class="mono">LIKE '%foo%'</span> which is otherwise unindexable</td></tr>
+          <tr><td><b>pg_partman</b></td><td>Automates partition creation and retention — removes the midnight failure mode</td></tr>
+          <tr><td><b>pg_cron</b></td><td>Scheduled jobs inside the database</td></tr>
+          <tr><td><b>pg_repack</b></td><td>Removes bloat without the long exclusive lock of <span class="mono">VACUUM FULL</span></td></tr>
+          <tr><td><b>TimescaleDB</b>, <b>Citus</b></td><td>Time-series capability, and distributed sharding</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Check extension availability before designing around one.</b> Managed platforms offer
+        differing subsets, and discovering that the one your design depends on is unavailable is a late and expensive
+        surprise.</div>
+    </div>
+    <div>
+      <div class="h3">The views that answer real questions</div>
+      <table>
+        <thead><tr><th style="width:158px">View</th><th>Answers</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">pg_stat_statements</td><td>Which queries consume the most total time — usually more useful than the single slowest</td></tr>
+          <tr><td class="mono">pg_stat_activity</td><td>What is running right now, what is waiting, and <b>how long the oldest transaction has been open</b></td></tr>
+          <tr><td class="mono">pg_locks</td><td>Who holds what and who is blocked. Join it to activity to find the head of a lock queue</td></tr>
+          <tr><td class="mono">pg_stat_user_tables</td><td>Dead tuple counts, and when each table was last vacuumed or analyzed</td></tr>
+          <tr><td class="mono">pg_stat_user_indexes</td><td>Index scan counts — how you find indexes nobody uses</td></tr>
+          <tr><td class="mono">pg_stat_replication</td><td>Replica state and lag, in bytes and in time</td></tr>
+          <tr><td class="mono">pg_replication_slots</td><td><b>Inactive slots and retained WAL.</b> Check this before it fills a disk</td></tr>
+          <tr><td class="mono">pg_stat_database</td><td>Commits, rollbacks, deadlocks, temporary file usage and cache hit ratio</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Temporary file usage is an underused signal.</b> It means operations spilled to disk
+        because <span class="mono">work_mem</span> was insufficient — a precise, actionable pointer to which queries need
+        attention, rather than a general sense that things are slow.</div>
+    </div>
+    <div>
+      <div class="h3">What to monitor, and why</div>
+      <table>
+        <thead><tr><th style="width:170px">Metric</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Oldest transaction age</b></td><td><b>The highest-value single metric.</b> It predicts bloat, blocked vacuum and eventually wraparound</td></tr>
+          <tr><td><b>Maximum unfrozen age per table</b></td><td>The wraparound early warning. Alert long before PostgreSQL starts warning itself</td></tr>
+          <tr><td><b>Dead tuple counts and last autovacuum</b></td><td>Whether vacuum is keeping up per table</td></tr>
+          <tr><td><b>Replication lag</b>, bytes and seconds</td><td>Your data-loss window, and whether replica reads are usable</td></tr>
+          <tr><td><b>Inactive replication slots and retained WAL</b></td><td>The silent disk-filling failure</td></tr>
+          <tr><td><b>Connection count vs limit</b></td><td>Exhaustion presents as application slowness, not a database error</td></tr>
+          <tr><td><b>Cache hit ratio</b></td><td>A sustained fall means the working set no longer fits</td></tr>
+          <tr><td><b>Checkpoint frequency</b></td><td>Timed versus requested checkpoints; too many requested means <span class="mono">max_wal_size</span> is too small</td></tr>
+          <tr><td><b>Deadlocks and lock waits</b></td><td>Contention patterns worth fixing in the application</td></tr>
+          <tr><td><b>Backup success and restore time</b></td><td>A silently failing backup means no backups</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:128px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Tables and indexes growing, disk filling</b></td><td>Bloat — vacuum blocked by a long transaction, an idle-in-transaction session, or an abandoned slot</td><td>Find the oldest transaction in <span class="mono">pg_stat_activity</span>; set the idle timeout; drop the dead slot</td></tr>
+          <tr><td><b>Database refuses writes, wraparound warnings</b></td><td>Transaction ids not frozen in time</td><td>Vacuum the named tables urgently. <b>Prevent by alerting on unfrozen age</b></td></tr>
+          <tr><td><b>Disk fills with WAL, database stops</b></td><td>An inactive replication slot, or WAL archiving failing</td><td>Drop the slot or fix archiving; set <span class="mono">max_slot_wal_keep_size</span></td></tr>
+          <tr><td><b>A query turned slow with no code change</b></td><td>Plan changed after statistics shifted, or data volume crossed a threshold</td><td><span class="mono">EXPLAIN (ANALYZE, BUFFERS)</span>; compare estimated with actual rows; <span class="mono">ANALYZE</span></td></tr>
+          <tr><td><b>Everything on one table hangs</b></td><td>A DDL statement waiting on a lock, with all subsequent queries queued behind it</td><td>Cancel the blocking statement. <b>Always set <span class="mono">lock_timeout</span> before DDL</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:128px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Application slow, database looks idle</b></td><td>Connection pool exhausted; requests queueing before they reach the database</td><td>Monitor pool wait time; add a pooler; find the leak holding connections</td></tr>
+          <tr><td><b>Out of memory under load</b></td><td><span class="mono">work_mem</span> multiplied by operations and connections</td><td>Lower the global value; raise it per session where genuinely needed</td></tr>
+          <tr><td><b>Regular write latency spikes</b></td><td>Checkpoints too frequent, or not spread across the interval</td><td>Raise <span class="mono">max_wal_size</span>; check the log for &ldquo;checkpoints occurring too frequently&rdquo;</td></tr>
+          <tr><td><b>Replica falls behind and cannot catch up</b></td><td>Replay is single-threaded and the primary's write rate exceeds it</td><td>Reduce write volume, faster replica storage, or accept the lag deliberately</td></tr>
+          <tr><td><b>Queries on the replica cancelled</b></td><td>Replay conflicts with a long-running read</td><td><span class="mono">hot_standby_feedback</span> — knowing it then holds back vacuum on the primary</td></tr>
+          <tr><td><b>Deadlock errors in the application</b></td><td>Two paths taking the same locks in different orders</td><td>Order lock acquisition consistently; the log names both statements</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>A missing index or a bad plan.</b> The most common cause of a sudden incident, and the cheapest to fix</td></tr>
+          <tr><td><b>2</b></td><td><b>Bloat from a blocked vacuum</b> — gradual, then sudden, and always traceable to a held snapshot</td></tr>
+          <tr><td><b>3</b></td><td><b>Connection exhaustion</b>, which presents as application slowness rather than a database error</td></tr>
+          <tr><td><b>4</b></td><td><b>Lock contention</b>, usually from a schema change meeting a long query</td></tr>
+          <tr><td><b>5</b></td><td><b>Single-primary write throughput</b> — the ceiling people plan for, and the last one reached</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> Write throughput is last. The failures that actually occur are
+        a query plan, a held transaction and a connection pool — all visible in advance, and all fixable without new
+        hardware.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>Primary down without failover tooling</b> — a full outage until someone promotes a replica. This is the argument for Patroni</li>
+        <li><b>Replica down</b> — read capacity reduced; ensure the application falls back to the primary rather than failing</li>
+        <li><b>Failover with asynchronous replication</b> — recent acknowledged writes may be lost. Decide whether that is acceptable, or run synchronously and accept the latency</li>
+        <li><b>Disk full</b> — PostgreSQL stops writes to protect itself. <b>Keep headroom, and alert on the WAL directory separately</b> from the data directory</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before an application depends on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Autovacuum enabled</b> and tuned per large table</div>
+      <div>&#9744; <b>Oldest transaction age monitored</b> and alerted on</div>
+      <div>&#9744; <b>Unfrozen transaction age alerted on</b> well before wraparound warnings</div>
+      <div>&#9744; <b><span class="mono">idle_in_transaction_session_timeout</span> set</b></div>
+      <div>&#9744; <b><span class="mono">statement_timeout</span> set</b>, per role</div>
+      <div>&#9744; <b><span class="mono">lock_timeout</span> set before all DDL</b></div>
+      <div>&#9744; <b>Dead tuple counts and last-vacuum times monitored</b></div>
+      <div>&#9744; <b>Bloat handled with <span class="mono">pg_repack</span></b>, not <span class="mono">VACUUM FULL</span></div>
+      <div>&#9744; <b>Isolation level chosen deliberately</b>; retries handled if Serializable</div>
+      <div>&#9744; <b>Write-skew risk considered</b> for invariants across rows</div>
+      <div>&#9744; <b><span class="mono">pg_stat_statements</span> enabled</b> — needs a restart, so do it early</div>
+      <div>&#9744; <b><span class="mono">log_min_duration_statement</span> set</b> and reviewed</div>
+      <div>&#9744; <b>Slow queries checked with <span class="mono">EXPLAIN (ANALYZE, BUFFERS)</span></b></div>
+      <div>&#9744; <b>Estimated versus actual rows compared</b>, not just total time</div>
+      <div>&#9744; <b>Unused indexes identified and dropped</b></div>
+      <div>&#9744; <b>Indexes built with <span class="mono">CONCURRENTLY</span></b>; invalid ones cleaned up</div>
+      <div>&#9744; <b><span class="mono">random_page_cost</span> lowered for SSD</b></div>
+      <div>&#9744; <b><span class="mono">shared_buffers</span> and <span class="mono">effective_cache_size</span> sized</b></div>
+      <div>&#9744; <b><span class="mono">work_mem</span> conservative globally</b>, raised per session where needed</div>
+      <div>&#9744; <b>Temporary file usage monitored</b> as a <span class="mono">work_mem</span> signal</div>
+      <div>&#9744; <b>Checkpoint frequency tuned</b>; log checked for frequent checkpoints</div>
+      <div>&#9744; <b>Connection pooler in place</b>; <span class="mono">max_connections</span> modest</div>
+      <div>&#9744; <b>Pool mode understood</b> — what transaction mode breaks</div>
+      <div>&#9744; <b>Pool wait time monitored on the application side</b></div>
+      <div>&#9744; <b>Replication lag monitored</b> in bytes and seconds</div>
+      <div>&#9744; <b>Replication slots checked for inactive ones</b>; <span class="mono">max_slot_wal_keep_size</span> set</div>
+      <div>&#9744; <b>WAL directory disk usage alerted on separately</b></div>
+      <div>&#9744; <b>Failover tooling deployed</b> — core has none</div>
+      <div>&#9744; <b>Failover tested</b>, including that clients reconnect</div>
+      <div>&#9744; <b>Sync versus async replication decided</b> with the loss window stated</div>
+      <div>&#9744; <b>No bidirectional logical replication</b> sold as multi-master</div>
+      <div>&#9744; <b>Backups automated off-host</b>, with a restore tested and timed</div>
+      <div>&#9744; <b>Point-in-time recovery available</b> and rehearsed</div>
+      <div>&#9744; <b>Application does not connect as superuser or table owner</b></div>
+      <div>&#9744; <b><span class="mono">pg_hba.conf</span> reviewed</b> — no stray <span class="mono">trust</span> entries</div>
+      <div>&#9744; <b><span class="mono">scram-sha-256</span> and TLS</b> with certificate verification</div>
+      <div>&#9744; <b>Large tables partitioned</b> where retention or maintenance demands it</div>
+      <div>&#9744; <b>Partitions created ahead of time</b>, automatically</div>
+      <div>&#9744; <b>Extension availability confirmed</b> on the target platform</div>
+      <div>&#9744; <b>Major version supported</b>, with an upgrade path rehearsed</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>state the oldest open transaction, whether any
+      replication slot is inactive, what <span class="mono">max_connections</span> is and whether a pooler sits in front,
+      and when a backup was last restored and timed.</b> Those four answers surface the failures that actually take
+      PostgreSQL down — none of which are about query throughput, and all of which are visible weeks in advance if anyone
+      is looking.</div>
+  </div>
+</div>
+
+</div>
