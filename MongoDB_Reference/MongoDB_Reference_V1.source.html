@@ -1,0 +1,982 @@
+<meta charset="utf-8">
+<title>MongoDB — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5956px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5956px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5926px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 436px 552px 903px 560px 607px 639px 504px 440px 467px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>MONGODB — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">The document model, the consistency controls, and the two decisions that are hard to reverse<br>
+    <span style="font-size:13.4px;color:#6d80b6">schema design · replica sets · read &amp; write concern · sharding · indexing · aggregation · operations
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT MONGODB IS — THE DOCUMENT MODEL, AND WHERE IT SITS ON CONSISTENCY
+    <span class="sub">start here — what &ldquo;flexible schema&rdquo; actually means, and the two decisions you will struggle to undo</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A <b>document database</b>. Records are BSON documents — a binary
+        encoding of JSON with additional types — grouped into collections. A document holds nested objects and arrays, so
+        an entire aggregate can be stored and retrieved as <b>one record, with no join</b>.</div>
+      <div class="callout r"><b>&ldquo;Flexible schema&rdquo; does not mean &ldquo;no schema&rdquo;.</b> The schema
+        still exists — it has moved from the database into your application code, where nothing enforces it unless you make
+        it. Every consumer must handle every historical shape a document has ever had. This is a genuine trade, not a free
+        advantage, and treating it as an absence of schema is how document databases acquire their reputation.</div>
+      <div class="h3">Hard limits worth memorising</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>16 MB per document</b></td><td>A hard BSON limit. It is the reason unbounded arrays are the classic failure mode</td></tr>
+          <tr><td><b>100 levels of nesting</b></td><td>Rarely reached, but real</td></tr>
+          <tr><td><b>Index key ~1024 bytes</b></td><td>Long strings cannot be fully indexed</td></tr>
+          <tr><td><b>Shard key is near-permanent</b></td><td>Resharding exists (5.0+) but is a heavy operation — treat the choice as one-way</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>The two decisions that are hard to undo</b> — and therefore where the thinking belongs:
+        <b>the document model</b> (what is embedded versus referenced) and <b>the shard key</b>. Almost everything else on
+        this sheet is tunable later; these two are structural.</div>
+    </div>
+    <div>
+      <div class="h3">Where it sits on CAP</div>
+      <div class="callout" style="margin-top:0"><b>MongoDB is CP by default, not AP.</b> A replica set has exactly
+        <b>one primary</b> that accepts writes. During a partition, the minority side has no primary and therefore
+        <b>cannot accept writes</b> — it sacrifices availability to preserve consistency. It is frequently mislabelled AP
+        alongside Cassandra, and the two behave quite differently.</div>
+      <div class="callout g"><b>But it is tunable, which is the real answer.</b> Write concern and read concern let
+        you move along the spectrum <b>per operation</b> — from fast and loss-prone to majority-acknowledged and
+        linearizable. The classification follows the configuration, not the product. Panel 6 is where this is set.</div>
+      <div class="h3">Use it when</div>
+      <ul>
+        <li>Data is naturally <b>document-shaped</b> — an aggregate read and written as a unit</li>
+        <li>The schema <b>varies by record</b> or evolves quickly — product catalogues, content, events</li>
+        <li>You need <b>horizontal write scaling</b> and can choose a good shard key</li>
+        <li>Queries are mostly <b>by key or by indexed field on one collection</b></li>
+        <li>Geospatial, time-series, or catalogue workloads where the flexibility is genuinely used</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Do not use it when</div>
+      <ul>
+        <li><b>The data is genuinely relational</b> — many-to-many across several entities, queried from every direction. You will end up doing joins in application code and hand-maintaining duplicated fields</li>
+        <li><b>You need multi-table transactions constantly.</b> They exist, but the model is designed so you rarely need them; needing them often is a signal the schema is wrong</li>
+        <li><b>Ad-hoc analytical queries over history</b> — a columnar engine is the right tool</li>
+        <li><b>Strong referential integrity is required</b> across collections — there are no foreign keys</li>
+        <li><b>The working set will not fit in RAM</b> and the access pattern is random — performance falls off sharply</li>
+      </ul>
+      <div class="callout r"><b>The honest failure mode.</b> Most unhappy MongoDB deployments are relational data
+        modelled as documents. The symptom is recognisable: joining three collections in application code, keeping
+        duplicated fields in sync by hand, and reaching for transactions to make it safe. At that point a relational
+        database has been rebuilt without its guarantees.</div>
+      <div class="callout p"><b><span class="lvl sr">STAFF</span> The reframe worth offering.</b> The question is
+        never &ldquo;document or relational&rdquo; in the abstract — it is <b>&ldquo;does one document correspond to one
+        unit of work?&rdquo;</b> If reads and writes naturally touch one aggregate, the model fits and everything is easy.
+        If they routinely span several, it does not, and no amount of tuning compensates.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. DOCUMENT MODEL ============ -->
+<div class="panel c2 span2">
+  <div class="phead">2 &nbsp;· &nbsp;THE DOCUMENT MODEL — EMBED OR REFERENCE
+    <span class="sub">the decision that determines whether everything else is easy · <span class="lvl jr">JUNIOR</span> the rule · <span class="lvl sr">STAFF</span> the cardinality cases</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The governing rule, in one line:</b> <b>data that is accessed
+        together should be stored together.</b> Model from your <i>queries</i>, not from your entities. This is the exact
+        inverse of relational design, where you normalise first and let the query planner assemble.</div>
+      <div class="code"><span class="c">// EMBEDDED — one read, no join</span>
+{ _id: 1, name: <span class="v">"Ada"</span>,
+  address: { city: <span class="v">"Bengaluru"</span>, pin: <span class="v">"560001"</span> },
+  recentOrders: [ {id: 9, total: 2499}, … ]   <span class="c">← bounded</span>
+}
+
+<span class="c">// REFERENCED — separate collection, joined by app or $lookup</span>
+{ _id: 1, name: <span class="v">"Ada"</span> }
+{ _id: 9, userId: 1, total: 2499 }            <span class="c">← unbounded</span></div>
+      <div class="h3">Choosing by cardinality</div>
+      <table>
+        <thead><tr><th style="width:112px">Relationship</th><th>Model as</th></tr></thead>
+        <tbody>
+          <tr><td><b>One-to-one</b></td><td><b>Embed.</b> An address inside a user — always read together, never separately</td></tr>
+          <tr><td><b>One-to-few</b><br><span style="color:#6b7391">tens, bounded</span></td><td><b>Embed.</b> Order lines, phone numbers, tags. The bound is what makes it safe</td></tr>
+          <tr><td><b>One-to-many</b><br><span style="color:#6b7391">hundreds, growing</span></td><td><b>Reference</b>, with the child holding the parent id. Optionally embed a small recent subset for display</td></tr>
+          <tr><td><b>One-to-very-many</b><br><span style="color:#6b7391">unbounded</span></td><td><b>Always reference.</b> Comments on a post, events for a device, log lines</td></tr>
+          <tr><td><b>Many-to-many</b></td><td>Reference from both sides, or accept duplication with a plan for keeping it in step</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The single most common MongoDB mistake: the unbounded array.</b>
+        Embedding a collection that grows without limit — comments, events, readings, followers — fails in three ways at
+        once. The document eventually approaches the <b>16 MB ceiling</b> and writes start failing. Every update
+        <b>rewrites the whole document</b>, so cost grows with array length. And the document outgrows its allocated space
+        repeatedly, causing churn. It works perfectly in testing and fails months later in production.</div>
+      <div class="h3">The trade, stated plainly</div>
+      <table>
+        <thead><tr><th style="width:96px"></th><th>Embed</th><th>Reference</th></tr></thead>
+        <tbody>
+          <tr><td><b>Reads</b></td><td>One operation, no join</td><td>Two or more, or a <span class="mono">$lookup</span></td></tr>
+          <tr><td><b>Writes</b></td><td>Atomic across the whole aggregate, for free</td><td>Multiple documents — may need a transaction</td></tr>
+          <tr><td><b>Growth</b></td><td><b>Bounded by 16 MB</b></td><td>Unbounded</td></tr>
+          <tr><td><b>Duplication</b></td><td>Data repeats across documents</td><td>Single source of truth</td></tr>
+          <tr><td><b>Update cost</b></td><td>Changing shared data means touching many documents</td><td>Change once</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Atomicity is the underrated reason to embed.</b> A write to a single document is
+        <b>always atomic</b>, however deeply nested the change. Embedding an aggregate means the invariants inside it are
+        maintained without transactions — which is the model working as intended, and why needing transactions frequently
+        suggests the boundaries are wrong.</div>
+      <div class="callout"><b>Duplication is acceptable here, deliberately.</b> Storing an author's name alongside
+        each post so the post renders in one read is normal practice, not a normalisation failure. What it costs you is a
+        job to update those copies when the name changes — decide up front whether that is acceptable, and how stale a copy
+        may be.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. PATTERNS ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;SCHEMA PATTERNS <span class="sub">named solutions to recurring shapes</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:118px">Pattern</th><th>Use when</th></tr></thead>
+      <tbody>
+        <tr><td><b>Bucket</b></td><td>High-volume time-series or events. Group many readings into one document per device per hour, instead of one document per reading. <b>Dramatically fewer documents and smaller indexes</b></td></tr>
+        <tr><td><b>Computed</b></td><td>A value is read far more often than its inputs change. Store the total, average or count rather than recomputing on every read</td></tr>
+        <tr><td><b>Subset</b></td><td>Only a small part of a large related set is usually needed. Embed the ten most recent, reference the rest</td></tr>
+        <tr><td><b>Extended reference</b></td><td>A join is needed only for a couple of fields. Duplicate just those alongside the reference, and accept the update cost</td></tr>
+        <tr><td><b>Polymorphic</b></td><td>Similar entities with differing fields share a collection, distinguished by a type field. This is the flexible schema being used deliberately</td></tr>
+        <tr><td><b>Attribute</b></td><td>Many optional, rarely-queried fields. Store as an array of key/value pairs so <b>one index covers them all</b></td></tr>
+        <tr><td><b>Outlier</b></td><td>Most documents are small but a few are enormous — a normal user versus a celebrity. Flag the outliers and handle them on a separate path</td></tr>
+        <tr><td><b>Approximation</b></td><td>Counters that do not need exactness — increment every <i>n</i>th event rather than every one</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Anti-patterns to recognise</div>
+    <ul>
+      <li><b>Unbounded arrays</b> — the one that causes real outages</li>
+      <li><b>Bloated documents</b> — fetching 2 MB to read one field</li>
+      <li><b>A collection per tenant or per user</b> — thousands of collections carry real metadata and memory overhead</li>
+      <li><b>Separating data always read together</b> — relational habit applied to a document store</li>
+      <li><b>Indexing everything</b> — each index slows every write and consumes RAM</li>
+      <li><b>Case-insensitive queries</b> without a collation or a normalised field — a guaranteed collection scan</li>
+    </ul>
+    <div class="callout g"><b>The bucket pattern deserves attention</b> if you are storing anything time-series
+      shaped. It reduces document count by orders of magnitude, and MongoDB's native <b>time series collections</b>
+      (5.0+) implement essentially this idea for you, with automatic bucketing and better compression.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — ONE NODE, A REPLICA SET, AND A SHARDED CLUSTER
+    <span class="sub">what runs inside mongod, and the two topologies — each solving a different problem</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 830" width="3320" height="830">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+    </defs>
+
+    <!-- INSIDE MONGOD -->
+    <rect x="8" y="6" width="1610" height="392" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">INSIDE ONE mongod — WiredTiger is where the durability and concurrency behaviour actually lives</text>
+
+    <rect x="26" y="44" width="180" height="130" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+    <text x="116" y="66" font-size="12.4" font-weight="700" fill="#1e3a8a" text-anchor="middle">Clients / drivers</text>
+    <g font-size="10.6" fill="#42507a" text-anchor="middle">
+      <text x="116" y="88">official drivers per language</text>
+      <text x="116" y="106">connection pooling</text>
+      <text x="116" y="124">retryable reads and writes</text>
+      <text x="116" y="144">topology-aware</text>
+      <text x="116" y="164">TCP 27017</text>
+    </g>
+
+    <rect x="222" y="44" width="270" height="130" rx="8" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+    <text x="357" y="66" font-size="12.4" font-weight="700" fill="#0f766e" text-anchor="middle">Query layer</text>
+    <g font-size="10.6" fill="#2f4f47">
+      <text x="236" y="88">· Parse and validate the command</text>
+      <text x="236" y="106">· Query planner — chooses an index or a scan</text>
+      <text x="236" y="124">· Plan cache, with periodic re-evaluation</text>
+      <text x="236" y="142">· Aggregation pipeline execution</text>
+      <text x="236" y="164" font-weight="700" fill="#be123c">A cached plan can go stale and slow a query</text>
+    </g>
+
+    <rect x="508" y="44" width="300" height="130" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="658" y="66" font-size="12.4" font-weight="700" fill="#7c2d92" text-anchor="middle">WiredTiger storage engine</text>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="522" y="88">· <tspan font-weight="700">Document-level concurrency</tspan> — writers do not</text>
+      <text x="534" y="104">  block each other across different documents</text>
+      <text x="522" y="124">· <tspan font-weight="700">MVCC</tspan> — readers see a consistent snapshot</text>
+      <text x="522" y="144">· Compression on by default for collections</text>
+      <text x="522" y="166" font-weight="700" fill="#7c2d92">B-tree structures on disk, cached in memory</text>
+    </g>
+
+    <rect x="824" y="44" width="300" height="130" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+    <text x="974" y="66" font-size="12.4" font-weight="700" fill="#b45309" text-anchor="middle">Cache — the performance story</text>
+    <g font-size="10.6" fill="#7a3d06">
+      <text x="838" y="88">· Default size: <tspan font-weight="700">50% of (RAM − 1 GB)</tspan>, minimum</text>
+      <text x="850" y="104">  256 MB. Set it explicitly in containers, where</text>
+      <text x="850" y="120">  host RAM may be detected instead of the limit</text>
+      <text x="838" y="140">· Holds working set: documents and index pages</text>
+      <text x="838" y="166" font-weight="700" fill="#be123c">Working set not fitting here is the main slowdown</text>
+    </g>
+
+    <rect x="1140" y="44" width="464" height="130" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+    <text x="1372" y="66" font-size="12.4" font-weight="700" fill="#be123c" text-anchor="middle">Durability — journal and checkpoints</text>
+    <g font-size="10.6" fill="#7f2b2b">
+      <text x="1154" y="88">· <tspan font-weight="700">Journal</tspan> — a write-ahead log, flushed frequently. Recovery replays it</text>
+      <text x="1154" y="108">· <tspan font-weight="700">Checkpoints</tspan> — a consistent on-disk snapshot written periodically</text>
+      <text x="1154" y="128">· A crash loses at most the window since the last journal flush</text>
+      <text x="1154" y="148">· <tspan font-family="Menlo,monospace" font-size="10.2">j: true</tspan> on a write waits for the journal before acknowledging</text>
+      <text x="1154" y="168" font-weight="700" fill="#b91c1c">Journalling protects against process crash — not against losing the host</text>
+    </g>
+
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M206,109 L216,109"/><path d="M492,109 L502,109"/><path d="M808,109 L818,109"/>
+    </g>
+
+    <rect x="26" y="186" width="1578" height="90" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="42" y="206" font-size="12.6" font-weight="700" fill="#047857">HOW A WRITE ACTUALLY COMPLETES — and where each guarantee is established</text>
+    <text x="42" y="228" font-size="11" fill="#2f4f47">The document is modified in the WiredTiger cache → an entry is appended to the journal → an entry is appended to the <tspan font-weight="700">oplog</tspan>, which is itself a capped collection → secondaries tail the oplog</text>
+    <text x="42" y="248" font-size="11" fill="#2f4f47">and apply the change → a checkpoint eventually writes the data files. <tspan font-weight="700">When the client is told the write succeeded depends entirely on the write concern</tspan> — see panel 6.</text>
+    <text x="42" y="268" font-size="11" font-weight="700" fill="#be123c">With the weakest concern the client is acknowledged before any of the durability steps complete. That is a valid choice, and it must be a deliberate one.</text>
+
+    <rect x="26" y="288" width="1578" height="98" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+    <text x="42" y="308" font-size="12.6" font-weight="700" fill="#1e3a8a">THE OPLOG — the mechanism behind replication, change streams and point-in-time recovery</text>
+    <text x="42" y="328" font-size="11" fill="#42507a">A <tspan font-weight="700">capped collection</tspan> of idempotent operations. Secondaries tail it and replay; change streams read it; point-in-time restore replays it over a snapshot.</text>
+    <text x="42" y="348" font-size="11" fill="#42507a">Its size determines the <tspan font-weight="700">replication window</tspan> — how long a secondary may be offline and still catch up incrementally.</text>
+    <text x="42" y="370" font-size="11" font-weight="700" fill="#be123c">If a secondary falls behind the oldest oplog entry it can no longer resync incrementally and needs a full initial sync — expensive, and it happens exactly when the cluster is already under strain.</text>
+
+    <!-- TOPOLOGIES -->
+    <rect x="1630" y="6" width="1682" height="392" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1648" y="30" font-size="16" font-weight="700" fill="#7c2d92">TWO TOPOLOGIES — they solve different problems, and a sharded cluster is built out of replica sets</text>
+
+    <rect x="1648" y="44" width="800" height="188" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="1664" y="64" font-size="12.6" font-weight="700" fill="#7c2d92">REPLICA SET — availability and read scaling</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="1664" y="76" width="150" height="56" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="1739" y="96" font-size="11.6" font-weight="700" fill="#be123c">PRIMARY</text>
+      <text x="1739" y="114" fill="#7f2b2b">all writes go here</text>
+      <rect x="1830" y="76" width="150" height="56" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="1905" y="96" font-size="11.6" font-weight="700" fill="#0f766e">SECONDARY</text>
+      <text x="1905" y="114" fill="#2f4f47">tails the oplog</text>
+      <rect x="1996" y="76" width="150" height="56" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2071" y="96" font-size="11.6" font-weight="700" fill="#0f766e">SECONDARY</text>
+      <text x="2071" y="114" fill="#2f4f47">can be elected</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2" fill="none" marker-end="url(#g)">
+      <path d="M1814,104 L1824,104"/><path d="M1980,104 L1990,104"/>
+    </g>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="2166" y="94">· <tspan font-weight="700">Odd number of voting members</tspan> — 3 or 5</text>
+      <text x="2166" y="112">· A majority must be reachable to elect a primary</text>
+      <text x="2166" y="130">· Automatic failover, typically in seconds</text>
+      <text x="1664" y="156">· <tspan font-weight="700">Exactly one primary.</tspan> Writes never scale by adding members — only reads do, and only if you accept stale data</text>
+      <text x="1664" y="176">· An <tspan font-weight="700">arbiter</tspan> votes without holding data. It makes a two-member set electable, and it means a majority write concern</text>
+      <text x="1676" y="194">  cannot be satisfied by data-bearing nodes alone — which is why arbiters are discouraged for anything that matters</text>
+      <text x="1664" y="216" font-weight="700" fill="#be123c">· Members should sit in separate failure domains, or the majority can be lost to a single event</text>
+    </g>
+
+    <rect x="2464" y="44" width="832" height="188" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="2480" y="64" font-size="12.6" font-weight="700" fill="#7c2d92">SHARDED CLUSTER — horizontal scale of data and writes</text>
+    <g font-size="10.6" text-anchor="middle">
+      <rect x="2480" y="76" width="170" height="50" rx="6" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="2565" y="94" font-size="11.4" font-weight="700" fill="#b45309">mongos</text>
+      <text x="2565" y="112" fill="#7a3d06">router — stateless</text>
+      <rect x="2666" y="76" width="180" height="50" rx="6" fill="#eef3fd" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="2756" y="94" font-size="11.4" font-weight="700" fill="#1e3a8a">Config servers</text>
+      <text x="2756" y="112" fill="#42507a">their own replica set</text>
+      <rect x="2862" y="76" width="180" height="50" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2952" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Shard 1</text>
+      <text x="2952" y="112" fill="#2f4f47">a replica set</text>
+      <rect x="3058" y="76" width="222" height="50" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="3169" y="94" font-size="11.4" font-weight="700" fill="#0f766e">Shard N</text>
+      <text x="3169" y="112" fill="#2f4f47">also a replica set</text>
+    </g>
+    <g font-size="10.6" fill="#4b3a5e">
+      <text x="2480" y="146">· <tspan font-weight="700">mongos</tspan> routes each query using the cluster metadata. It holds no data and is scaled horizontally beside the application</text>
+      <text x="2480" y="164">· <tspan font-weight="700">Config servers</tspan> hold the authoritative chunk-to-shard map. They are themselves a replica set, and losing them is fatal to routing</text>
+      <text x="2480" y="182">· Data is split into <tspan font-weight="700">chunks</tspan> by shard key range; the <tspan font-weight="700">balancer</tspan> moves chunks to keep shards even</text>
+      <text x="2480" y="202">· <tspan font-weight="700">Every shard is a replica set</tspan> — sharding gives capacity, replication gives availability. You need both</text>
+      <text x="2480" y="222" font-weight="700" fill="#be123c">· Do not shard until you must: it adds routing, balancing, and query constraints that a replica set does not have</text>
+    </g>
+
+    <rect x="1648" y="244" width="1648" height="142" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1664" y="264" font-size="12.6" font-weight="700" fill="#b91c1c">FAILOVER AND ROLLBACK — the behaviour that surprises people</text>
+    <text x="1664" y="286" font-size="11" fill="#7f2b2b">When a primary becomes unreachable, the remaining members hold an election. A majority must agree, which is why an odd number in separate failure domains matters.</text>
+    <text x="1664" y="306" font-size="11" fill="#7f2b2b">A secondary is promoted, typically within seconds, and drivers discover the new primary automatically.</text>
+    <text x="1664" y="330" font-size="11" font-weight="700" fill="#b91c1c">The consequence: writes that were acknowledged but had not replicated to a majority can be ROLLED BACK. The old primary, on rejoining, writes them to a rollback file and</text>
+    <text x="1664" y="350" font-size="11" font-weight="700" fill="#b91c1c">discards them from the live data. The client was told they succeeded, and they are gone.</text>
+    <text x="1664" y="374" font-size="11" fill="#7f2b2b">This is the entire reason write concern exists as a per-operation control. Writing with <tspan font-family="Menlo,monospace" font-size="10.4">w: "majority"</tspan> is what makes a write survive a failover — see panel 6.</text>
+
+    <!-- READ PATH -->
+    <rect x="8" y="410" width="3304" height="192" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="434" font-size="16" font-weight="700" fill="#0f766e">READ ROUTING — read preference decides which member answers, and therefore how stale the answer may be</text>
+    <g font-size="10.8">
+      <rect x="26" y="446" width="636" height="140" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="344" y="466" font-size="12.2" font-weight="700" fill="#0f766e" text-anchor="middle">THE FIVE READ PREFERENCES</text>
+      <text x="40" y="486" fill="#2f4f47">· <tspan font-weight="700">primary</tspan> — the default. Always current, and no read scaling</text>
+      <text x="40" y="504" fill="#2f4f47">· <tspan font-weight="700">primaryPreferred</tspan> — primary, falling back to secondaries</text>
+      <text x="40" y="522" fill="#2f4f47">· <tspan font-weight="700">secondary</tspan> — secondaries only. Scales reads, may be stale</text>
+      <text x="40" y="540" fill="#2f4f47">· <tspan font-weight="700">secondaryPreferred</tspan> — secondaries, falling back to primary</text>
+      <text x="40" y="558" fill="#2f4f47">· <tspan font-weight="700">nearest</tspan> — lowest latency, regardless of role</text>
+      <text x="40" y="578" font-weight="700" fill="#be123c">Tag sets and maxStalenessSeconds refine which members qualify</text>
+
+      <rect x="678" y="446" width="700" height="140" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="1.8"/>
+      <text x="694" y="466" font-size="12.2" font-weight="700" fill="#b91c1c">READING FROM SECONDARIES IS NOT FREE READ SCALING</text>
+      <text x="694" y="486" font-size="10.8" fill="#7f2b2b">· Replication is asynchronous, so a secondary read can return <tspan font-weight="700">arbitrarily stale</tspan> data during lag</text>
+      <text x="694" y="504" font-size="10.8" fill="#7f2b2b">· A user who writes and immediately reads may not see their own change</text>
+      <text x="694" y="522" font-size="10.8" fill="#7f2b2b">· Secondaries apply the same write load as the primary, so they are not idle capacity</text>
+      <text x="694" y="540" font-size="10.8" fill="#7f2b2b">· <tspan font-family="Menlo,monospace" font-size="10.2">maxStalenessSeconds</tspan> bounds it, but does not eliminate it</text>
+      <text x="694" y="562" font-size="10.8" font-weight="700" fill="#b91c1c">Use secondary reads for analytics, reporting and genuinely stale-tolerant paths —</text>
+      <text x="694" y="578" font-size="10.8" font-weight="700" fill="#b91c1c">not as a general answer to a primary that is running hot.</text>
+
+      <rect x="1394" y="446" width="700" height="140" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.8"/>
+      <text x="1410" y="466" font-size="12.2" font-weight="700" fill="#047857">CAUSAL CONSISTENCY — the fix for read-your-writes</text>
+      <text x="1410" y="486" font-size="10.8" fill="#2f4f47">A <tspan font-weight="700">causally consistent session</tspan> guarantees that operations within it observe a</text>
+      <text x="1410" y="502" font-size="10.8" fill="#2f4f47">consistent order — so a read after your own write sees that write, even on a secondary.</text>
+      <text x="1410" y="524" font-size="10.8" fill="#2f4f47">The driver carries a cluster time and an operation time on each request, and the</text>
+      <text x="1410" y="540" font-size="10.8" fill="#2f4f47">server waits until the member is current enough to satisfy it.</text>
+      <text x="1410" y="562" font-size="10.8" font-weight="700" fill="#047857">This is the correct answer to &ldquo;I read from a secondary and my own update was missing&rdquo;</text>
+      <text x="1410" y="578" font-size="10.8" font-weight="700" fill="#047857">— rather than moving the read back to the primary and losing the scaling.</text>
+
+      <rect x="2110" y="446" width="1186" height="140" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2126" y="466" font-size="12.4" font-weight="700" fill="#0f766e">QUERY ROUTING IN A SHARDED CLUSTER — the distinction that decides whether sharding helps at all</text>
+      <text x="2126" y="488" font-size="11" fill="#2f4f47"><tspan font-weight="700" fill="#047857">Targeted query</tspan> — the filter includes the shard key, so mongos routes to exactly the shard or shards holding those chunks. This scales: adding shards adds capacity, and each query touches few of them.</text>
+      <text x="2126" y="510" font-size="11" fill="#2f4f47"><tspan font-weight="700" fill="#be123c">Scatter-gather</tspan> — the filter omits the shard key, so mongos must ask <tspan font-weight="700">every shard</tspan> and merge the results. Latency becomes that of the slowest shard, and adding shards makes it worse rather than better.</text>
+      <text x="2126" y="536" font-size="11" fill="#2f4f47">Sorting without the shard key, and paginating deeply, both amplify this — mongos must gather and merge far more than it returns.</text>
+      <text x="2126" y="560" font-size="11" font-weight="700" fill="#be123c">This is why the shard key is chosen from the query patterns, not from the data model. A shard key that no common query filters on gives you all the operational cost of sharding</text>
+      <text x="2126" y="578" font-size="11" font-weight="700" fill="#be123c">and none of the scaling — and it is the single most expensive mistake available in a MongoDB deployment.</text>
+    </g>
+
+    <rect x="8" y="614" width="3304" height="208" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="638" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — the four properties that explain the rest of this sheet</text>
+    <text x="26" y="664" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · One primary accepts all writes.</tspan> Replication gives availability and read capacity, never write capacity. When writes exceed one primary, the answer is sharding — and sharding brings the routing constraints above.</text>
+    <text x="26" y="692" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · Consistency is a per-operation choice, not a property of the product.</tspan> Write concern decides when you are told a write succeeded; read concern decides what a read is allowed to see. MongoDB is CP by default and can be tuned in both directions.</text>
+    <text x="26" y="720" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The working set should fit in the WiredTiger cache.</tspan> Performance is excellent while it does and degrades sharply when it does not, because every miss becomes disk I/O. Capacity planning here is memory planning first.</text>
+    <text x="26" y="748" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · A single-document write is always atomic.</tspan> Model so that one document is one unit of work and you rarely need transactions. Needing them frequently is a signal about the schema rather than a reason to tune the transaction.</text>
+    <text x="26" y="782" font-size="11.8" fill="#6b7391">Useful interrogation of any MongoDB design: what does one document represent, does any array in it grow without bound, what is the shard key and which queries filter on it, and what write concern is the application actually using?</text>
+    <text x="26" y="806" font-size="11.8" font-weight="700" fill="#1e3a8a">Those four questions surface almost every serious problem — and the last one is very often answered with &ldquo;whatever the default is&rdquo;, which is worth knowing before it matters.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. REPLICA SET ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;REPLICA SETS — ELECTIONS, THE OPLOG, AND WHAT SURVIVES A FAILOVER
+    <span class="sub"><span class="lvl mid">MID</span> how failover works · <span class="lvl sr">STAFF</span> rollback, oplog window and the arbiter trap</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Membership and elections</div>
+      <ul>
+        <li><b>An odd number of voting members</b> — three or five. An even number gains no fault tolerance and can deadlock a vote</li>
+        <li><b>A majority must be reachable</b> to elect a primary. Three members tolerate one failure; five tolerate two</li>
+        <li><b>Members in separate failure domains</b> — three members in one rack protect against a process crash and nothing else</li>
+        <li><b><span class="mono">priority</span></b> influences who is elected; setting it to 0 makes a member ineligible — useful for a distant or analytics-only node</li>
+        <li><b>Hidden and delayed members</b> serve backups or provide a human-error safety window</li>
+      </ul>
+      <div class="callout r"><b>The arbiter trap.</b> An arbiter votes but holds no data, letting two data-bearing
+        members form a majority cheaply. But if one of those two fails, <b>a majority write concern can no longer be
+        satisfied</b> — writes stall or lose their durability guarantee while the set still reports as healthy. Prefer a
+        third data-bearing member for anything that matters.</div>
+      <div class="h3">The oplog</div>
+      <ul>
+        <li>A <b>capped collection of idempotent operations</b>, replayed by secondaries</li>
+        <li>Its size sets the <b>replication window</b> — how long a member can be offline and still catch up</li>
+        <li>Fall behind the oldest entry and a <b>full initial sync</b> is required, which is expensive and happens under strain</li>
+        <li><b>Size it against your write rate and your worst realistic maintenance window</b>, then monitor the window as a metric</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Rollback, stated plainly.</b> If a primary accepts writes that
+        have not reached a majority and then fails, a new primary is elected without them. When the old primary rejoins, it
+        <b>discards those writes</b> — they are written to a rollback file for manual recovery, and removed from the live
+        data. The client was told they succeeded.</div>
+      <div class="h3">What prevents it</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><span class="mono">w: "majority"</span></td><td>The write is acknowledged only once a majority hold it, so an election cannot lose it. <b>The default since MongoDB 5.0</b>, and worth confirming rather than assuming in an older or overridden deployment</td></tr>
+          <tr><td><span class="mono">j: true</span></td><td>Waits for the journal, protecting against a process crash on the acknowledging members</td></tr>
+          <tr><td>Read concern <span class="mono">majority</span></td><td>Reads only data that cannot be rolled back — the read-side counterpart</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The trade is latency.</b> A majority write concern waits for network round trips to
+        other members, so it is slower than <span class="mono">w: 1</span> — noticeably so across regions. That is the
+        actual cost of durability here, and it should be a considered choice per operation rather than a global default
+        nobody revisits.</div>
+      <div class="h3">Operating a replica set</div>
+      <ul>
+        <li><b>Rolling maintenance</b> — upgrade secondaries first, then step down the primary deliberately</li>
+        <li><b><span class="mono">rs.stepDown()</span></b> for a controlled failover rather than waiting for detection</li>
+        <li><b>Monitor replication lag</b> — it is the size of your data-loss window right now</li>
+        <li><b>Test failover deliberately</b>, including that the application reconnects. An untested failover is the most common reason recovery does not work when needed</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. CONCERNS ============ -->
+<div class="panel c5">
+  <div class="phead">6 &nbsp;· &nbsp;WRITE &amp; READ CONCERN <span class="sub">the actual consistency controls</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>This panel is the consistency story.</b> Every claim about
+      MongoDB being consistent or eventually consistent reduces to these two settings — and they are chosen
+      <b>per operation</b>, not per cluster.</div>
+    <div class="h3">Write concern — when am I told it succeeded?</div>
+    <table>
+      <thead><tr><th style="width:118px">Setting</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">w: 0</span></td><td>Fire and forget. No acknowledgement at all — the write may simply not happen</td></tr>
+        <tr><td><span class="mono">w: 1</span></td><td>The primary has it. <b>Can be rolled back</b> if the primary fails before replicating</td></tr>
+        <tr><td><span class="mono">w: "majority"</span></td><td>A majority of data-bearing members have it. <b>Survives failover.</b> The default since 5.0</td></tr>
+        <tr><td><span class="mono">w: N</span></td><td>A specific count of members</td></tr>
+        <tr><td><span class="mono">j: true</span></td><td>Waits for the journal — durable against process crash</td></tr>
+        <tr><td><span class="mono">wtimeout</span></td><td>A time bound. <b>On timeout the write is not undone</b> — it may still be applied. This is not a rollback</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Read concern — what am I allowed to see?</div>
+    <table>
+      <thead><tr><th style="width:118px">Level</th><th>Returns</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">local</span></td><td>The member's most recent data. <b>May be rolled back later</b></td></tr>
+        <tr><td><span class="mono">available</span></td><td>Like local, with fewer guarantees in a sharded cluster — can return orphaned documents</td></tr>
+        <tr><td><span class="mono">majority</span></td><td>Only data acknowledged by a majority. <b>Will not be rolled back</b></td></tr>
+        <tr><td><span class="mono">linearizable</span></td><td>The strongest. <b>Primary only</b>, and only for a query that uniquely identifies a single document. Confirms with other members, so it is measurably slower</td></tr>
+        <tr><td><span class="mono">snapshot</span></td><td>A consistent point-in-time view across the operation — used by multi-document transactions</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The combination that catches people out.</b> Writing with
+      <span class="mono">w: "majority"</span> and then reading with <span class="mono">local</span> from a secondary can
+      still return stale or rollback-able data. <b>Both sides must be set</b> — the write concern alone does not make reads
+      safe.</div>
+  </div>
+</div>
+
+<!-- ============ 7. SHARDING ============ -->
+<div class="panel c3 span2">
+  <div class="phead">7 &nbsp;· &nbsp;SHARDING — CHUNKS, THE BALANCER, AND WHAT CHANGES FOR YOUR QUERIES
+    <span class="sub"><span class="lvl mid">MID</span> the mechanism · <span class="lvl sr">STAFF</span> when to shard, and what stops working</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The mechanism</div>
+      <ul>
+        <li>A sharded collection is split into <b>chunks</b> — contiguous ranges of shard-key values</li>
+        <li>The <b>config servers</b> hold the authoritative map of chunk to shard. They are a replica set, and their loss stops routing entirely</li>
+        <li><b>mongos</b> is a stateless router: it reads the map and directs each operation. Run several, close to the application</li>
+        <li>The <b>balancer</b> migrates chunks between shards to keep the distribution even. Migration is real data movement and competes with live traffic</li>
+        <li><b>Every shard is itself a replica set</b> — sharding gives capacity, replication gives availability</li>
+      </ul>
+      <div class="h3">Sharding strategies</div>
+      <table>
+        <thead><tr><th style="width:104px">Strategy</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><b>Ranged</b></td><td>Chunks by key range. <b>Range queries are efficient</b>, and a monotonically increasing key sends every insert to one shard</td></tr>
+          <tr><td><b>Hashed</b></td><td>Chunks by hash of the key. <b>Even write distribution</b>, and range queries become scatter-gather</td></tr>
+          <tr><td><b>Zoned</b></td><td>Pin key ranges to specific shards — for data residency, or tiering by hardware</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The choice is a genuine trade.</b> Hashed solves the hot-shard problem and gives up
+        efficient range scans. Ranged preserves locality and risks a hotspot. A <b>compound shard key</b> — a
+        well-distributed prefix followed by a range component — often captures both, and is usually the better answer.</div>
+    </div>
+    <div>
+      <div class="h3">What changes once a collection is sharded</div>
+      <table>
+        <thead><tr><th style="width:150px">Concern</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td><b>Queries without the shard key</b></td><td>Become scatter-gather across every shard, with latency set by the slowest</td></tr>
+          <tr><td><b>Unique indexes</b></td><td>Only enforceable if they include the shard key — you cannot cheaply guarantee global uniqueness on another field</td></tr>
+          <tr><td><b>Sorting and deep pagination</b></td><td>mongos must merge across shards; skipping deeply is expensive</td></tr>
+          <tr><td><b><span class="mono">$lookup</span></b></td><td>Historically restricted against sharded collections; capability varies by version. <b>Verify against your version rather than assuming</b></td></tr>
+          <tr><td><b>Transactions</b></td><td>Work across shards from 4.2, at a higher coordination cost</td></tr>
+          <tr><td><b>Balancer activity</b></td><td>Migrations add load and latency. Schedule a balancing window if traffic has a clear peak</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Do not shard prematurely.</b> Sharding is the answer to <i>capacity</i> — data or
+        write volume exceeding one replica set. It is not a performance fix for slow queries, and it is not a substitute for
+        an index. Applied to a workload that did not need it, it adds routing, balancing and every constraint above while
+        making the common queries slower.</div>
+      <div class="callout g"><b>Reach for it when</b> the dataset exceeds what one machine can hold with the working
+        set in RAM, or write throughput exceeds one primary. Before that, a larger machine and better indexes are almost
+        always the cheaper answer.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. SHARD KEY ============ -->
+<div class="panel c5">
+  <div class="phead">8 &nbsp;· &nbsp;THE SHARD KEY <span class="sub">the decision to get right first</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Treat this as one-way.</b> Resharding a live collection is
+      supported from MongoDB 5.0, but it copies the entire collection and is a major operation. Choosing well at the start
+      is dramatically cheaper than fixing it later — and a bad shard key is the most expensive mistake available here.</div>
+    <div class="h3">The three properties it needs</div>
+    <table>
+      <thead><tr><th style="width:118px">Property</th><th>Why, and what goes wrong without it</th></tr></thead>
+      <tbody>
+        <tr><td><b>High cardinality</b></td><td>Enough distinct values to split into many chunks. A key with few values produces <b>jumbo chunks</b> that cannot be divided and cannot be balanced</td></tr>
+        <tr><td><b>Even frequency</b></td><td>No single value should dominate. A key where 40% of documents share one value concentrates that data and its traffic on one shard permanently</td></tr>
+        <tr><td><b>Non-monotonic</b></td><td>A steadily increasing key — a timestamp, an ObjectId — sends <b>every new insert to the same shard</b>, because they all fall in the highest chunk range. The cluster has many shards and one of them is doing all the work</td></tr>
+        <tr><td><b>Present in queries</b></td><td>The fourth, and the one most often forgotten. If common queries do not filter on it, every one is scatter-gather and sharding buys nothing</td></tr>
+      </tbody>
+    </table>
+    <div class="code"><span class="c">// poor: monotonic — all inserts hit one shard</span>
+{ createdAt: 1 }
+
+<span class="c">// poor: low cardinality — jumbo chunks, no balance</span>
+{ country: 1 }
+
+<span class="c">// better: hashed — even writes, no range locality</span>
+{ userId: <span class="v">"hashed"</span> }
+
+<span class="c">// often best: compound — distributes AND targets</span>
+{ tenantId: 1, createdAt: 1 }
+<span class="c">// queries filtering tenantId are targeted;</span>
+<span class="c">// within a tenant, time ranges stay local</span></div>
+    <div class="callout g"><b>The test to apply before committing.</b> Write down your five most frequent queries.
+      If the shard key does not appear in the filter of most of them, it is the wrong key — regardless of how evenly it
+      distributes the data.</div>
+  </div>
+</div>
+
+<!-- ============ 9. INDEXING ============ -->
+<div class="panel c4">
+  <div class="phead">9 &nbsp;· &nbsp;INDEXING <span class="sub">and the rule for compound order</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:112px">Type</th><th>For</th></tr></thead>
+      <tbody>
+        <tr><td><b>Single field</b></td><td>Equality, range and sort on one field. <span class="mono">_id</span> is always indexed and unique</td></tr>
+        <tr><td><b>Compound</b></td><td>Several fields. <b>Order matters — see below</b></td></tr>
+        <tr><td><b>Multikey</b></td><td>Created automatically on an array field; indexes every element</td></tr>
+        <tr><td><b>Text</b></td><td>Basic full-text. Limited — for real search, use a dedicated search index</td></tr>
+        <tr><td><b>Geospatial</b><span style="color:#6b7391"> 2dsphere</span></td><td>Proximity and containment queries on coordinates</td></tr>
+        <tr><td><b>Hashed</b></td><td>Even distribution for sharding; equality only, no ranges</td></tr>
+        <tr><td><b>TTL</b></td><td>Deletes documents after an interval. A background task, so removal is not instant</td></tr>
+        <tr><td><b>Partial</b></td><td>Indexes only documents matching a filter — smaller and cheaper</td></tr>
+        <tr><td><b>Sparse</b></td><td>Skips documents lacking the field</td></tr>
+        <tr><td><b>Unique</b></td><td>Enforces uniqueness. On a sharded collection it must include the shard key</td></tr>
+        <tr><td><b>Wildcard</b></td><td>Indexes unknown or highly variable field names — useful with truly polymorphic documents</td></tr>
+      </tbody>
+    </table>
+    <div class="callout b"><b>The ESR rule for compound index order: Equality, Sort, Range.</b> Fields matched
+      exactly come first, then fields used for sorting, then range conditions. Getting this order wrong is the most common
+      reason an index exists and the query still sorts in memory or scans.</div>
+    <div class="h3">The rules that follow</div>
+    <ul>
+      <li><b>A compound index serves any prefix of itself</b> — an index on <span class="mono">(a,b,c)</span> helps queries on <span class="mono">a</span>, or <span class="mono">a,b</span>, but not on <span class="mono">b</span> alone</li>
+      <li><b>Covered queries</b> answer entirely from the index without touching a document — the fastest possible read</li>
+      <li><b>Every index slows every write</b> and consumes RAM. Find and drop unused ones using index usage statistics</li>
+      <li><b>Indexes should fit in cache</b> alongside the working set, or lookups become disk reads</li>
+      <li><b>Build in the background</b> on production, and prefer a rolling build across members</li>
+    </ul>
+    <div class="callout r"><b>The fastest diagnosis: <span class="mono">explain("executionStats")</span>.</b>
+      <span class="mono">COLLSCAN</span> means no index was used. A large gap between documents examined and documents
+      returned means the index is not selective enough. Both are visible in seconds and are the first thing to check.</div>
+  </div>
+</div>
+
+<!-- ============ 10. AGGREGATION ============ -->
+<div class="panel c7">
+  <div class="phead">10 &nbsp;· &nbsp;QUERIES &amp; AGGREGATION <span class="sub">the pipeline, and its limits</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">The aggregation pipeline passes documents through ordered stages, each
+      transforming the stream. It is the mechanism for grouping, joining, reshaping and computing — everything beyond a
+      simple find.</div>
+    <div class="code">db.orders.aggregate([
+  { $match:  { status: <span class="v">"shipped"</span> } },   <span class="c">← FIRST</span>
+  { $lookup: { from: <span class="v">"users"</span>, … } },
+  { $group:  { _id: <span class="v">"$region"</span>,
+               total: { $sum: <span class="v">"$amount"</span> } } },
+  { $sort:   { total: -1 } },
+  { $limit:  10 }
+])</div>
+    <div class="callout g"><b>The one optimisation that matters most: filter early.</b> Put <span class="mono">$match</span>
+      and <span class="mono">$limit</span> as early as possible. A <span class="mono">$match</span> at the head can use an
+      index; the same stage after a <span class="mono">$group</span> cannot, and every prior stage has already processed
+      documents you were going to discard.</div>
+    <div class="h3">Limits worth knowing</div>
+    <ul>
+      <li><b>Stages have a memory limit</b>; exceeding it errors unless <span class="mono">allowDiskUse</span> is enabled, which then spills to disk and is much slower</li>
+      <li><b>A returned document still cannot exceed 16 MB</b> — a <span class="mono">$group</span> accumulating a large array will hit it</li>
+      <li><b><span class="mono">$lookup</span> is not a relational join.</b> It is a left outer join executed per input document, with no query planner optimising across the two collections. Fine for small lookups, poor as a substitute for a proper data model</li>
+      <li><b>Sorting without a supporting index</b> happens in memory, subject to the same limit</li>
+    </ul>
+    <div class="callout r"><b>If you find yourself writing several <span class="mono">$lookup</span> stages,</b> that
+      is a strong signal the documents are modelled relationally. The fix is in panel 2, not in the pipeline — no amount of
+      aggregation tuning compensates for a schema that requires assembling every read.</div>
+    <div class="callout"><b>Change streams</b> expose the oplog as a resumable, filterable event stream — the
+      supported way to react to data changes without polling. They require a replica set, and the resume token is what makes
+      them safe across a consumer restart.</div>
+  </div>
+</div>
+
+<!-- ============ 11. TRANSACTIONS ============ -->
+<div class="panel c6">
+  <div class="phead">11 &nbsp;· &nbsp;TRANSACTIONS <span class="sub">available, and best avoided</span></div>
+  <div class="pbody">
+    <div class="callout g" style="margin-top:0"><b>The correction first, because the outdated claim persists.</b>
+      MongoDB has supported <b>multi-document ACID transactions since 4.0</b> for replica sets, and <b>4.2</b> extended them
+      across sharded clusters. They are a mature capability, not a missing one. &ldquo;MongoDB does not have
+      transactions&rdquo; has been wrong for years.</div>
+    <div class="code">session = client.startSession()
+session.withTransaction(() =&gt; {
+  orders.insertOne({…},   { session })
+  inventory.updateOne({…}, { session })
+})   <span class="c">// commits or aborts together</span></div>
+    <div class="callout r"><b>But the design goal is to not need them.</b> A single-document write is <b>already
+      atomic</b>, however deeply nested. If your documents are modelled so that one document is one unit of work, the
+      invariants hold without any transaction. <b>Reaching for transactions routinely is a signal about the schema</b>, not
+      a reason to tune the transaction.</div>
+    <div class="h3">The costs, which are real</div>
+    <ul>
+      <li><b>A default time limit</b> — around a minute — after which the transaction aborts. Long-running work will simply fail</li>
+      <li><b>Snapshot state must be held</b> for the duration, adding cache pressure</li>
+      <li><b>Write conflicts abort and must be retried</b> by the application; the retry loop is your responsibility</li>
+      <li><b>Cross-shard transactions coordinate across nodes</b>, which is materially more expensive</li>
+      <li><b>The oplog entry is subject to size limits</b>, so very large transactions can fail outright</li>
+    </ul>
+    <div class="h3">When they are genuinely right</div>
+    <ul>
+      <li>Moving value between two documents that cannot be merged into one — an account transfer</li>
+      <li>Maintaining an invariant across genuinely separate aggregates</li>
+      <li>Migrating a schema across collections in one step</li>
+    </ul>
+    <div class="callout"><b>Always use the driver's retry helper</b> rather than a hand-written loop.
+      <span class="mono">withTransaction</span> handles transient errors and commit-unknown results correctly — both of
+      which are easy to get subtly wrong by hand.</div>
+  </div>
+</div>
+
+<!-- ============ 12. STORAGE ============ -->
+<div class="panel c8 span2">
+  <div class="phead">12 &nbsp;· &nbsp;WIREDTIGER, MEMORY AND PERFORMANCE
+    <span class="sub"><span class="lvl sr">STAFF</span> why the working set fitting in cache is the single biggest performance factor</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">What WiredTiger provides</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Document-level concurrency</b></td><td>Writers to different documents do not block each other — this is what makes concurrent write throughput acceptable</td></tr>
+          <tr><td><b>MVCC</b></td><td>Readers see a consistent snapshot without blocking writers</td></tr>
+          <tr><td><b>Compression</b></td><td>On by default for collections, with prefix compression for indexes. Trades CPU for a much smaller on-disk footprint</td></tr>
+          <tr><td><b>Journal</b></td><td>A write-ahead log flushed frequently; recovery replays it after a crash</td></tr>
+          <tr><td><b>Checkpoints</b></td><td>Periodic consistent snapshots of the data files</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Cache sizing</div>
+      <div class="callout b"><b>The default is <span class="mono">max(50% of (RAM − 1 GB), 256 MB)</span>.</b> The
+        remainder is deliberately left for the operating system's page cache and for connection and query memory — which is
+        why raising it toward 100% of RAM causes out-of-memory events rather than better performance.</div>
+      <div class="callout r"><b>Set it explicitly in containers.</b> mongod may detect the <b>host's</b> total memory
+        rather than the container's limit, size its cache against that, and be terminated by the platform. This is a very
+        common and confusing failure in Kubernetes deployments.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The single biggest performance factor: does the working set fit
+        in cache?</b> The working set is the documents and index pages actually touched — not the whole database. While it
+        fits, reads are memory-speed. Once it does not, every miss becomes a disk read, and performance does not degrade
+        gently — it falls off a cliff as the miss rate climbs.</div>
+      <div class="h3">Diagnosing it</div>
+      <ul>
+        <li><b>Cache hit ratio</b> from <span class="mono">serverStatus</span> — a falling ratio precedes almost every performance incident</li>
+        <li><b>Pages read into cache</b> rising steadily means the working set has outgrown it</li>
+        <li><b>Disk read IOPS and latency</b> climbing while query volume is flat</li>
+        <li><b>Index size versus cache size</b> — if indexes alone approach the cache, document lookups will always miss</li>
+      </ul>
+      <div class="h3">What to do about it, in order</div>
+      <ol>
+        <li><b>Add indexes</b> so fewer documents are examined — often the whole fix</li>
+        <li><b>Drop unused indexes</b>, which are consuming cache for nothing</li>
+        <li><b>Project only needed fields</b>, so less is pulled through</li>
+        <li><b>Reduce document size</b> — the subset pattern, or moving large blobs to object storage</li>
+        <li><b>Archive cold data</b> so the working set shrinks</li>
+        <li><b>Add RAM</b> — usually cheaper than the alternative below</li>
+        <li><b>Shard</b>, which spreads the working set across machines. The last resort, not the first</li>
+      </ol>
+      <div class="callout g"><b>Note the order.</b> Six things come before sharding, and in most cases one of the
+        first three resolves it. Sharding to fix a working-set problem that an index would have solved adds permanent
+        operational cost for no benefit.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">13 &nbsp;· &nbsp;SECURITY &amp; BACKUP <span class="sub">the defaults are not enough</span></div>
+  <div class="pbody">
+    <div class="h3">Access control</div>
+    <ul>
+      <li><b>Enable authorisation.</b> Without it, anyone who can reach the port has full access — and unauthenticated MongoDB exposed to the internet is scanned for and compromised routinely</li>
+      <li><b><span class="mono">bindIp</span> to specific interfaces.</b> Never expose it publicly, regardless of authentication</li>
+      <li><b>SCRAM</b> for password auth; <b>x.509 certificates</b>, <b>LDAP</b> or <b>Kerberos</b> for enterprise integration</li>
+      <li><b>Role-based access control</b> with built-in and custom roles — per database and per collection</li>
+      <li><b>Least privilege per application.</b> A reporting service needs read on one database, not cluster admin</li>
+      <li><b>TLS</b> for client and intra-cluster traffic</li>
+    </ul>
+    <div class="h3">Encryption</div>
+    <ul>
+      <li><b>At rest</b> — storage-engine or volume-level encryption</li>
+      <li><b>Client-side field-level encryption</b> — fields are encrypted by the driver, so the server never sees plaintext</li>
+      <li><b>Queryable encryption</b> — supports equality and range queries over encrypted fields, keeping them encrypted server-side</li>
+    </ul>
+    <div class="h3">Backups</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Filesystem snapshot</b></td><td>Fast and consistent if the journal is included. The usual production approach</td></tr>
+        <tr><td><b><span class="mono">mongodump</span></b></td><td>Logical export. Convenient at small scale, slow to restore at large scale</td></tr>
+        <tr><td><b>Point-in-time</b></td><td>A snapshot plus oplog replay to a chosen moment — the only thing that recovers from a bad write at a known time</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Replication is not a backup.</b> It copies a mistaken <span class="mono">deleteMany</span>
+      to every member in milliseconds. Only a backup — one you have actually restored, and timed — protects against human
+      error and application bugs.</div>
+  </div>
+</div>
+
+<!-- ============ 14. CONFIG ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;CONFIGURATION, DRIVERS AND OBSERVABILITY
+    <span class="sub">the settings that change behaviour, what the application must get right, and what to watch</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Server configuration that matters</div>
+      <table>
+        <thead><tr><th style="width:170px">Setting</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">wiredTiger.engineConfig<br>.cacheSizeGB</td><td>Leave at the default on a dedicated host; <b>set it explicitly in a container</b>, where host RAM may be detected instead of the limit</td></tr>
+          <tr><td class="mono">security.authorization</td><td><b>enabled</b>. There is no acceptable reason to run without it</td></tr>
+          <tr><td class="mono">net.bindIp</td><td>Specific interfaces only. Never <span class="mono">0.0.0.0</span> on an untrusted network</td></tr>
+          <tr><td class="mono">net.tls</td><td>Client and intra-cluster encryption</td></tr>
+          <tr><td class="mono">replication.oplogSizeMB</td><td>Sets the replication window — size it against write rate and your worst maintenance window</td></tr>
+          <tr><td class="mono">storage.journal</td><td>Leave enabled. Disabling it trades durability for very little</td></tr>
+          <tr><td class="mono">operationProfiling</td><td>Profile slow operations above a threshold — the fastest route to the query causing latency</td></tr>
+          <tr><td class="mono">net.maxIncomingConnections</td><td>Bound it; connection storms are a real failure mode</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Host settings matter as much.</b> Use XFS for the data volume, disable transparent
+        huge pages, raise file descriptor and process limits, and ensure the clock is synchronised — several of these are
+        checked and warned about at startup, and the warnings are worth reading.</div>
+    </div>
+    <div>
+      <div class="h3">What the driver must get right</div>
+      <ul>
+        <li><b>One client instance per application</b>, shared. Creating a client per request defeats pooling entirely and is a common source of connection exhaustion</li>
+        <li><b><span class="mono">maxPoolSize</span></b> sized against the server's connection limit divided by the number of application instances</li>
+        <li><b>Timeouts set</b> — connect, socket and server selection. Unbounded waits turn a slow server into a hung application</li>
+        <li><b>Retryable reads and writes enabled</b> — the driver retries once through a failover, which turns most elections into a latency blip rather than an error</li>
+        <li><b>Write and read concern set deliberately</b> per operation, not left implicit</li>
+        <li><b>Causally consistent sessions</b> where read-your-writes matters</li>
+        <li><b>The connection string lists all members</b>, or uses SRV, so the driver can discover the topology</li>
+      </ul>
+      <div class="callout g"><b>Retryable writes deserve a mention in any interview.</b> The driver retries a failed
+        write once, and the server deduplicates it using a statement id — so a retry after a failover does not apply the
+        write twice. It is what makes elections mostly invisible to the application.</div>
+    </div>
+    <div>
+      <div class="h3">What to monitor</div>
+      <table>
+        <thead><tr><th style="width:160px">Metric</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Replication lag</b></td><td>The size of your data-loss window right now, and the first thing to check in an incident</td></tr>
+          <tr><td><b>Oplog window</b></td><td>How long a member can be offline before needing a full resync</td></tr>
+          <tr><td><b>Cache hit ratio</b></td><td>Falls before almost every performance incident</td></tr>
+          <tr><td><b>Page faults / disk reads</b></td><td>The working set no longer fits</td></tr>
+          <tr><td><b>Connections</b> current and available</td><td>Exhaustion saturates before CPU does</td></tr>
+          <tr><td><b>Queued operations</b></td><td>Read and write queues indicate saturation</td></tr>
+          <tr><td><b>Slow query count</b></td><td>From the profiler — usually one missing index</td></tr>
+          <tr><td><b>Index miss ratio</b></td><td>Queries scanning rather than seeking</td></tr>
+          <tr><td><b>Balancer activity</b></td><td>Chunk migrations competing with live traffic</td></tr>
+          <tr><td><b>Election count</b></td><td>Frequent elections mean instability, not healthy failover</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The tools.</b> <span class="mono">explain("executionStats")</span> for a single query;
+        the <b>database profiler</b> for slow operations over time; <span class="mono">serverStatus</span> and
+        <span class="mono">currentOp</span> for live state; <span class="mono">$indexStats</span> to find unused indexes;
+        and <span class="mono">mongotop</span> and <span class="mono">mongostat</span> for a quick live view.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:130px">Symptom</th><th>Cause</th><th style="width:155px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Queries suddenly slow, CPU high</b></td><td>A missing index causing a collection scan, or a plan change</td><td>Profiler then <span class="mono">explain</span>; add the index; check for <span class="mono">COLLSCAN</span></td></tr>
+          <tr><td><b>Gradual slowdown over months</b></td><td>The working set has outgrown the cache</td><td>Cache hit ratio; add indexes, reduce document size, archive, add RAM</td></tr>
+          <tr><td><b>Writes fail after a period of growth</b></td><td>A document approaching the 16 MB limit — almost always an unbounded array</td><td>Restructure to reference the growing collection; the bucket pattern</td></tr>
+          <tr><td><b>One shard hot, others idle</b></td><td>A monotonic or low-cardinality shard key</td><td>Hashed or compound key; resharding if it is severe enough to justify it</td></tr>
+          <tr><td><b>Data missing after a failover</b></td><td>Writes acknowledged with <span class="mono">w: 1</span> were rolled back</td><td>Expected behaviour. Use <span class="mono">w: "majority"</span>; check the rollback files</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:130px">Symptom</th><th>Cause</th><th style="width:155px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Secondary needs a full resync</b></td><td>It fell behind the oplog window during maintenance</td><td>Increase oplog size; monitor the window as a metric</td></tr>
+          <tr><td><b>Connection errors under load</b></td><td>Pool too small, or a client created per request</td><td>One shared client; size <span class="mono">maxPoolSize</span> against the server limit</td></tr>
+          <tr><td><b>mongod killed by the platform</b></td><td>Cache sized against host RAM inside a container</td><td>Set <span class="mono">cacheSizeGB</span> explicitly below the container limit</td></tr>
+          <tr><td><b>Stale reads reported by users</b></td><td>Reading from secondaries during replication lag</td><td>Causally consistent sessions, or read from the primary for those paths</td></tr>
+          <tr><td><b>Latency spikes at intervals</b></td><td>Balancer migrating chunks, or checkpoint pressure</td><td>Schedule a balancing window; review write volume and disk throughput</td></tr>
+          <tr><td><b>Aggregation fails outright</b></td><td>A stage exceeded its memory limit</td><td>Filter earlier; add a supporting index; enable disk use knowing it is slower</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>A missing index.</b> By a wide margin the most common cause of a sudden incident, and the cheapest to fix</td></tr>
+          <tr><td><b>2</b></td><td><b>Working set exceeding cache</b>, which arrives gradually and then sharply</td></tr>
+          <tr><td><b>3</b></td><td><b>Connection pool exhaustion</b>, which saturates before CPU</td></tr>
+          <tr><td><b>4</b></td><td><b>A hot shard</b> from a poor shard key — structural, and expensive to correct</td></tr>
+          <tr><td><b>5</b></td><td><b>Single-primary write throughput</b> — the real ceiling, and the last one reached</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> The limit people design for — write throughput — is last. The
+        two that actually cause incidents are an index and a memory budget, both of which are fixable in an afternoon if
+        they are being measured.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>Primary unavailable</b> — writes fail for the seconds until an election completes. Retryable writes make this mostly invisible if the driver is configured for it</li>
+        <li><b>A secondary lost</b> — no user impact, but a majority write concern now has less margin</li>
+        <li><b>Config servers unavailable</b> — a sharded cluster cannot route. Treat their availability as critical</li>
+        <li><b>mongos unavailable</b> — run several; they are stateless and cheap</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before an application depends on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Schema modelled from queries</b>, not from entities</div>
+      <div>&#9744; <b>No unbounded arrays</b> — every embedded array has a known ceiling</div>
+      <div>&#9744; <b>Document size monitored</b> against the 16 MB limit</div>
+      <div>&#9744; <b>Embed-versus-reference decided per relationship</b>, by cardinality</div>
+      <div>&#9744; <b>Duplicated fields have an update plan</b> and a stated staleness tolerance</div>
+      <div>&#9744; <b>Application validates the schema</b>, or JSON schema validation is enabled</div>
+      <div>&#9744; <b>Indexes exist for every frequent query</b>, verified with <span class="mono">explain</span></div>
+      <div>&#9744; <b>Compound index order follows ESR</b></div>
+      <div>&#9744; <b>No <span class="mono">COLLSCAN</span></b> on any hot path</div>
+      <div>&#9744; <b>Unused indexes identified and dropped</b></div>
+      <div>&#9744; <b>Indexes and working set fit in cache</b>, with headroom</div>
+      <div>&#9744; <b>Cache hit ratio monitored</b> and alerted on</div>
+      <div>&#9744; <b><span class="mono">cacheSizeGB</span> set explicitly</b> if running in a container</div>
+      <div>&#9744; <b>Odd number of voting members</b>, in separate failure domains</div>
+      <div>&#9744; <b>No arbiter</b> where majority write concern matters</div>
+      <div>&#9744; <b>Write concern set deliberately</b> — <span class="mono">w: "majority"</span> for anything durable</div>
+      <div>&#9744; <b>Read concern set to match</b>; a majority write with a local read is not safe</div>
+      <div>&#9744; <b>Rollback behaviour understood</b> and accepted, or prevented</div>
+      <div>&#9744; <b>Read preference chosen per query</b>, with staleness accepted where used</div>
+      <div>&#9744; <b>Causal sessions used</b> where read-your-writes matters</div>
+      <div>&#9744; <b>Oplog sized</b> against write rate and worst maintenance window</div>
+      <div>&#9744; <b>Replication lag and oplog window alerted on</b></div>
+      <div>&#9744; <b>Failover tested</b>, including that the application reconnects</div>
+      <div>&#9744; <b>Shard key chosen from the five most frequent queries</b></div>
+      <div>&#9744; <b>Shard key has cardinality, even frequency and is non-monotonic</b></div>
+      <div>&#9744; <b>Scatter-gather queries identified</b> and accepted or eliminated</div>
+      <div>&#9744; <b>Balancer window scheduled</b> if traffic has a clear peak</div>
+      <div>&#9744; <b>Config servers treated as critical</b>, replicated and monitored</div>
+      <div>&#9744; <b>Several mongos instances</b>, close to the application</div>
+      <div>&#9744; <b>Transactions used sparingly</b>, with the driver's retry helper</div>
+      <div>&#9744; <b>Aggregations filter early</b>; memory limits understood</div>
+      <div>&#9744; <b>One shared client per application</b>; pool sized against the server limit</div>
+      <div>&#9744; <b>Driver timeouts set</b>; retryable reads and writes enabled</div>
+      <div>&#9744; <b>Authorisation enabled</b>; never bound to a public interface</div>
+      <div>&#9744; <b>TLS in transit</b>; encryption at rest where required</div>
+      <div>&#9744; <b>Least-privilege roles per application</b></div>
+      <div>&#9744; <b>Backups automated and off-host</b>, with a restore tested and timed</div>
+      <div>&#9744; <b>Point-in-time recovery available</b> where a bad write must be undone</div>
+      <div>&#9744; <b>Slow query profiler enabled</b> and reviewed regularly</div>
+      <div>&#9744; <b>Host settings applied</b> — filesystem, THP, ulimits, clock sync</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>name what one document represents, whether any array in
+      it can grow without bound, what the shard key is and which queries filter on it, and what write concern the
+      application actually uses.</b> Those four answers reveal almost every serious problem — and the last is very often
+      &ldquo;whatever the default is&rdquo;, which is worth discovering before a failover rather than after one.</div>
+  </div>
+</div>
+
+</div>
