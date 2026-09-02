@@ -1,0 +1,885 @@
+<meta charset="utf-8">
+<title>Apache Cassandra — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5760px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5760px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5730px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 375px 571px 709px 639px 550px 606px 527px 444px 491px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>APACHE CASSANDRA — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Query-first modelling, tunable consistency, and the two things that will actually break it<br>
+    <span style="font-size:13.4px;color:#6d80b6">data modelling · consistency · write &amp; read path · compaction · tombstones &amp; repair · operations
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT CASSANDRA IS — MASTERLESS, AP, AND OPTIMISED FOR WRITES
+    <span class="sub">start here — the three properties that make it excellent at a narrow thing and poor at everything else</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A <b>masterless, distributed, wide-column store</b>. Every node is
+        identical — there is no primary, no coordinator role that must be elected, and no single point of failure. Data is
+        distributed by consistent hashing over a token ring, and replicated to a configurable number of nodes per data
+        centre.</div>
+      <div class="callout b"><b>The design goal, stated once:</b> <b>linear write scalability and continuous
+        availability across data centres.</b> Doubling the nodes roughly doubles write throughput, and losing a node — or a
+        whole region — does not stop writes. Everything awkward about Cassandra is the price of those two properties.</div>
+      <div class="h3">The three properties that explain everything else</div>
+      <table>
+        <tbody>
+          <tr><td style="width:24px"><b>1</b></td><td><b>Writes never read first.</b> A write is an append to a commit log and a memtable — no lookup, no read-modify-write, no locking. This is why writes are fast and uniform, and it is why <b>a delete is itself a write</b> (a tombstone), which causes most operational trouble</td></tr>
+          <tr><td><b>2</b></td><td><b>There is no query planner and no join.</b> You get exactly the queries your table was designed for. <b>The data model is designed per query</b>, and denormalisation is the intended practice rather than a compromise</td></tr>
+          <tr><td><b>3</b></td><td><b>Consistency is a per-operation choice.</b> It is AP by default, and the same cluster behaves closer to CP when you ask for quorum on both sides. See panel 5</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Almost every Cassandra failure traces to one of those.</b> Panels 2 and 9 cover the
+        two that cause real incidents: a partition key chosen badly, and tombstones left unrepaired.</div>
+    </div>
+    <div>
+      <div class="h3">Where it sits on CAP</div>
+      <div class="callout" style="margin-top:0"><b>Cassandra is AP</b> — during a partition, nodes on both sides
+        keep accepting reads and writes at low consistency levels, and the cluster converges afterwards through read repair,
+        hinted handoff and anti-entropy repair. Availability is preserved; a read may return stale data.</div>
+      <div class="callout g"><b>The nuance worth adding.</b> Because consistency is tunable per operation, a write
+        and a read that both use <span class="mono">QUORUM</span> give <b>linearizable-per-key behaviour for that
+        operation</b> — at the cost of failing when a quorum is unreachable. Cassandra is not <i>fixed</i> at AP; the
+        default is AP and <b>you choose the position per statement</b>. That is the most accurate answer to the question.</div>
+      <div class="h3">Use it when</div>
+      <ul>
+        <li><b>Write volume is very high and continuous</b> — event logs, clickstreams, sensor and telemetry data, time-series</li>
+        <li><b>Always-on across regions</b> is a genuine requirement, with no failover window</li>
+        <li><b>Access is by a known key</b> and the queries are stable and few</li>
+        <li><b>Linear scale-out</b> is needed and adding nodes must not require re-architecting</li>
+        <li><b>Eventual consistency is acceptable</b> for most reads</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Do not use it when</div>
+      <ul>
+        <li><b>Queries are ad-hoc or exploratory.</b> You must know them before designing the tables — this is the hardest constraint to accept and the most commonly underestimated</li>
+        <li><b>The data is relational</b> with joins across entities — there are no joins, and doing them in the application at scale is painful</li>
+        <li><b>You need multi-row or multi-table ACID transactions</b> — see the note below</li>
+        <li><b>The workload is delete-heavy</b>, or resembles a queue. Tombstones make this actively hostile</li>
+        <li><b>The dataset is small.</b> A three-node minimum for meaningful replication is overkill for data that fits on one machine</li>
+        <li><b>Aggregations across partitions</b> are needed — that is an analytics engine's job</li>
+      </ul>
+      <div class="callout r"><b>The correction worth making early: lightweight transactions are not ACID
+        transactions.</b> An <span class="mono">IF</span> clause gives <b>linearizable compare-and-set within a single
+        partition</b>, implemented with Paxos. It is not multi-row, not multi-table, has no rollback, and costs several
+        round trips. Describing it as ACID sets an expectation the database cannot meet.</div>
+      <div class="callout p"><b><span class="lvl sr">STAFF</span> Version context.</b> <b>Cassandra 5.0</b> brought
+        the most consequential changes in years: <b>Storage-Attached Indexes</b>, which fix much of what made secondary
+        indexes unusable; a <b>vector type with approximate-nearest-neighbour search</b> combinable with normal CQL
+        filters; the <b>Unified Compaction Strategy</b>, which subsumes the older strategies and self-tunes; trie-based
+        memtables and the BTI SSTable format; and dynamic data masking. If you last evaluated Cassandra on 3.x, several
+        conclusions are now out of date.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. DATA MODEL ============ -->
+<div class="panel c5 span2">
+  <div class="phead">2 &nbsp;· &nbsp;DATA MODELLING — QUERY FIRST, AND THE PARTITION KEY DECISION
+    <span class="sub">the skill that separates a working cluster from a failing one · <span class="lvl jr">JUNIOR</span> the keys · <span class="lvl sr">STAFF</span> partition sizing</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The governing rule, and it genuinely inverts relational
+        practice: <span style="font-size:13.4px">start from the queries, not the entities.</span></b> Write down every
+        query the application will make, then design <b>one table per query</b>, duplicating data freely. Normalising first
+        and hoping the queries work out produces a data model that cannot serve them at all.</div>
+      <div class="h3">The primary key has two parts, and they do different jobs</div>
+      <div class="code">PRIMARY KEY ( (user_id, day), event_time, event_id )
+                └──────┬──────┘  └────────┬─────────┘
+              PARTITION KEY        CLUSTERING COLUMNS
+              decides WHICH        decide the ORDER
+              node stores it       WITHIN the partition</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>Partition key</b></td><td>Hashed to a token, which determines the node. <b>Every query must supply it</b> — without it there is no way to know which node holds the data</td></tr>
+          <tr><td><b>Clustering columns</b></td><td>Sort rows <b>on disk</b> within the partition. Range scans and ordering are efficient only along this order</td></tr>
+          <tr><td><b>Static columns</b></td><td>One value shared by the whole partition</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Design the sort order into the table.</b> <span class="mono">WITH CLUSTERING ORDER
+        BY (event_time DESC)</span> makes &ldquo;most recent first&rdquo; free — the rows are already stored that way.
+        Sorting at query time in any other order is not available.</div>
+      <div class="h3">Denormalisation is the design, not a shortcut</div>
+      <ul>
+        <li><b>The same data lives in several tables</b>, each shaped for one query. This is correct and expected</li>
+        <li><b>The application maintains the copies.</b> There is no join and no cascade — writing to all of them is your code's responsibility</li>
+        <li><b>Storage is cheap; a query that cannot be served is not</b></li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Partition sizing is where clusters are made or broken.</b> A
+        partition lives entirely on its replica nodes and is read as a unit. <b>Keep partitions under roughly 100 MB and
+        100,000 rows</b> as a working guide. Beyond that, reads slow, compaction struggles, repair takes longer, and memory
+        pressure rises on exactly the nodes holding it.</div>
+      <div class="h3">The two ways a partition key goes wrong</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>Unbounded growth</b></td><td>The partition has no natural limit — all events for a device, forever. It grows until it breaks. <b>The fix is bucketing:</b> add a time component such as day or month to the partition key so each partition is bounded by construction</td></tr>
+          <tr><td><b>Hot partitions</b></td><td>One key receives a disproportionate share of traffic — a status flag, a country, a popular tenant. <b>Low cardinality is the warning sign.</b> That partition's replicas are saturated while the rest of the cluster is idle, and adding nodes does not help</td></tr>
+        </tbody>
+      </table>
+      <div class="code"><span class="c">-- unbounded: grows forever</span>
+PRIMARY KEY ( device_id, reading_time )
+
+<span class="c">-- bounded: one partition per device per day</span>
+PRIMARY KEY ( (device_id, day), reading_time )
+
+<span class="c">-- hot: a handful of distinct values</span>
+PRIMARY KEY ( status, order_id )
+
+<span class="c">-- spread: add a bucket to widen the key</span>
+PRIMARY KEY ( (status, bucket), order_id )</div>
+      <div class="callout"><b>The trade with bucketing is query fan-out.</b> Reading a month now means reading
+        thirty partitions rather than one. That is usually the right trade — thirty bounded reads are far better than one
+        unbounded partition — but choose the bucket size against the query, not arbitrarily.</div>
+      <div class="callout g"><b>The test to apply before committing to a key:</b> how many distinct values does it
+        have, how large can one partition become at full retention, and does <b>every</b> read supply it? If any answer is
+        uncomfortable, change the model now — it is by far the most expensive thing to change later.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. ANTI-PATTERNS ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;ANTI-PATTERNS <span class="sub">the ones that reliably cause incidents</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:126px">Anti-pattern</th><th>Why it fails</th></tr></thead>
+      <tbody>
+        <tr><td><b>Using it as a queue</b></td><td><b>The classic.</b> Insert, read the oldest, delete, repeat — every delete leaves a tombstone at the front of the partition, so each read scans through more and more of them until it times out. <b>Cassandra is actively bad at this</b>, and no tuning fixes it</td></tr>
+        <tr><td><b>Delete-heavy workloads</b></td><td>Same mechanism. Deletes are writes, and the space is only reclaimed after compaction <i>and</i> the grace period. Prefer TTLs, or partition so removal is dropping whole partitions</td></tr>
+        <tr><td><b>Read-modify-write</b></td><td>Read a value, modify it, write it back. Two concurrent clients silently lose one update — there is no locking. Use a lightweight transaction if you truly need it, and expect the cost</td></tr>
+        <tr><td><b><span class="mono">ALLOW FILTERING</span></b></td><td>It does not enable a feature — it disables a safety check and permits a scan across nodes. <b>Fine in an ad-hoc investigation, never in application code</b></td></tr>
+        <tr><td><b>Cross-partition batches</b></td><td>Treated as a performance optimisation when it is the opposite. See panel 10</td></tr>
+        <tr><td><b>Secondary indexes on high-cardinality columns</b></td><td>Historically fans out to every node. See panel 11</td></tr>
+        <tr><td><b>Unbounded collections</b></td><td>A list or map that keeps growing is read and rewritten whole. Keep them small and bounded, or use clustering rows instead</td></tr>
+        <tr><td><b>One giant table for everything</b></td><td>Relational instinct. One table per query is the model</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The common thread.</b> Every one of these is a relational or queue-shaped habit
+      applied to a store that is optimised for a different access pattern. They usually work in development, where volumes
+      are small and partitions are short, and fail months later in production once the data has accumulated.</div>
+    <div class="callout g"><b>The counter-question that catches most of them:</b> <b>&ldquo;which partition does
+      this query read, and how large will it be in a year?&rdquo;</b> If the answer is &ldquo;several&rdquo; or
+      &ldquo;we don't know&rdquo;, the design needs another pass before it ships.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — THE TOKEN RING, REPLICATION, AND THE WRITE AND READ PATHS
+    <span class="sub">how data finds a node, how a write becomes durable, and why a read is more work than a write</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+    </defs>
+
+    <!-- RING -->
+    <rect x="8" y="6" width="1180" height="404" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE TOKEN RING — every node is identical, and any node can serve any request</text>
+
+    <circle cx="230" cy="200" r="118" fill="none" stroke="#1e3a8a" stroke-width="3"/>
+    <g font-size="10.6" text-anchor="middle">
+      <circle cx="230" cy="82" r="21" fill="#0f766e"/><text x="230" y="86" fill="#fff" font-weight="700">N1</text>
+      <circle cx="332" cy="141" r="21" fill="#7c2d92"/><text x="332" y="145" fill="#fff" font-weight="700">N2</text>
+      <circle cx="332" cy="259" r="21" fill="#b45309"/><text x="332" y="263" fill="#fff" font-weight="700">N3</text>
+      <circle cx="230" cy="318" r="21" fill="#be123c"/><text x="230" y="322" fill="#fff" font-weight="700">N4</text>
+      <circle cx="128" cy="259" r="21" fill="#0369a1"/><text x="128" y="263" fill="#fff" font-weight="700">N5</text>
+      <circle cx="128" cy="141" r="21" fill="#334155"/><text x="128" y="145" fill="#fff" font-weight="700">N6</text>
+      <text x="230" y="196" font-size="11.4" font-weight="700" fill="#1e3a8a">token range</text>
+      <text x="230" y="214" font-size="10.4" fill="#42507a">0 … 2^63−1</text>
+    </g>
+
+    <g font-size="10.8" fill="#42507a">
+      <text x="378" y="70">· A row's <tspan font-weight="700">partition key is hashed</tspan> with Murmur3 to produce a token</text>
+      <text x="378" y="90">· The token falls in a range, and the node owning that range is the first replica</text>
+      <text x="378" y="110">· The next <tspan font-weight="700">RF − 1</tspan> nodes clockwise hold the remaining replicas</text>
+      <text x="378" y="132" font-weight="700" fill="#0f766e">· There is no master. Any node can act as coordinator for any request</text>
+      <text x="378" y="158">· <tspan font-weight="700">Virtual nodes</tspan> give each machine many small ranges rather than one large one,</text>
+      <text x="390" y="174">so adding or removing a node redistributes evenly without a manual rebalance</text>
+      <text x="378" y="196">· The default token count per node was reduced substantially in Cassandra 4.0 —</text>
+      <text x="390" y="212">fewer, larger ranges make repair and streaming considerably cheaper</text>
+      <text x="378" y="238" font-weight="700" fill="#1e3a8a">· <tspan font-family="Menlo,monospace" font-size="10.4">Gossip</tspan> — nodes exchange state every second, so membership and failure</text>
+      <text x="390" y="254" font-weight="700" fill="#1e3a8a">detection need no coordinator and no external service</text>
+      <text x="378" y="278">· <tspan font-weight="700">Snitch</tspan> — tells the cluster which rack and data centre each node is in, which is</text>
+      <text x="390" y="294">what lets replicas be placed across failure domains rather than beside each other</text>
+      <text x="378" y="316">· <tspan font-weight="700">Seeds</tspan> — the nodes a new member contacts to join the gossip network. They are</text>
+      <text x="390" y="332">a bootstrap convenience, not masters, and they hold no special data</text>
+      <text x="378" y="358" font-weight="700" fill="#be123c">· Getting the snitch wrong puts every replica in one rack — the cluster looks</text>
+      <text x="390" y="374" font-weight="700" fill="#be123c">healthy and a single rack failure takes the data offline</text>
+    </g>
+
+    <!-- REPLICATION -->
+    <rect x="1200" y="6" width="1054" height="404" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1218" y="30" font-size="16" font-weight="700" fill="#7c2d92">REPLICATION — set per keyspace, per data centre</text>
+
+    <rect x="1218" y="44" width="1018" height="96" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+    <text x="1234" y="64" font-size="12.4" font-weight="700" fill="#7c2d92">NetworkTopologyStrategy — use this, essentially always</text>
+    <text x="1234" y="84" font-size="10.8" fill="#4b3a5e">Replication factor is declared <tspan font-weight="700">per data centre</tspan>, and replicas are placed on distinct racks where the topology allows it.</text>
+    <text x="1234" y="102" font-size="10.8" fill="#4b3a5e">RF 3 per data centre is the standard production choice: it tolerates one node loss per DC while still satisfying a local quorum.</text>
+    <text x="1234" y="124" font-size="10.8" font-weight="700" fill="#be123c">SimpleStrategy ignores racks and data centres entirely. It is acceptable for a laptop and wrong for anything else — including a</text>
+    <text x="1234" y="134" font-size="10.8" font-weight="700" fill="#be123c">single-DC production cluster, because migrating away from it later is disruptive.</text>
+
+    <rect x="1218" y="152" width="1018" height="120" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="1234" y="172" font-size="12.6" font-weight="700" fill="#047857">THE ONE FORMULA TO REMEMBER — R + W &gt; RF</text>
+    <text x="1234" y="194" font-size="11" fill="#2f4f47">If the number of replicas read plus the number written exceeds the replication factor, the two sets <tspan font-weight="700">must overlap by at least one node</tspan> — so the read is</text>
+    <text x="1234" y="212" font-size="11" fill="#2f4f47">guaranteed to see the latest write. This single inequality is the whole of tunable consistency, and it is what &ldquo;strong consistency&rdquo; means here.</text>
+    <text x="1234" y="236" font-size="11" fill="#2f4f47">With <tspan font-weight="700">RF 3</tspan>: QUORUM is 2. Write at QUORUM and read at QUORUM gives 2 + 2 &gt; 3 — consistent, and tolerant of one node being down.</text>
+    <text x="1234" y="256" font-size="11" font-weight="700" fill="#be123c">Write at ONE and read at ONE gives 1 + 1 = 2, which is not greater than 3 — so the read may legitimately return stale data. Both are valid choices;</text>
+    <text x="1234" y="266" font-size="11" font-weight="700" fill="#be123c">only one of them is a consistency guarantee, and the difference should be deliberate rather than inherited from a default.</text>
+
+    <rect x="1218" y="284" width="1018" height="118" rx="8" fill="#fff7ea" stroke="#e9b669" stroke-width="2"/>
+    <text x="1234" y="304" font-size="12.4" font-weight="700" fill="#a35c00">MULTI-DATA-CENTRE — and why LOCAL_QUORUM is the production default</text>
+    <text x="1234" y="324" font-size="10.8" fill="#7a3d06">Replication to another data centre is <tspan font-weight="700">asynchronous</tspan> and continuous. Each DC has its own replication factor, so a keyspace can be</text>
+    <text x="1234" y="340" font-size="10.8" fill="#7a3d06">RF 3 in two regions and RF 1 in a third used only for analytics.</text>
+    <text x="1234" y="362" font-size="10.8" font-weight="700" fill="#047857">LOCAL_QUORUM requires a quorum within the client's own data centre only. It gives consistency locally without paying cross-region</text>
+    <text x="1234" y="378" font-size="10.8" font-weight="700" fill="#047857">latency on every operation, and it keeps working when the link between regions is down. This is what almost every production cluster uses.</text>
+    <text x="1234" y="398" font-size="10.8" fill="#7a3d06">EACH_QUORUM requires a quorum in <tspan font-style="italic">every</tspan> data centre — strong across regions, and unavailable the moment one region is unreachable.</text>
+
+    <!-- WRITE PATH -->
+    <rect x="2266" y="6" width="1046" height="404" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="2284" y="30" font-size="16" font-weight="700" fill="#0f766e">THE WRITE PATH — why writes are fast and uniform</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="2284" y="44" width="150" height="50" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="2359" y="64" font-size="11.4" font-weight="700" fill="#0f766e">Client</text>
+      <text x="2359" y="82" fill="#2f4f47">any node</text>
+      <rect x="2464" y="44" width="180" height="50" rx="6" fill="#fff7ea" stroke="#b45309" stroke-width="2"/>
+      <text x="2554" y="64" font-size="11.4" font-weight="700" fill="#b45309">Coordinator</text>
+      <text x="2554" y="82" fill="#7a3d06">hashes key, finds replicas</text>
+      <rect x="2674" y="44" width="180" height="50" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="2764" y="64" font-size="11.4" font-weight="700" fill="#be123c">Commit log</text>
+      <text x="2764" y="82" fill="#7f2b2b">append — durability</text>
+      <rect x="2884" y="44" width="180" height="50" rx="6" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2974" y="64" font-size="11.4" font-weight="700" fill="#7c2d92">Memtable</text>
+      <text x="2974" y="82" fill="#4b3a5e">in memory, sorted</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M2434,69 L2458,69"/><path d="M2644,69 L2668,69"/><path d="M2854,69 L2878,69"/>
+    </g>
+    <g font-size="10.8" fill="#2f4f47">
+      <text x="2284" y="118">· The coordinator sends the write to <tspan font-weight="700">all</tspan> replicas and waits for as many as the consistency level requires</text>
+      <text x="2284" y="138">· Each replica appends to its commit log and applies to its memtable, then acknowledges</text>
+      <text x="2284" y="158">· <tspan font-weight="700">No read happens first</tspan> — which is why write cost does not depend on existing data</text>
+      <text x="2284" y="180">· When the memtable fills it is <tspan font-weight="700">flushed to an immutable SSTable</tspan> on disk and the commit log is freed</text>
+      <text x="2284" y="200">· If a replica is down, the coordinator may store a <tspan font-weight="700">hint</tspan> and replay it when the node returns</text>
+      <text x="2284" y="222" font-weight="700" fill="#be123c">· Hints expire after a configured window. A node down longer than that will not be caught up by</text>
+      <text x="2296" y="238" font-weight="700" fill="#be123c">hints, and requires a repair — which is a common and quiet source of inconsistency</text>
+    </g>
+
+    <rect x="2284" y="252" width="1010" height="150" rx="8" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="2300" y="272" font-size="12.4" font-weight="700" fill="#0f766e">THE READ PATH — more work than a write, and the asymmetry is the point</text>
+    <text x="2300" y="292" font-size="10.8" fill="#2f4f47">A row may have fragments in the memtable and in <tspan font-weight="700">several SSTables</tspan>, each holding a different version of different columns. A read must find</text>
+    <text x="2300" y="308" font-size="10.8" fill="#2f4f47">and merge them all, then resolve conflicts by timestamp — last write wins, per column.</text>
+    <text x="2300" y="330" font-size="10.8" fill="#2f4f47">· <tspan font-weight="700">Bloom filter</tspan> per SSTable answers &ldquo;definitely not here&rdquo; cheaply, so most SSTables are skipped without touching disk</text>
+    <text x="2300" y="348" font-size="10.8" fill="#2f4f47">· <tspan font-weight="700">Key cache</tspan> and the partition index locate the row within an SSTable that may contain it</text>
+    <text x="2300" y="366" font-size="10.8" fill="#2f4f47">· <tspan font-weight="700">Read repair</tspan> compares replicas and pushes corrections back, healing divergence as a side effect of reading</text>
+    <text x="2300" y="388" font-size="10.8" font-weight="700" fill="#be123c">· This is why compaction matters so much: the more SSTables a partition is spread across, the more work every read does.</text>
+
+    <rect x="8" y="422" width="3304" height="206" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="446" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — five properties that explain the rest of this sheet</text>
+    <text x="26" y="472" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 &#183; There is no master, and the partition key decides everything.</tspan> Which node holds a row, whether a query can be served at all, and whether load spreads evenly are all consequences of that one choice — which is why panel 2 is the longest on this sheet.</text>
+    <text x="26" y="500" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 &#183; Writes never read first, so a delete is a write.</tspan> That makes writes fast and uniform, and it means deletion leaves tombstones that must be replicated, read through, and eventually purged — the source of most operational trouble.</text>
+    <text x="26" y="528" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 &#183; Consistency is chosen per operation, and R + W &gt; RF is the whole rule.</tspan> The cluster is AP by default and behaves closer to CP when you ask it to. Inheriting the default means running at ONE, which is a choice whether or not anyone made it deliberately.</text>
+    <text x="26" y="556" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 &#183; SSTables are immutable, so reads merge across files.</tspan> Compaction exists to keep that count low; when it falls behind, read latency rises with no change to the queries. SSTables per read is the number that tells you.</text>
+    <text x="26" y="584" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 &#183; Convergence is a maintenance activity, not an automatic one.</tspan> Hints expire and read repair only touches data that is read. Anti-entropy repair is the only mechanism reaching every row, and it must complete within the grace period.</text>
+    <text x="26" y="612" font-size="11.8" font-weight="700" fill="#1e3a8a">Useful interrogation of any Cassandra design: what is the partition key, how large does one partition get at full retention, when did repair last finish, and what consistency level is the application actually using?</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. CONSISTENCY ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;CONSISTENCY LEVELS — WHAT EACH ONE ACTUALLY GUARANTEES
+    <span class="sub"><span class="lvl mid">MID</span> the levels · <span class="lvl sr">STAFF</span> the two that are routinely described wrongly</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Level</th><th>Requires</th></tr></thead>
+        <tbody>
+          <tr><td><b>ANY</b><br><span style="color:#6b7391">write only</span></td><td><b style="color:#be123c">The write succeeds even if no replica received it</b> — a hint stored on any node counts. The weakest level that exists; the data is unreadable until the hint replays. Almost never the right choice</td></tr>
+          <tr><td><b>ONE</b></td><td>One replica responds. <b>This is the default</b> for reads and writes unless the driver or session overrides it</td></tr>
+          <tr><td><b>LOCAL_ONE</b></td><td>One replica <b>in the local data centre</b>. Commonly the driver default in multi-DC deployments</td></tr>
+          <tr><td><b>TWO / THREE</b></td><td>That many replicas, anywhere</td></tr>
+          <tr><td><b>QUORUM</b></td><td>A majority <b>across all data centres</b>. Correct but often unintended in a multi-DC cluster — it pays cross-region latency</td></tr>
+          <tr><td><b>LOCAL_QUORUM</b></td><td>A majority <b>within the local data centre</b>. <b>The production standard</b> for multi-DC</td></tr>
+          <tr><td><b>EACH_QUORUM</b></td><td>A quorum in <b>every</b> data centre. Write-side only; unavailable if any DC is unreachable</td></tr>
+          <tr><td><b>ALL</b></td><td>Every replica. <b>Any single node down means the operation fails</b> — it trades away the availability you chose Cassandra for</td></tr>
+          <tr><td><b>SERIAL</b><br><b>LOCAL_SERIAL</b></td><td>Read levels used with lightweight transactions, so a read observes in-progress Paxos state</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Two corrections worth stating explicitly, because reference
+        material gets both wrong.</b><br><b>1 · <span class="mono">ANY</span> is not &ldquo;one replica&rdquo;.</b> That
+        describes <span class="mono">ONE</span>. <span class="mono">ANY</span> succeeds when <b>every replica is down</b>,
+        by storing a hint — the write is durable but not readable until replay.<br><b>2 · <span class="mono">QUORUM</span>
+        is not the default.</b> The default is <span class="mono">ONE</span>. A cluster where nobody set a consistency
+        level is running at <span class="mono">ONE</span>, not at a balanced middle setting.</div>
+      <div class="callout g"><b>Apply <span class="mono">R + W &gt; RF</span> to choose.</b> With RF 3, the common
+        production pairing is <b>write LOCAL_QUORUM and read LOCAL_QUORUM</b> — 2 + 2 &gt; 3, consistent within the region,
+        and tolerant of one node down. Drop either side to ONE and you have chosen speed over the guarantee, which is
+        legitimate for metrics and logs and wrong for anything a user reads back immediately.</div>
+      <div class="h3">How divergence is repaired — three mechanisms</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>Hinted handoff</b></td><td>The coordinator stores writes for a briefly unavailable node and replays them. <b>Bounded by a time window</b> — beyond it, hints are dropped</td></tr>
+          <tr><td><b>Read repair</b></td><td>Divergence found during a read is corrected on the spot. Only helps data that is actually read</td></tr>
+          <tr><td><b>Anti-entropy repair</b></td><td><span class="mono">nodetool repair</span>. The only mechanism that reaches <b>every</b> row. <b>Not optional</b> — see panel 9</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Conflicts resolve by last-write-wins, per column, on timestamp.</b> There is no
+        merge and no conflict surface. <b>Clock skew across nodes therefore causes silent data loss</b> — a write with an
+        earlier timestamp is discarded. Run NTP everywhere and monitor drift; this is not a theoretical concern.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. CQL ============ -->
+<div class="panel c3">
+  <div class="phead">6 &nbsp;· &nbsp;CQL &amp; QUERY RULES <span class="sub">SQL-like syntax, very different rules</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>CQL looks like SQL and is not SQL.</b> There are <b>no joins,
+      no subqueries, no aggregates across partitions and no query planner</b>. The syntax being familiar is the trap —
+      what a query is allowed to do is determined entirely by the primary key of the table it reads.</div>
+    <div class="h3">What a <span class="mono">WHERE</span> clause may contain</div>
+    <ul>
+      <li><b>The full partition key is required</b> — always, with equality. Without it the cluster cannot know which node to ask</li>
+      <li><b>Clustering columns must be restricted in order</b> — you cannot skip one. With <span class="mono">(a, b, c)</span>, filtering on <span class="mono">a</span> and <span class="mono">c</span> is not allowed</li>
+      <li><b>Only the last restricted clustering column may use a range.</b> Everything before it must be equality</li>
+      <li><b><span class="mono">ORDER BY</span> can only follow the clustering order</b>, forwards or reversed</li>
+      <li><b>Anything else requires <span class="mono">ALLOW FILTERING</span></b>, which is a warning rather than a feature</li>
+    </ul>
+    <div class="code"><span class="c">-- PRIMARY KEY ((user_id), event_time, event_id)</span>
+
+<span class="v">OK</span>   WHERE user_id = ?
+<span class="v">OK</span>   WHERE user_id = ? AND event_time &gt; ?
+<span class="v">OK</span>   WHERE user_id = ? AND event_time = ? AND event_id = ?
+
+<span class="r">NO</span>   WHERE event_time &gt; ?          <span class="c">-- no partition key</span>
+<span class="r">NO</span>   WHERE user_id = ? AND event_id = ?  <span class="c">-- skips a</span>
+                                     <span class="c">   clustering col</span></div>
+    <div class="callout"><b>These restrictions are a feature, not a limitation.</b> The database refuses queries
+      it cannot serve efficiently, rather than accepting them and degrading unpredictably at scale — which is what a
+      relational database would do. <b><span class="mono">ALLOW FILTERING</span> switches that protection off</b>, and it
+      is the reason it should never appear in application code.</div>
+    <div class="h3">Other things worth knowing</div>
+    <ul>
+      <li><b>TTL per row or column</b> — data expires automatically. <b>The best answer to deletion</b>, since it avoids explicit tombstones from application logic</li>
+      <li><b>Counters live in their own tables</b> and cannot mix with normal columns. They are <b>not idempotent</b>, so a retried increment may double-count</li>
+      <li><b>Collections</b> — set, list and map. Keep them small; a non-frozen collection is read and rewritten as a unit</li>
+      <li><b><span class="mono">INSERT</span> and <span class="mono">UPDATE</span> are the same operation</b> — both are upserts. There is no &ldquo;row does not exist&rdquo; error</li>
+      <li><b>Paging is automatic</b> in the drivers. Do not implement it manually with offsets</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 7. STORAGE ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;STORAGE ENGINE — SSTABLES, CACHES AND WHY READS COST MORE THAN WRITES
+    <span class="sub"><span class="lvl sr">STAFF</span> the log-structured design, and the read amplification that follows from it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>Cassandra is a log-structured merge store.</b> Writes append
+        to memory and are periodically flushed to <b>immutable</b> files. Nothing is ever modified in place — which makes
+        writes sequential and cheap, and makes reads a merge across however many files hold fragments of the row.</div>
+      <div class="h3">The components</div>
+      <table>
+        <tbody>
+          <tr><td style="width:126px"><b>Commit log</b></td><td>Append-only, per node. <b>The durability guarantee</b> — a crash replays it. Put it on separate storage from data if the disks are not fast</td></tr>
+          <tr><td><b>Memtable</b></td><td>In-memory, sorted, per table. Absorbs writes until flushed</td></tr>
+          <tr><td><b>SSTable</b></td><td><b>Immutable</b> sorted file on disk. Once written it is never modified — only merged away by compaction</td></tr>
+          <tr><td><b>Bloom filter</b></td><td>Per SSTable. Answers &ldquo;this key is definitely not here&rdquo; without a disk read, so most SSTables are skipped. False positives cost a wasted lookup; false negatives cannot occur</td></tr>
+          <tr><td><b>Partition index<br>and summary</b></td><td>Locate a partition's offset within an SSTable</td></tr>
+          <tr><td><b>Key cache</b></td><td>Caches those offsets. <b>Cheap and effective</b> — usually worth increasing</td></tr>
+          <tr><td><b>Row cache</b></td><td>Caches whole rows. <b>Off by default and usually correct to leave off</b> — it is invalidated on any write to the partition, so it hurts mixed workloads</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Rely on the operating system page cache.</b> Cassandra reads SSTables through it, so
+        unallocated memory is doing useful work. This is why heap should stay modest and the rest of RAM left free —
+        raising the heap to consume the machine reduces the cache that makes reads fast.</div>
+    </div>
+    <div>
+      <div class="h3">Read amplification, and why it is the thing to watch</div>
+      <div style="font-size:12.9px;line-height:1.45">A single logical row can have fragments in the memtable and in
+        many SSTables — one holding the original insert, another an updated column, another a tombstone. <b>Every read must
+        consult all of them</b> and merge by timestamp.</div>
+      <div class="callout r"><b>So the number of SSTables a read touches is the read cost.</b> Compaction exists to
+        keep that number low. When compaction falls behind — because the strategy is wrong, or the node is I/O saturated —
+        <b>read latency degrades steadily with no change to the queries</b>. The metric to watch is SSTables per read, and
+        it is one of the most diagnostic numbers in the whole system.</div>
+      <div class="h3">Compression and disk</div>
+      <ul>
+        <li><b>Compression is on by default</b> — LZ4 is fast and usually correct. Chunk length trades ratio against read cost, so smaller chunks suit random reads</li>
+        <li><b>Local storage, not network-attached.</b> Cassandra assumes fast local disks; putting SSTables on remote storage undermines the design</li>
+        <li><b>Leave real headroom.</b> Compaction needs space to write merged output before removing inputs — a disk near capacity cannot compact, which increases read cost and fills the disk further</li>
+        <li><b>Never use RAID with parity</b> for data. Cassandra replicates across nodes already; disk-level redundancy adds write cost for a guarantee you have elsewhere</li>
+      </ul>
+      <div class="callout g"><b>The heap guidance.</b> Keep the JVM heap moderate — commonly 8 to 16 GB with the
+        modern collectors — and leave the rest of RAM to the page cache. Long garbage-collection pauses cause nodes to be
+        marked down by their peers, which triggers hints, repairs and cascading load. <b>Pause time matters more than heap
+        size</b>, and it is the metric to alert on.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. COMPACTION ============ -->
+<div class="panel c4">
+  <div class="phead">8 &nbsp;· &nbsp;COMPACTION <span class="sub">choosing the strategy correctly</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">Compaction merges SSTables, discarding superseded values and expired
+      tombstones. It is what keeps reads fast and what reclaims disk. <b>Choosing the wrong strategy is one of the most
+      consequential and most reversible decisions here.</b></div>
+    <table>
+      <thead><tr><th style="width:96px">Strategy</th><th>Behaviour and fit</th></tr></thead>
+      <tbody>
+        <tr><td><b>STCS</b><br><span style="color:#6b7391">size-tiered</span></td><td>Merges SSTables of similar size. <b>Low write amplification, higher read amplification</b>, and can need up to double the space during a large compaction. Suits write-heavy workloads with few overwrites</td></tr>
+        <tr><td><b>LCS</b><br><span style="color:#6b7391">levelled</span></td><td>Maintains levels so a row appears in few SSTables. <b>Excellent read performance and much higher write amplification.</b> Suits read-heavy workloads with frequent updates — and will struggle if the write rate exceeds what it can compact</td></tr>
+        <tr><td><b>TWCS</b><br><span style="color:#6b7391">time-windowed</span></td><td><b>The correct answer for time-series with TTLs.</b> Groups data by time window so an entire window expires and is dropped as a unit, with no tombstone scanning at all</td></tr>
+        <tr><td><b>UCS</b><br><span style="color:#6b7391">unified, 5.0</span></td><td>Subsumes the tiered and levelled behaviours behind one configurable strategy that adapts as the workload changes. <b>The direction of travel</b>, and it removes much of the guesswork above</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The decision, in one line each.</b> Time-series with a TTL → <b>TWCS</b>, and the
+      benefit is large. Read-heavy with updates → <b>LCS</b>. Write-heavy, few updates → <b>STCS</b>. On 5.0, <b>UCS</b>
+      unless you have a specific reason.</div>
+    <div class="callout r"><b>TWCS with explicit deletes defeats itself.</b> Its advantage is that a whole window
+      expires together. Deleting individual rows inside a window creates tombstones that prevent the window being dropped
+      cleanly — so use <b>TTLs, not <span class="mono">DELETE</span></b>, on TWCS tables.</div>
+    <div class="h3">Operating it</div>
+    <ul>
+      <li><b>Watch pending compactions.</b> A number that keeps climbing means compaction cannot keep up, and read latency will follow it</li>
+      <li><b>Throughput is throttled</b> by default so compaction does not starve queries. Raising it helps a backlog and costs foreground latency</li>
+      <li><b>Never run a major compaction routinely</b> — it produces one enormous SSTable that subsequent compactions cannot manage well, and the effect is long-lived</li>
+      <li><b>Changing strategy is safe but not instant</b> — it rewrites data in the background</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 9. TOMBSTONES ============ -->
+<div class="panel c5">
+  <div class="phead">9 &nbsp;· &nbsp;TOMBSTONES &amp; REPAIR <span class="sub">the failure that defines Cassandra ops</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>A delete is a write.</b> It cannot modify existing SSTables
+      because they are immutable, so it writes a <b>tombstone</b> — a marker saying &ldquo;this is deleted as of this
+      timestamp&rdquo;. The tombstone must be replicated everywhere, and it must outlive the data it hides.</div>
+    <div class="h3">Why a read gets slower after deletes</div>
+    <ul>
+      <li><b>Tombstones are read like any other data.</b> Scanning a partition means walking through them to determine what still exists</li>
+      <li><b>Thresholds exist and they fire.</b> Passing a certain count per query logs a warning; passing a much higher one <b>aborts the query outright</b></li>
+      <li><b>This is exactly why the queue pattern fails</b> — the deleted head of the partition is scanned on every read, and grows</li>
+    </ul>
+    <div class="callout r"><b>The critical rule, and the reason repair is mandatory.</b> Tombstones are purged
+      after <b><span class="mono">gc_grace_seconds</span></b> — <b>ten days by default</b>. If a node was down or missed
+      the tombstone and it is purged elsewhere before that node learns of it, <b>the deleted data comes back</b> when the
+      node rejoins. It is a real, silent correctness failure with a name: <b>zombie data</b>.</div>
+    <div class="callout g"><b>Therefore: <span class="mono">nodetool repair</span> must complete on every node
+      within <span class="mono">gc_grace_seconds</span>.</b> This is not a tuning suggestion — it is a correctness
+      requirement of the delete mechanism. A cluster where repair has not run in two weeks with the default grace period
+      may already have resurrected data, and nothing will report it.</div>
+    <div class="h3">Repair in practice</div>
+    <ul>
+      <li><b>Schedule it</b> — with Reaper, or the built-in scheduling in newer versions. Repair that depends on someone remembering does not happen</li>
+      <li><b>Subrange or incremental repair</b> to keep each run manageable on large clusters</li>
+      <li><b>It is expensive</b> — it streams data and competes with live traffic. Run it continuously at low intensity rather than as an occasional large job</li>
+      <li><b>Alert on time since last successful repair per node</b>, against the grace period</li>
+    </ul>
+    <div class="callout"><b>Reducing <span class="mono">gc_grace_seconds</span> shortens the repair deadline
+      proportionally.</b> It is a legitimate choice for TTL-only tables where nothing is explicitly deleted — and
+      dangerous if repair cannot reliably finish inside the shorter window.</div>
+  </div>
+</div>
+
+<!-- ============ 10. LWT ============ -->
+<div class="panel c6">
+  <div class="phead">10 &nbsp;· &nbsp;TRANSACTIONS &amp; BATCHES <span class="sub">both routinely misused</span></div>
+  <div class="pbody">
+    <div class="h3">Lightweight transactions</div>
+    <div class="code">INSERT INTO users (email, id) VALUES (?, ?)
+  IF NOT EXISTS;
+
+UPDATE accounts SET balance = ? WHERE id = ?
+  IF balance = ?;   <span class="c">-- compare and set</span></div>
+    <div class="callout r"><b>What they are, precisely.</b> <b>Linearizable compare-and-set within a single
+      partition</b>, implemented with Paxos. They are <b>not</b> multi-row transactions, <b>not</b> multi-table, and there
+      is <b>no rollback</b>. Two statements with <span class="mono">IF</span> are two independent transactions.</div>
+    <div class="callout"><b>And they are expensive.</b> Paxos requires several round trips among replicas rather
+      than one — commonly quoted as roughly four — so an LWT can cost an order of magnitude more than a normal write.
+      Contention on the same partition makes it worse, because rounds fail and retry.</div>
+    <div class="callout g"><b>Use them for genuine uniqueness and state-transition guards</b> — claiming a
+      username, moving an order from pending to paid exactly once. <b>Do not use them on a hot path</b>, and never as a
+      general substitute for the transactions a relational database provides. If a design needs them frequently, Cassandra
+      is likely the wrong choice for that part of the system.</div>
+    <div class="h3">Batches — the most misunderstood feature here</div>
+    <div class="callout r"><b>A batch is not a performance optimisation. It usually makes things slower.</b> A
+      <b>logged</b> batch spanning several partitions gives <b>atomicity</b> — all statements eventually apply — at the
+      cost of writing a batch log to two additional nodes first, and forcing one coordinator to fan out to many replicas
+      it does not own. The parallelism of independent writes is lost.</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px"><b>Single-partition batch</b></td><td><b>Genuinely useful.</b> All statements go to one set of replicas and are applied atomically and isolated. This is the good case</td></tr>
+        <tr><td><b>Multi-partition logged batch</b></td><td>Use <b>only</b> when atomicity across partitions is a real requirement — for example keeping denormalised copies in step. Accept the cost knowingly</td></tr>
+        <tr><td><b>Multi-partition unlogged batch</b></td><td><b>Almost always wrong.</b> No atomicity <i>and</i> coordinator overhead. Send concurrent individual writes instead</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The rule: batch for atomicity, never for throughput.</b> For throughput, issue many
+      asynchronous single-row writes — that is what the architecture is built for, and it will be faster.</div>
+  </div>
+</div>
+
+<!-- ============ 11. INDEXES ============ -->
+<div class="panel c8">
+  <div class="phead">11 &nbsp;· &nbsp;INDEXES &amp; VIEWS <span class="sub">and what 5.0 changed</span></div>
+  <div class="pbody">
+    <div class="h3">Secondary indexes — the historical problem</div>
+    <div class="callout r" style="margin-top:0"><b>A classic secondary index is local to each node.</b> Since the
+      indexed value gives no information about which partition holds it, a query using one <b>must be sent to every node in
+      the data centre</b> and the results merged. Cost grows with cluster size, so the query gets slower as you scale out —
+      the opposite of what the rest of the system does.</div>
+    <ul>
+      <li><b>Worst on high-cardinality columns</b> such as an email address — nearly every node is asked and nearly all return nothing</li>
+      <li><b>Also bad on very low cardinality</b> such as a boolean — the matching partitions are enormous</li>
+      <li><b>Reasonable only</b> when the query also supplies the partition key, narrowing it to one node</li>
+    </ul>
+    <div class="callout g"><b><span class="lvl sr">STAFF</span> Storage-Attached Indexes change this
+      materially.</b> Introduced in <b>Cassandra 5.0</b>, SAI attaches indexes to SSTables so they participate in
+      compaction and repair automatically, supports multiple indexed columns far more efficiently, and handles numeric
+      ranges and text matching. <b>It is the mechanism behind vector search</b> as well. It does not eliminate the
+      scatter-gather characteristic, but it makes indexing a reasonable tool rather than one to avoid — and it is the main
+      reason to revisit conclusions formed on 3.x.</div>
+    <div class="callout b"><b>The default answer remains a second table.</b> If you need to query by another
+      attribute, write a table keyed by that attribute and maintain both from the application. It is more code and it
+      scales predictably — which is the trade Cassandra asks you to make everywhere.</div>
+    <div class="h3">Materialized views</div>
+    <div class="callout r"><b>Treat them as experimental, because they are.</b> Server-maintained views were
+      flagged as experimental after release owing to correctness problems — a view can drift out of sync with its base
+      table and there is no supported way to detect or fix it short of rebuilding. <b>They remain marked experimental and
+      require explicitly enabling.</b></div>
+    <div class="callout"><b>The recommended alternative is the manual one:</b> maintain the second table from
+      application code. It is more work and its failure modes are ones you can see, test and correct — rather than silent
+      divergence you discover from a customer report.</div>
+  </div>
+</div>
+
+<!-- ============ 12. OPERATIONS ============ -->
+<div class="panel c7 span2">
+  <div class="phead">12 &nbsp;· &nbsp;OPERATIONS — NODE LIFECYCLE, SCALING AND THE COMMANDS THAT MATTER
+    <span class="sub"><span class="lvl mid">MID</span> running a cluster · <span class="lvl sr">STAFF</span> the steps people skip and regret</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Adding and removing nodes</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Adding a node</b></td><td>It bootstraps by streaming the ranges it will own from existing nodes. <b>Add one at a time</b> and let each finish — parallel bootstraps cause range confusion and heavy streaming load</td></tr>
+          <tr><td><b>After adding: <span class="mono">cleanup</span></b></td><td><b>The step most often forgotten.</b> Existing nodes still hold data for ranges they no longer own. Until cleanup runs, <b>disk usage does not fall</b> and people conclude scaling out did not work</td></tr>
+          <tr><td><b>Removing a live node</b></td><td><span class="mono">decommission</span> — it streams its data to the new owners before leaving. Graceful</td></tr>
+          <tr><td><b>Removing a dead node</b></td><td><span class="mono">removenode</span> — the cluster restores replica counts from surviving copies. <b>Follow with repair</b></td></tr>
+          <tr><td><b>Replacing a node</b></td><td>Start the replacement with the replace-address flag so it assumes the dead node's ranges rather than joining as a new member</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Scaling is linear and it is not instant.</b> Bootstrapping streams real data over
+        the network, and on a large cluster that is hours. <b>Plan capacity ahead of need</b> — adding nodes during an
+        incident adds streaming load to an already struggling cluster.</div>
+      <div class="callout g"><b>Rolling restarts are routine and safe</b> at RF 3 with quorum reads and writes —
+        one node at a time, waiting for the cluster to report it fully up before continuing. Run <span class="mono">nodetool
+        drain</span> before stopping a node so it flushes memtables and stops accepting writes cleanly.</div>
+    </div>
+    <div>
+      <div class="h3">The commands worth knowing</div>
+      <table>
+        <thead><tr><th style="width:150px">Command</th><th>Answers</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">nodetool status</td><td>Which nodes are up, their load, and ownership percentage. <b>The first thing to run</b></td></tr>
+          <tr><td class="mono">nodetool repair</td><td>Anti-entropy repair. <b>Mandatory within the grace period</b></td></tr>
+          <tr><td class="mono">nodetool cleanup</td><td>Removes data no longer owned. Run after every topology change</td></tr>
+          <tr><td class="mono">nodetool tablestats</td><td>Per table: SSTable count, <b>SSTables per read</b>, partition sizes, tombstone ratios. The richest diagnostic available</td></tr>
+          <tr><td class="mono">nodetool compactionstats</td><td>Pending compactions — a climbing number is an early warning</td></tr>
+          <tr><td class="mono">nodetool tpstats</td><td>Thread pool statistics and <b>dropped messages</b>, which indicate overload</td></tr>
+          <tr><td class="mono">nodetool netstats</td><td>Streaming progress during bootstrap or repair</td></tr>
+          <tr><td class="mono">nodetool drain</td><td>Flush and stop accepting writes, before a clean shutdown</td></tr>
+          <tr><td class="mono">nodetool snapshot</td><td>Hard-link snapshot of SSTables — the basis of backups</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Dropped messages in <span class="mono">tpstats</span> are the clearest overload
+        signal there is.</b> They mean the node could not process requests within their timeout and discarded them —
+        <b>silently, from the client's point of view, at low consistency levels</b>. Any non-zero dropped count deserves
+        investigation.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">13 &nbsp;· &nbsp;SECURITY &amp; BACKUP <span class="sub">defaults are wide open</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Authentication and authorisation are disabled by default.</b> A
+      cluster started with stock settings accepts any client that can reach the port, with full privileges. Combined with
+      the default administrative credentials, an exposed cluster is compromised quickly and routinely.</div>
+    <div class="h3">What to enable</div>
+    <ul>
+      <li><b>Authentication</b> — switch to the password authenticator, <b>change the default superuser credentials</b>, and raise the replication factor of the system authentication keyspace so logins survive a node loss</li>
+      <li><b>Authorisation</b> — role-based, granted per keyspace and per table. Applications get read and write on what they use, nothing more</li>
+      <li><b>TLS on both channels</b> — client-to-node and node-to-node. Inter-node encryption matters particularly across data centres</li>
+      <li><b>Network isolation</b> — never expose the client or inter-node ports beyond the trusted network</li>
+      <li><b>Encryption at rest</b> at the volume level, or via a distribution that provides it</li>
+      <li><b>Audit logging</b>, available in modern versions, where compliance requires it</li>
+      <li><b>Dynamic data masking</b> (5.0) obscures sensitive column values from roles without permission to see them</li>
+    </ul>
+    <div class="h3">Backups</div>
+    <ul>
+      <li><b>Snapshots are hard links</b> to current SSTables — near-instant and initially free in space, but they <b>prevent those files being deleted</b>, so old snapshots quietly consume the disk. Clear them</li>
+      <li><b>Incremental backups</b> hard-link each new SSTable as it is flushed</li>
+      <li><b>Copy snapshots off the node.</b> On-node snapshots do not survive losing the node</li>
+      <li><b>Restoring requires the token layout</b> to match, or a full refresh — <b>practise it</b> before you need it</li>
+    </ul>
+    <div class="callout r"><b>Replication is not backup.</b> A mistaken <span class="mono">TRUNCATE</span> or a bad
+      deployment replicates immediately to every replica in every data centre. Only an off-cluster backup recovers from
+      that — and an untested restore is a hypothesis.</div>
+  </div>
+</div>
+
+<!-- ============ 14. CONFIG ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;CONFIGURATION, DRIVERS AND OBSERVABILITY
+    <span class="sub">the settings that change behaviour, what the client must get right, and what to watch</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Settings that matter</div>
+      <table>
+        <thead><tr><th style="width:168px">Setting</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">cluster_name</td><td>Nodes only join a cluster of the same name — the guard against a test node joining production</td></tr>
+          <tr><td class="mono">seeds</td><td>A few stable nodes per data centre for gossip bootstrap. <b>Not masters</b>, and they should not all be in one rack</td></tr>
+          <tr><td class="mono">endpoint_snitch</td><td><b>Get this right before data exists.</b> It determines rack and data-centre awareness, and therefore whether replicas are actually spread across failure domains</td></tr>
+          <tr><td class="mono">num_tokens</td><td>Virtual nodes per host. Modern defaults are far lower than early versions, which makes repair and streaming much cheaper. <b>Keep it consistent across the cluster</b></td></tr>
+          <tr><td class="mono">commitlog_directory<br>data_file_directories</td><td>Separate devices where possible, so commit log writes do not contend with compaction I/O</td></tr>
+          <tr><td class="mono">concurrent_reads<br>concurrent_writes</td><td>Sized against cores and disks. Too high causes queueing and dropped messages rather than throughput</td></tr>
+          <tr><td class="mono">compaction_throughput</td><td>Throttles compaction so it does not starve queries. Raise to clear a backlog</td></tr>
+          <tr><td class="mono">gc_grace_seconds</td><td>Per table. <b>Your repair deadline</b> — see panel 9</td></tr>
+          <tr><td class="mono">Heap and collector</td><td>Moderate heap, modern low-pause collector. <b>Pause time matters more than size</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Host settings matter too.</b> Disable swap entirely, raise file descriptor limits,
+        disable transparent huge pages, use fast local disks, and <b>run NTP everywhere</b> — clock skew causes silent data
+        loss under last-write-wins.</div>
+    </div>
+    <div>
+      <div class="h3">What the driver must get right</div>
+      <ul>
+        <li><b>Set the consistency level explicitly</b> per statement. The default is <span class="mono">ONE</span>, and inheriting it by accident is how &ldquo;we thought we had quorum&rdquo; happens</li>
+        <li><b>Use a data-centre-aware load balancing policy</b>, pinned to the local DC — otherwise queries cross regions for no reason</li>
+        <li><b>Use prepared statements.</b> They are parsed once, and they let the driver route requests <b>directly to a replica</b> rather than to an arbitrary coordinator — a real latency saving</li>
+        <li><b>Enable token-aware routing</b>, which is what makes that possible</li>
+        <li><b>Configure retry and speculative execution deliberately</b> — and remember that <b>non-idempotent statements must not be retried blindly</b>, counters especially</li>
+        <li><b>Let the driver page</b> result sets; never emulate offsets</li>
+        <li><b>Set timeouts shorter than the server's</b>, so the client fails before the coordinator does</li>
+      </ul>
+      <div class="callout g"><b>Token-aware routing with prepared statements is the single biggest client-side
+        win.</b> It removes one network hop from every request by sending it straight to a node that owns the data.</div>
+    </div>
+    <div>
+      <div class="h3">What to monitor</div>
+      <table>
+        <thead><tr><th style="width:160px">Metric</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Time since last repair</b>, per node</td><td><b>The highest-value metric here.</b> Against <span class="mono">gc_grace_seconds</span> — exceeding it risks resurrected data</td></tr>
+          <tr><td><b>SSTables per read</b></td><td>Read amplification. Rising means compaction is behind</td></tr>
+          <tr><td><b>Pending compactions</b></td><td>A climbing backlog precedes latency problems</td></tr>
+          <tr><td><b>Tombstone counts per read</b></td><td>Warnings and aborted queries start here</td></tr>
+          <tr><td><b>Dropped messages</b></td><td>Overload, and silent data loss at low consistency</td></tr>
+          <tr><td><b>Partition sizes</b>, maximum</td><td>Catches an unbounded partition before it breaks</td></tr>
+          <tr><td><b>GC pause duration</b></td><td>Long pauses cause nodes to be marked down and trigger cascades</td></tr>
+          <tr><td><b>Hints stored and replayed</b></td><td>Nodes have been unavailable; sustained hinting means instability</td></tr>
+          <tr><td><b>Clock drift across nodes</b></td><td>Last-write-wins makes skew a correctness issue</td></tr>
+          <tr><td><b>Disk usage per node</b></td><td>Compaction needs headroom; a full disk cannot compact</td></tr>
+        </tbody>
+      </table>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:128px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Reads on one table time out, others fine</b></td><td>Tombstones — usually a queue pattern or heavy deletes</td><td>Check tombstone counts in <span class="mono">tablestats</span>; redesign to TTLs or bucketed partitions</td></tr>
+          <tr><td><b>Deleted data reappears</b></td><td>Repair did not complete within <span class="mono">gc_grace_seconds</span></td><td><b>Schedule repair.</b> Alert on time since last successful run per node</td></tr>
+          <tr><td><b>One node hot, others idle</b></td><td>Hot partition from a low-cardinality partition key</td><td>Add a bucket to widen the key. Requires a model change and a migration</td></tr>
+          <tr><td><b>Reads slow down gradually</b></td><td>Compaction behind, so SSTables per read is climbing</td><td>Check pending compactions; raise throughput; review the strategy</td></tr>
+          <tr><td><b>Disk usage did not fall after adding nodes</b></td><td><span class="mono">nodetool cleanup</span> was never run</td><td>Run it on every pre-existing node after any topology change</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:128px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Nodes flapping up and down</b></td><td>Long GC pauses, so peers mark the node dead</td><td>Tune heap and collector; reduce partition sizes; watch pause time not heap size</td></tr>
+          <tr><td><b>Writes accepted but data missing</b></td><td>Written at <span class="mono">ONE</span> or <span class="mono">ANY</span> and read before convergence — or clock skew discarded it</td><td>Use <span class="mono">LOCAL_QUORUM</span> both sides; verify NTP on every node</td></tr>
+          <tr><td><b>Query works in dev, fails in production</b></td><td><span class="mono">ALLOW FILTERING</span> — fine on small data, a cluster-wide scan at scale</td><td>Model a table for the query, or index with SAI on 5.0</td></tr>
+          <tr><td><b>Latency spikes under load, requests dropped</b></td><td>Coordinator overload, often from multi-partition batches</td><td><span class="mono">tpstats</span> for dropped messages; replace batches with concurrent writes</td></tr>
+          <tr><td><b>Disk full, compaction stopped</b></td><td>No headroom to write merged output; or old snapshots retained</td><td>Clear snapshots; add capacity. <b>Keep real headroom</b></td></tr>
+          <tr><td><b>A whole rack failed and data went offline</b></td><td>Snitch misconfigured, so replicas were never spread</td><td>Correct the snitch and repair. <b>Verify placement before you need it</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>The data model.</b> A hot or unbounded partition, or a query the tables cannot serve. By a wide margin the most common — and the most expensive to correct</td></tr>
+          <tr><td><b>2</b></td><td><b>Tombstones and missed repairs</b> — gradual degradation, then aborted queries or resurrected data</td></tr>
+          <tr><td><b>3</b></td><td><b>Compaction falling behind</b>, driving read amplification upward</td></tr>
+          <tr><td><b>4</b></td><td><b>GC pauses</b> marking nodes down and cascading load onto the rest</td></tr>
+          <tr><td><b>5</b></td><td><b>Raw write throughput</b> — the thing Cassandra is best at, and the last limit you reach</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> The property people choose Cassandra for is the last to fail.
+        The failures that actually occur are modelling decisions and maintenance discipline — both settled long before the
+        cluster is under load.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>One node down at RF 3</b> — no impact at quorum. Hints accumulate and replay on return</li>
+        <li><b>Two nodes down at RF 3</b> — quorum operations fail for the ranges they share. Reads at ONE still work</li>
+        <li><b>A data centre unreachable</b> — <span class="mono">LOCAL_QUORUM</span> continues normally, which is precisely why it is the default choice. <span class="mono">EACH_QUORUM</span> stops</li>
+        <li><b>A node down beyond the hint window</b> — it returns with a gap that <b>only repair will close</b></li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before an application depends on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Every query written down before the tables were designed</b></div>
+      <div>&#9744; <b>One table per query</b>; denormalisation deliberate</div>
+      <div>&#9744; <b>Every read supplies the full partition key</b></div>
+      <div>&#9744; <b>No partition can grow unbounded</b> — bucketed where needed</div>
+      <div>&#9744; <b>Partition sizes monitored</b>, under roughly 100 MB</div>
+      <div>&#9744; <b>Partition key cardinality checked</b> for hot spots</div>
+      <div>&#9744; <b>Clustering order matches the required read order</b></div>
+      <div>&#9744; <b>No <span class="mono">ALLOW FILTERING</span></b> anywhere in application code</div>
+      <div>&#9744; <b>No queue-like or delete-heavy pattern</b></div>
+      <div>&#9744; <b>TTLs used in preference to explicit deletes</b></div>
+      <div>&#9744; <b>NetworkTopologyStrategy</b>, never SimpleStrategy</div>
+      <div>&#9744; <b>RF 3 per data centre</b> for anything that matters</div>
+      <div>&#9744; <b>Snitch configured and replica placement verified</b> across racks</div>
+      <div>&#9744; <b>Consistency level set explicitly</b> — the default is <span class="mono">ONE</span></div>
+      <div>&#9744; <b><span class="mono">R + W &gt; RF</span> satisfied</b> where consistency is required</div>
+      <div>&#9744; <b><span class="mono">LOCAL_QUORUM</span> for multi-DC</b>, not <span class="mono">QUORUM</span></div>
+      <div>&#9744; <b>No use of <span class="mono">ANY</span></b>, and its behaviour understood</div>
+      <div>&#9744; <b>Repair scheduled and monitored</b> per node</div>
+      <div>&#9744; <b>Time since last repair alerted on</b> against <span class="mono">gc_grace_seconds</span></div>
+      <div>&#9744; <b>Tombstone thresholds monitored</b></div>
+      <div>&#9744; <b>Compaction strategy matched to the workload</b></div>
+      <div>&#9744; <b>TWCS tables use TTLs, not deletes</b></div>
+      <div>&#9744; <b>Pending compactions and SSTables per read monitored</b></div>
+      <div>&#9744; <b>No routine major compactions</b></div>
+      <div>&#9744; <b>Batches used for atomicity only</b>, never throughput</div>
+      <div>&#9744; <b>LWT use is rare and off the hot path</b></div>
+      <div>&#9744; <b>Materialized views avoided</b>, or their status accepted</div>
+      <div>&#9744; <b>Secondary index use justified</b>, or SAI on 5.0</div>
+      <div>&#9744; <b>Prepared statements and token-aware routing</b> enabled</div>
+      <div>&#9744; <b>DC-aware load balancing pinned to the local DC</b></div>
+      <div>&#9744; <b>Retries safe for non-idempotent statements</b></div>
+      <div>&#9744; <b>NTP running everywhere</b>; clock drift monitored</div>
+      <div>&#9744; <b>Heap moderate</b>; GC pause time alerted on</div>
+      <div>&#9744; <b>Swap disabled</b>; local fast disks; ulimits raised</div>
+      <div>&#9744; <b>Disk headroom for compaction</b> maintained</div>
+      <div>&#9744; <b><span class="mono">cleanup</span> run after every topology change</b></div>
+      <div>&#9744; <b>Authentication and authorisation enabled</b>; defaults changed</div>
+      <div>&#9744; <b>Auth keyspace replication raised</b> so logins survive node loss</div>
+      <div>&#9744; <b>TLS on client and inter-node</b>; ports not publicly exposed</div>
+      <div>&#9744; <b>Snapshots copied off-cluster</b>, cleared, and a restore rehearsed</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>name the partition key for every table, state how
+      large the largest partition becomes at full retention, say when repair last completed on every node, and give the
+      consistency level the application actually uses.</b> Those four answers cover the failures that genuinely take
+      Cassandra down — and none of them are about throughput, which is the one thing it will do well regardless.</div>
+  </div>
+</div>
+
+</div>
