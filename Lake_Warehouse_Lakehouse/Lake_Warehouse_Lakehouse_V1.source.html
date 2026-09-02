@@ -1,0 +1,820 @@
+<meta charset="utf-8">
+<title>Data Lake vs Warehouse vs Lakehouse — Architecture &amp; Reference</title>
+<style>
+  @page { size: 3400px 5218px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5218px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5188px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 439px 554px 685px 510px 538px 653px 517px 496px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  .yes{color:#047857;font-weight:700} .no{color:#be123c;font-weight:700} .part{color:#a35c00;font-weight:700}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>DATA LAKE vs DATA WAREHOUSE vs DATA LAKEHOUSE<span class="v">V1</span></h1>
+  <div class="tag">Three answers to the same question, asked in three decades under different constraints<br>
+    <span style="font-size:13.4px;color:#6d80b6">what each solved · what actually changed · table formats · the catalog · cost models · choosing · migrating
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;THESE ARE NOT THREE COMPETING PRODUCTS — THEY ARE THREE ERAS OF THE SAME PROBLEM
+    <span class="sub">start here — each solved the previous one's failure, and the boundaries are now blurring in both directions</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The question all three answer</div>
+      <div style="font-size:13px;line-height:1.46"><b>Where do we put data so people can ask questions of it?</b>
+        The answer changed three times because the <b>economics changed</b> — not because the previous answer was
+        foolish. Understanding what each was responding to explains their trade-offs better than any feature table.</div>
+      <div class="callout b"><b>The single technical shift underneath all of it: the separation of storage from
+        compute.</b> When storage and processing had to live on the same machine, you sized both together and paid for
+        both permanently. Once cheap object storage decoupled them, you could <b>store everything and pay for compute only
+        when querying</b> — and every architecture after that point is a consequence.</div>
+      <div class="h3">The sequence, and what forced each step</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Warehouse</b><br><span style="color:#6b7391">1990s–2000s</span></td><td>Storage was expensive, so you kept only what you had decided was valuable, in a schema fixed in advance. <b>Excellent for reporting; it discarded everything else</b></td></tr>
+          <tr><td><b>Data lake</b><br><span style="color:#6b7391">2010s</span></td><td>Object storage made keeping everything cheap. Store raw, decide the schema at read time. <b>Solved capture; many failed at retrieval</b></td></tr>
+          <tr><td><b>Lakehouse</b><br><span style="color:#6b7391">2020s</span></td><td>Add a <b>metadata layer over open files</b> so lake storage gains transactions, schema enforcement and warehouse-class performance. <b>The attempt to keep both properties</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Read that sequence as a response to failure, not as progress toward one correct
+        answer.</b> Each generation fixed the previous one's biggest weakness while introducing its own — and all three
+        remain in production, frequently in the same organisation.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The historical lesson worth stating plainly: the data
+        swamp.</b> A large share of first-generation data lakes became unusable. Data went in and nothing came out —
+        because there was <b>no catalog, no ownership, no schema enforcement and no quality gate</b>. Everything could be
+        stored and nothing could be found or trusted. <b>The failure was governance, not technology</b>, and a lakehouse
+        without governance fails exactly the same way.</div>
+      <div class="h3">What actually distinguishes them</div>
+      <table>
+        <thead><tr><th style="width:118px">Dimension</th><th>The real difference</th></tr></thead>
+        <tbody>
+          <tr><td><b>Where structure is applied</b></td><td>Warehouse: on write. Lake: on read. Lakehouse: <b>on write for curated tables, on read for raw</b> — which is why it needs both disciplines</td></tr>
+          <tr><td><b>Who owns the storage format</b></td><td>Warehouse: historically the vendor. Lake and lakehouse: <b>you do</b>, in open files in your own object store</td></tr>
+          <tr><td><b>What guarantees writers get</b></td><td>Warehouse: full transactions. Lake: none. Lakehouse: <b>ACID from the table format</b></td></tr>
+          <tr><td><b>Which engines can read it</b></td><td>Warehouse: its own. Lake and lakehouse: <b>any engine that understands the format</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>That third row is the lakehouse's actual invention.</b> Everything else was already
+        possible on a data lake. Adding transactional guarantees to files on object storage is what made the lake usable
+        for the workloads that previously required a warehouse.</div>
+    </div>
+    <div>
+      <div class="callout p" style="margin-top:0"><b><span class="lvl sr">STAFF</span> The honest 2026 position:
+        the categories are converging, and from both directions.</b> <b>Snowflake</b> added managed Iceberg tables stored
+        in your own cloud storage; <b>BigQuery</b> offers managed Iceberg tables in customer-owned buckets;
+        <b>Databricks</b> added native Iceberg support. Warehouses now read and write open formats, and lakehouse engines
+        have closed much of the performance gap. <b>The interesting question is no longer &ldquo;which architecture&rdquo;
+        — it is which engine, and which catalog.</b></div>
+      <div class="callout r"><b>Which means: be sceptical of comparison tables that are five years old</b>, including
+        several claims that circulate widely. Two that are now wrong: that warehouses cannot handle semi-structured data —
+        they have had native JSON and variant types for years — and that they only scale up. Modern cloud warehouses are
+        scale-out with separated storage and compute, which is the same architectural property the lakehouse is praised
+        for.</div>
+      <div class="h3">How the decision usually presents in practice</div>
+      <ul>
+        <li><b>It is rarely greenfield.</b> You have a warehouse and a growing lake, and the question is how they relate</li>
+        <li><b>The right answer is often both</b>, with one system of record for curated data and clear boundaries</li>
+        <li><b>Team capability matters more than the architecture diagram.</b> A lakehouse run by a team without data engineering depth becomes a swamp faster than a warehouse becomes expensive</li>
+        <li><b>Ask what you are optimising for</b> — cost, openness, BI concurrency, ML access or operational simplicity. They point to different answers, and only one of them can be first</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. LAKE ============ -->
+<div class="panel c2">
+  <div class="phead">2 &nbsp;· &nbsp;DATA LAKE <span class="sub">store everything, decide later</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">A <b>centralised store for raw data of any type</b> — structured,
+      semi-structured and unstructured — held in its native format on cheap object storage. Structure is applied
+      <b>when the data is read</b>, not when it is written.</div>
+    <div class="h3">What it does well</div>
+    <ul>
+      <li><b>Ingest anything, immediately</b> — no schema negotiation before data can land</li>
+      <li><b>Very low storage cost</b>, so retention is an easy decision</li>
+      <li><b>Keeps the original</b>, so questions not yet asked remain answerable</li>
+      <li><b>Open access for any engine</b> — Spark, Python, SQL engines, ML frameworks all read the same files</li>
+      <li><b>Excellent for data science and ML</b>, which need raw detail rather than pre-aggregated summaries</li>
+    </ul>
+    <div class="h3">What it does badly</div>
+    <ul>
+      <li><b>No transactions.</b> A failed write leaves partial files, and a reader can see a half-written state</li>
+      <li><b>No schema enforcement</b> — a corrupted or changed producer is discovered downstream, by a person</li>
+      <li><b>Poor performance on complex SQL</b> without significant additional tooling</li>
+      <li><b>No update or delete semantics</b> — changing one row historically meant rewriting a partition</li>
+      <li><b>Governance is entirely external</b>, and therefore usually absent</li>
+    </ul>
+    <div class="callout r"><b>The failure mode has a name: the data swamp.</b> Without a catalog, ownership and
+      quality gates, a lake accumulates data nobody can find, nobody trusts and nobody will delete. <b>The technology
+      works exactly as designed</b> — permissive ingestion is the feature — and that is precisely the problem when nothing
+      constrains it.</div>
+    <div class="callout g"><b>Where a plain lake is still exactly right:</b> the <b>immutable raw landing layer</b>
+      beneath any modern platform, ML feature engineering over full-fidelity history, long-term archival at the lowest
+      storage cost, and exploration of data whose structure genuinely is not yet known.</div>
+  </div>
+</div>
+
+<!-- ============ 3. WAREHOUSE ============ -->
+<div class="panel c1">
+  <div class="phead">3 &nbsp;· &nbsp;DATA WAREHOUSE <span class="sub">structured, governed, fast</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">A store of <b>cleaned, conformed, modelled data</b> optimised for
+      analytical querying and business intelligence. Structure is enforced <b>on write</b>, so everything inside conforms
+      to a declared schema.</div>
+    <div class="h3">What it does well</div>
+    <ul>
+      <li><b>Complex SQL at high concurrency</b> — hundreds of simultaneous dashboard users is the workload it was built for</li>
+      <li><b>Full ACID transactions</b> and constraints, enforced by the engine</li>
+      <li><b>Governance built in</b> — access control, auditing and lineage as native features</li>
+      <li><b>Mature tooling</b> — every BI product connects, and every analyst already knows the interface</li>
+      <li><b>Operationally simple</b> — one system, managed, with far less to assemble and maintain</li>
+    </ul>
+    <div class="callout r"><b>Two widely repeated criticisms are now out of date.</b> <b>&ldquo;Cannot handle
+      semi-structured data&rdquo;</b> — modern cloud warehouses have native JSON and variant types and query nested
+      structures well. <b>&ldquo;Scale-up only&rdquo;</b> — they are scale-out with storage separated from compute, which
+      is the same property the lakehouse is credited with. Both claims described the 2010s appliance era.</div>
+    <div class="h3">What remains genuinely limiting</div>
+    <ul>
+      <li><b>Compute cost at sustained scale</b> — heavy continuous processing is often cheaper elsewhere</li>
+      <li><b>Format ownership</b>, historically. Data in proprietary storage is reachable only through that vendor's engine — <b>though managed Iceberg tables in customer-owned storage are actively dissolving this</b></li>
+      <li><b>Weaker fit for ML</b> — training pipelines want direct file access to full-fidelity data, not a SQL interface</li>
+      <li><b>Unstructured content</b> — images, audio and documents do not belong here</li>
+    </ul>
+    <div class="callout g"><b>Where a warehouse is still the best answer:</b> BI and financial reporting where
+      correctness and concurrency dominate, regulated environments needing provable governance, and any organisation whose
+      team is small enough that <b>operational simplicity is worth more than openness</b>. That last case is more common
+      than architecture discussions admit.</div>
+  </div>
+</div>
+
+<!-- ============ 4. LAKEHOUSE ============ -->
+<div class="panel c3">
+  <div class="phead">4 &nbsp;· &nbsp;DATA LAKEHOUSE <span class="sub">what it actually is</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>Stated precisely, so the term means something:</b> a lakehouse
+      is <b>open data files on object storage, plus a metadata layer that makes them behave like tables</b> — with
+      transactions, schema enforcement and history — plus a catalog that governs access, plus engines that query it
+      directly. <b>It is not a product. It is a stack, and each layer is a choice.</b></div>
+    <div class="code">    query engines · BI · ML · SQL
+              &darr;
+    <span class="k">CATALOG</span> — governance, discovery, access
+              &darr;
+    <span class="k">TABLE FORMAT</span> — Iceberg | Delta | Hudi
+      ACID · time travel · evolution
+              &darr;
+    <span class="k">FILE FORMAT</span> — Parquet · ORC · Avro
+              &darr;
+    <span class="k">OBJECT STORAGE</span> — S3 · ADLS · GCS</div>
+    <div class="h3">What it gets right</div>
+    <ul>
+      <li><b>ACID on cheap storage</b> — the core achievement, and the thing a plain lake could not do</li>
+      <li><b>One copy, many engines</b> — no duplicating data into a warehouse to run BI on it</li>
+      <li><b>Time travel</b> — query a table as it was, which makes debugging and audit tractable</li>
+      <li><b>Schema and partition evolution</b> without rewriting history</li>
+      <li><b>Row-level updates and deletes</b>, including the ones privacy law requires</li>
+      <li><b>Storage you own</b>, in a format you can walk away with</li>
+    </ul>
+    <div class="callout r"><b>What it costs, and this is routinely understated.</b> It is <b>more moving parts</b>
+      — format, catalog, engine and maintenance jobs are four separate decisions rather than one product. It needs
+      <b>ongoing table maintenance</b> that nobody owns by default: compaction, snapshot expiry, orphan cleanup. And it
+      needs a team with genuine data engineering depth. <b>A lakehouse is a capability commitment, not just an
+      architecture choice.</b></div>
+  </div>
+</div>
+
+<!-- ============ 5. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">5 &nbsp;· &nbsp;THE THREE ARCHITECTURES SIDE BY SIDE — AND WHAT TECHNICALLY CHANGED BETWEEN THEM
+    <span class="sub">where data flows, where structure is applied, and the two shifts that made each generation possible</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 612" width="3320" height="612">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- WAREHOUSE -->
+    <rect x="8" y="6" width="1094" height="286" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="15" font-weight="700" fill="#1e3a8a">DATA WAREHOUSE — structure first</text>
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="26" y="44" width="150" height="52" rx="6" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+      <text x="101" y="64" font-size="11.2" font-weight="700" fill="#334155">Structured</text>
+      <text x="101" y="80" fill="#42507a">OLTP · ERP · CRM</text>
+      <rect x="206" y="44" width="150" height="52" rx="6" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="281" y="64" font-size="11.2" font-weight="700" fill="#b45309">ETL</text>
+      <text x="281" y="80" fill="#7a3d06">transform first</text>
+      <rect x="386" y="44" width="180" height="52" rx="6" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="476" y="64" font-size="11.2" font-weight="700" fill="#1d4ed8">WAREHOUSE</text>
+      <text x="476" y="80" fill="#1e3a5f">schema-on-write</text>
+      <rect x="596" y="44" width="150" height="52" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="671" y="64" font-size="11.2" font-weight="700" fill="#047857">BI</text>
+      <text x="671" y="80" fill="#2f4f47">dashboards · reports</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M176,70 L200,70"/><path d="M356,70 L380,70"/><path d="M566,70 L590,70"/>
+    </g>
+    <g font-size="10.5" fill="#42507a">
+      <text x="770" y="60"><tspan font-weight="700">Structure is decided before</tspan></text>
+      <text x="770" y="76"><tspan font-weight="700">data is stored.</tspan> Anything that</text>
+      <text x="770" y="92">does not fit is discarded.</text>
+      <text x="26" y="122">· Data is cleaned, conformed and modelled <tspan font-style="italic">on the way in</tspan>. What lands is already trustworthy, and already committed to a shape.</text>
+      <text x="26" y="142">· The engine owns the storage format, so it can optimise aggressively — indexes, statistics, clustering, caching, query planning.</text>
+      <text x="26" y="162">· Transactions, constraints and access control are native, not assembled from parts.</text>
+      <text x="26" y="186" font-weight="700" fill="#047857">Strength: unbeatable for BI concurrency, complex SQL and governed reporting. One system to operate.</text>
+      <text x="26" y="208" font-weight="700" fill="#be123c">Cost: you must know the questions in advance. Data judged not valuable is never captured, and that decision cannot be revisited.</text>
+      <text x="26" y="232" fill="#6b7391">The 1990s constraint that produced this shape: storage was expensive, and compute lived on the same machine as the data.</text>
+      <text x="26" y="256" fill="#42507a">Modern cloud warehouses have since separated storage from compute and added native JSON and variant types — so two of the</text>
+      <text x="26" y="274" fill="#42507a">standard criticisms of this column no longer hold. What remains is format ownership and cost at sustained processing scale.</text>
+    </g>
+
+    <!-- LAKE -->
+    <rect x="1114" y="6" width="1094" height="286" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1132" y="30" font-size="15" font-weight="700" fill="#0f766e">DATA LAKE — store first</text>
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="1132" y="44" width="150" height="52" rx="6" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+      <text x="1207" y="64" font-size="11.2" font-weight="700" fill="#334155">Any source</text>
+      <text x="1207" y="80" fill="#42507a">any format, any rate</text>
+      <rect x="1312" y="44" width="150" height="52" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="1387" y="64" font-size="11.2" font-weight="700" fill="#047857">Load raw</text>
+      <text x="1387" y="80" fill="#2f4f47">no transformation</text>
+      <rect x="1492" y="44" width="180" height="52" rx="6" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+      <text x="1582" y="64" font-size="11.2" font-weight="700" fill="#0f766e">OBJECT STORE</text>
+      <text x="1582" y="80" fill="#2f4f47">schema-on-read</text>
+      <rect x="1702" y="44" width="150" height="52" rx="6" fill="#f6f0fd" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1777" y="64" font-size="11.2" font-weight="700" fill="#7c2d92">ML · Spark</text>
+      <text x="1777" y="80" fill="#4b3a5e">exploration</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M1282,70 L1306,70"/><path d="M1462,70 L1486,70"/><path d="M1672,70 L1696,70"/>
+    </g>
+    <g font-size="10.5" fill="#2f4f47">
+      <text x="1876" y="60"><tspan font-weight="700">Structure is applied when</tspan></text>
+      <text x="1876" y="76"><tspan font-weight="700">the data is read.</tspan> Nothing is</text>
+      <text x="1876" y="92">rejected on the way in.</text>
+      <text x="1132" y="122">· Cheap object storage removed the need to decide what is worth keeping. Keep everything, at full fidelity, indefinitely.</text>
+      <text x="1132" y="142">· Files are open and any engine can read them. No vendor stands between you and your own data.</text>
+      <text x="1132" y="162">· Ingestion is trivial — there is no schema to negotiate before data can land.</text>
+      <text x="1132" y="186" font-weight="700" fill="#047857">Strength: capture. Data science and ML get full-fidelity history rather than someone else's summary.</text>
+      <text x="1132" y="208" font-weight="700" fill="#be123c">Cost: no transactions, no schema enforcement, no update semantics, and governance only if you build it separately.</text>
+      <text x="1132" y="234" font-weight="700" fill="#b91c1c">The characteristic failure: the data swamp. Permissive ingestion with no catalog, no ownership and no quality gate</text>
+      <text x="1132" y="252" font-weight="700" fill="#b91c1c">produces a store where everything went in and nothing can be found or trusted.</text>
+      <text x="1132" y="276" fill="#6b7391">Note that this was a governance failure rather than a technical one — which is why the same failure is available in a lakehouse.</text>
+    </g>
+
+    <!-- LAKEHOUSE -->
+    <rect x="2220" y="6" width="1092" height="286" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="2238" y="30" font-size="15" font-weight="700" fill="#7c2d92">DATA LAKEHOUSE — store first, with guarantees</text>
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="2238" y="44" width="140" height="52" rx="6" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+      <text x="2308" y="64" font-size="11.2" font-weight="700" fill="#334155">Any source</text>
+      <text x="2308" y="80" fill="#42507a">batch · stream · CDC</text>
+      <rect x="2408" y="44" width="170" height="52" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="2493" y="62" font-size="11.2" font-weight="700" fill="#be123c">TABLE FORMAT</text>
+      <text x="2493" y="78" fill="#7f2b2b">ACID · time travel</text>
+      <text x="2493" y="92" fill="#7f2b2b">schema evolution</text>
+      <rect x="2608" y="44" width="170" height="52" rx="6" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2693" y="62" font-size="11.2" font-weight="700" fill="#7c2d92">OPEN FILES</text>
+      <text x="2693" y="78" fill="#4b3a5e">Parquet on</text>
+      <text x="2693" y="92" fill="#4b3a5e">object storage</text>
+      <rect x="2808" y="44" width="170" height="52" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="2893" y="62" font-size="11.2" font-weight="700" fill="#047857">MANY ENGINES</text>
+      <text x="2893" y="78" fill="#2f4f47">SQL · BI · ML</text>
+      <text x="2893" y="92" fill="#2f4f47">streaming</text>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M2378,70 L2402,70"/><path d="M2578,70 L2602,70"/><path d="M2778,70 L2802,70"/>
+    </g>
+    <g font-size="10.5" fill="#4b3a5e">
+      <text x="3002" y="60"><tspan font-weight="700">Enforced on curated tables,</tspan></text>
+      <text x="3002" y="76"><tspan font-weight="700">permissive on raw.</tspan> Both</text>
+      <text x="3002" y="92">disciplines, in one store.</text>
+      <text x="2238" y="122">· The metadata layer is the whole idea: a transaction log and manifest over ordinary Parquet files turns a directory into a table.</text>
+      <text x="2238" y="142">· Writers get atomic commits and conflict detection. Readers never see a half-written state. Neither was possible on a plain lake.</text>
+      <text x="2238" y="162">· The catalog above it governs discovery and access, and determines which engines may participate.</text>
+      <text x="2238" y="186" font-weight="700" fill="#047857">Strength: one copy of the data, open format, warehouse-class guarantees, and BI plus ML from the same tables.</text>
+      <text x="2238" y="208" font-weight="700" fill="#be123c">Cost: four decisions instead of one, and maintenance jobs — compaction, snapshot expiry, orphan cleanup — that nobody owns by default.</text>
+      <text x="2238" y="234" fill="#6b7391">The enabling shift: object storage got cheap and consistent enough that a metadata layer could provide real transactional</text>
+      <text x="2238" y="252" fill="#6b7391">guarantees on top of it. That is a genuine advance, and it is narrower than the marketing suggests.</text>
+      <text x="2238" y="276" font-weight="700" fill="#7c2d92">Governance is still yours to build. The swamp failure mode is fully available here if ownership and quality gates are skipped.</text>
+    </g>
+
+    <!-- CONVERGENCE -->
+    <rect x="8" y="304" width="3304" height="146" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2.5"/>
+    <text x="26" y="328" font-size="15" font-weight="700" fill="#047857">THE CONVERGENCE — why a 2020-era comparison table now misleads</text>
+    <text x="26" y="354" font-size="11.6" fill="#2f4f47"><tspan font-weight="700">Warehouses moved toward the lake.</tspan> Snowflake added managed Iceberg tables stored in customer-owned cloud storage; BigQuery offers managed Iceberg tables in your own buckets; both read and write open formats. The proprietary-storage</text>
+    <text x="26" y="374" font-size="11.6" fill="#2f4f47">objection — for years the strongest argument against a warehouse — is materially weaker than it was.</text>
+    <text x="26" y="398" font-size="11.6" fill="#2f4f47"><tspan font-weight="700">Lakehouses moved toward the warehouse.</tspan> Query engines closed much of the performance gap, catalogs added fine-grained governance, and the operational experience improved substantially. Databricks added native Iceberg support alongside Delta.</text>
+    <text x="26" y="424" font-size="11.6" font-weight="700" fill="#047857">The practical consequence: the architecture label matters less than three concrete questions — which engine runs your queries, which catalog governs access, and whose storage account holds the bytes. Those determine cost, capability and</text>
+    <text x="26" y="442" font-size="11.6" font-weight="700" fill="#047857">how hard it would be to leave. Comparing &ldquo;lake versus warehouse versus lakehouse&rdquo; without answering them is comparing categories rather than options.</text>
+
+    <!-- READING -->
+    <rect x="8" y="462" width="3304" height="142" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="486" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — four properties that explain the rest of this sheet</text>
+    <text x="26" y="512" font-size="11.6" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · Where structure is applied is the real axis.</tspan> On write means trustworthy but committed in advance; on read means flexible but unverified. The lakehouse does both at different layers, which is why it needs both sets of discipline rather than neither.</text>
+    <text x="26" y="538" font-size="11.6" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · The metadata layer is the lakehouse's actual invention.</tspan> Transactions over open files on object storage is the specific advance. Everything else attributed to the lakehouse was already achievable on a data lake with enough effort.</text>
+    <text x="26" y="564" font-size="11.6" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · Governance is orthogonal to all three.</tspan> The swamp was a failure of ownership, cataloguing and quality gates — not of the storage layer. No architecture on this sheet prevents it, and each will produce it if those are skipped.</text>
+    <text x="26" y="590" font-size="11.6" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · The categories are converging, so decide at the layer below them:</tspan> table format, catalog, engine and storage ownership. Those four are the choices with consequences; the label is mostly how you describe the result afterwards.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 6. COMPARISON ============ -->
+<div class="panel c1 span2">
+  <div class="phead">6 &nbsp;· &nbsp;THE DETAILED COMPARISON — CORRECTED FOR WHERE THINGS ACTUALLY STAND
+    <span class="sub"><span class="lvl mid">MID</span> the reference table · <span class="lvl sr">STAFF</span> the rows marked are where dated claims usually appear</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">Aspect</th><th>Data lake</th><th>Data warehouse</th><th>Data lakehouse</th></tr></thead>
+      <tbody>
+        <tr><td><b>Primary purpose</b></td><td>Store raw data of any type at any scale</td><td>Curated, structured data for reporting and BI</td><td>Unified analytics across all data types</td></tr>
+        <tr><td><b>Data types</b></td><td>Structured, semi-structured, unstructured</td><td>Structured, <b>and semi-structured via native JSON and variant types</b></td><td>Structured, semi-structured, unstructured</td></tr>
+        <tr><td><b>Where schema applies</b></td><td>On read</td><td>On write</td><td>On write for curated, on read for raw</td></tr>
+        <tr><td><b>Storage format</b></td><td>Native or raw — JSON, CSV, logs, Parquet</td><td>Engine-managed columnar; <b>increasingly open Iceberg tables in customer storage</b></td><td>Open columnar (Parquet, ORC) plus a table format (Iceberg, Delta, Hudi)</td></tr>
+        <tr><td><b>Transactions</b></td><td><span class="no">None</span></td><td><span class="yes">Full ACID</span>, with constraints</td><td><span class="yes">ACID</span> via the table format; constraint support varies</td></tr>
+        <tr><td><b>Performance profile</b></td><td>Good for scans and exploration; weak on complex SQL</td><td><b>Strongest for BI concurrency</b> and complex joins</td><td>Strong and improving; depends heavily on layout and maintenance</td></tr>
+        <tr><td><b>Scalability</b></td><td>Massive, cheap object storage</td><td><b>Scale-out with storage and compute separated</b> — the appliance-era &ldquo;scale-up only&rdquo; claim is obsolete</td><td>Massive, cloud-native</td></tr>
+        <tr><td><b>Governance</b></td><td>Entirely external — and therefore often absent</td><td>Built in and mature</td><td>Via the catalog — <b>capable, and it is a component you must choose and operate</b></td></tr>
+        <tr><td><b>Cost shape</b></td><td>Very low storage; compute paid per job</td><td>Higher compute; <b>often lower total cost when usage is spiky, because it idles well</b></td><td>Low storage; compute per engine; <b>plus ongoing maintenance jobs</b></td></tr>
+        <tr><td><b>Engine access</b></td><td>Any engine that reads the files</td><td>Historically its own; <b>open formats now widen this</b></td><td>Any engine supporting the table format and catalog</td></tr>
+        <tr><td><b>ML and data science</b></td><td><b>Best</b> — direct file access to full history</td><td>Workable via connectors; not the natural path</td><td><b>Best of both</b> — files for training, SQL for features</td></tr>
+        <tr><td><b>Operational burden</b></td><td>Low to run, high to make usable</td><td><b>Lowest</b> — one managed system</td><td><b>Highest</b> — format, catalog, engine and maintenance are separate concerns</td></tr>
+        <tr><td><b>Best suited for</b></td><td>Raw landing, archival, ML, unknown schema</td><td>BI, financial reporting, regulated analytics, small teams</td><td>Mixed BI and ML at scale, with open formats and a capable team</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The row worth arguing about is operational burden.</b> Comparison tables usually
+      omit it, and it is decisive for smaller teams. A lakehouse asks you to choose and operate four things a warehouse
+      provides as one. That is a fair trade at scale with a data platform team, and a poor one without.</div>
+  </div>
+</div>
+
+<!-- ============ 7. ENABLERS ============ -->
+<div class="panel c4">
+  <div class="phead">7 &nbsp;· &nbsp;WHAT ACTUALLY ENABLED EACH ERA <span class="sub">the technical shifts underneath</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">Each generation became possible because something underneath changed.
+      Naming those shifts explains the architectures better than listing their features.</div>
+    <div class="h3">1 · Cheap, durable object storage</div>
+    <ul>
+      <li>Storage became inexpensive enough that <b>&ldquo;keep everything&rdquo; stopped being a budget decision</b></li>
+      <li>Effectively unlimited, highly durable, and accessible over a network from anywhere</li>
+      <li><b>This alone created the data lake</b></li>
+    </ul>
+    <div class="h3">2 · Separation of storage and compute</div>
+    <ul>
+      <li>Compute no longer had to sit on the machine holding the data</li>
+      <li><b>Scale each independently</b>; pay for compute only while querying</li>
+      <li>Several engines can read the same data at once without copying it</li>
+      <li><b>This is the deepest shift on the sheet</b> — and modern warehouses have it too, which is why the old comparison points blur</li>
+    </ul>
+    <div class="h3">3 · Columnar file formats</div>
+    <ul>
+      <li>Parquet and ORC read only the columns needed, compress far better, and carry statistics that let engines skip whole blocks</li>
+      <li><b>They made querying files competitive</b> with a purpose-built engine</li>
+    </ul>
+    <div class="h3">4 · The metadata layer</div>
+    <ul>
+      <li>A transaction log and manifests over ordinary files, giving <b>atomic commits, isolation and history</b></li>
+      <li><b>This is the lakehouse's specific invention</b>, and the reason the term exists at all</li>
+    </ul>
+    <div class="callout g"><b>Understanding these four makes the trade-offs predictable.</b> Anything requiring
+      transactional guarantees needs the metadata layer. Anything requiring high BI concurrency needs an engine that
+      caches and plans well. Anything requiring low cost needs compute that idles cheaply. The architecture label follows
+      from those requirements rather than preceding them.</div>
+  </div>
+</div>
+
+<!-- ============ 8. TABLE FORMATS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">8 &nbsp;· &nbsp;OPEN TABLE FORMATS — WHERE THEY GENUINELY DIFFER
+    <span class="sub">a feature matrix of all ticks is not useful · <span class="lvl sr">STAFF</span> the differences that survive scrutiny</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:150px">Capability</th><th>Delta Lake</th><th>Apache Iceberg</th><th>Apache Hudi</th></tr></thead>
+        <tbody>
+          <tr><td>ACID transactions</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Schema evolution</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Time travel</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td><b>Partition evolution</b></td><td class="part">Via clustering</td><td class="yes">Native</td><td class="part">Limited</td></tr>
+          <tr><td><b>Hidden partitioning</b></td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
+          <tr><td>Row-level updates</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Optimised for it</td></tr>
+          <tr><td>Streaming ingest</td><td class="yes">Strong</td><td class="yes">Good</td><td class="yes">Strongest</td></tr>
+          <tr><td>Incremental pull</td><td class="part">Change feed</td><td class="part">Incremental scan</td><td class="yes">Core design goal</td></tr>
+          <tr><td>Metadata mechanism</td><td>Transaction log</td><td>Manifest tree</td><td>Timeline</td></tr>
+          <tr><td>Engine breadth</td><td>Broad, deepest on Spark</td><td><b>Broadest and most vendor-neutral</b></td><td>Narrower</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The matrix you usually see gives all three a tick everywhere.</b> That is roughly
+        true at feature level and unhelpful for choosing. <b>The rows in bold are where they actually diverge</b>, and where
+        the decision should be made.</div>
+    </div>
+    <div>
+      <div class="h3">What each is genuinely best at</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Iceberg</b></td><td><b>Vendor neutrality and the broadest engine support.</b> Partition evolution lets you change the physical layout <b>without rewriting history</b>, which directly de-risks one of the hard-to-reverse decisions. Hidden partitioning means queries need not know the scheme to benefit from it. <b>The default choice when openness is the priority</b></td></tr>
+          <tr><td><b>Delta Lake</b></td><td>Mature, excellent tooling, and the deepest integration with Spark and Databricks. <b>The natural choice if that is your platform</b> — and Databricks now supports Iceberg natively as well, so this is less binding than it was</td></tr>
+          <tr><td><b>Hudi</b></td><td>Built around <b>upserts and incremental consumption</b>. The strongest fit for CDC-heavy ingestion where records update constantly and downstream consumers want only what changed</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Partition evolution deserves the emphasis it gets here.</b> Physical layout is one of
+        the genuinely expensive things to change on a large table — rewriting petabytes is slow and costly. Being able to
+        change the partitioning scheme going forward, without touching existing data, converts a structural decision into
+        a reversible one.</div>
+      <div class="callout b"><b>The interoperability point.</b> The <b>Iceberg REST catalog specification</b> has
+        become the common interface, implemented across major warehouses and engines, and cross-engine read and write
+        against the same tables is now real. That reduces the cost of choosing wrongly — but it also means
+        <b>the format is no longer where lock-in lives</b>. See the next panel.</div>
+      <div class="callout"><b>A practical note on picking.</b> Most organisations should choose based on which
+        engines they already run and which catalog they will use, not on the feature matrix. All three are capable; the
+        integration cost of the odd one out is what you will actually feel.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 9. CATALOG ============ -->
+<div class="panel c8">
+  <div class="phead">9 &nbsp;· &nbsp;THE CATALOG <span class="sub">where lock-in lives now</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>The most under-discussed component on this sheet.</b> If the
+      table format decides how files behave, the <b>catalog decides which tables exist, who may read them, and which
+      engines can participate</b>. Open files governed by a closed catalog are not as open as they appear.</div>
+    <div class="h3">What a catalog does</div>
+    <ul>
+      <li><b>Table registry</b> — what exists, and where its current metadata pointer is</li>
+      <li><b>Atomic commits</b> — swapping that pointer is what makes a write atomic across engines</li>
+      <li><b>Access control</b> — increasingly the enforcement point, down to rows and columns</li>
+      <li><b>Discovery and documentation</b> — ownership, descriptions, business glossary</li>
+      <li><b>Lineage</b>, where it integrates with the engines</li>
+    </ul>
+    <div class="h3">The options</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Iceberg REST catalog</b></td><td><b>The open specification</b> that has become the common interface. Implemented across major warehouses and engines — the thing to check for before anything else</td></tr>
+        <tr><td><b>Apache Polaris</b></td><td>An open-source REST catalog implementation, now a top-level Apache project</td></tr>
+        <tr><td><b>Unity Catalog</b></td><td>Databricks' governance layer, with an Iceberg REST endpoint for external engines</td></tr>
+        <tr><td><b>AWS Glue</b></td><td>The default on AWS; broad service integration</td></tr>
+        <tr><td><b>Hive Metastore</b></td><td>Long-standing and widely supported. <b>Legacy for new builds</b> — a REST catalog is the current answer</td></tr>
+        <tr><td><b>Nessie</b></td><td>Adds git-like branching and tagging over table state — genuinely useful for testing data changes in isolation</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The questions to ask before committing.</b> Does it implement the open REST
+      specification? Can multiple engines <b>write</b>, not merely read? Is access control enforced consistently for every
+      engine, or only the vendor's own? <b>And what happens to your metadata if you leave?</b> Open files with metadata
+      you cannot export is a subtler lock-in than the one everyone was worried about.</div>
+  </div>
+</div>
+
+<!-- ============ 10. CHOOSING ============ -->
+<div class="panel c7">
+  <div class="phead">10 &nbsp;· &nbsp;CHOOSING <span class="sub">a decision framework</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:170px">If this is true</th><th>Lean toward</th></tr></thead>
+      <tbody>
+        <tr><td>Workload is BI and reporting on structured data, with high concurrency</td><td><b>Warehouse.</b> It is what the shape was built for, and it will be simpler and probably cheaper</td></tr>
+        <tr><td>Small team, no dedicated data platform engineers</td><td><b>Warehouse.</b> Operational simplicity is worth more than openness when nobody can run the alternative</td></tr>
+        <tr><td>Heavy ML and data science on full-fidelity history</td><td><b>Lakehouse</b>, or a lake beneath a warehouse</td></tr>
+        <tr><td>Mixed BI and ML, at scale, with a capable platform team</td><td><b>Lakehouse.</b> One copy serving both is a real saving</td></tr>
+        <tr><td>Very large volumes with sustained processing cost</td><td><b>Lakehouse.</b> Compute economics dominate at this scale</td></tr>
+        <tr><td>Avoiding vendor lock-in is a stated priority</td><td><b>Lakehouse</b> with Iceberg and an open catalog — <b>and check the catalog, not just the format</b></td></tr>
+        <tr><td>Unstructured content, or schema genuinely unknown</td><td><b>Lake</b> as the landing layer, whatever sits above it</td></tr>
+        <tr><td>Strict regulatory governance with provable controls</td><td><b>Warehouse</b>, or a lakehouse with a mature catalog and real ownership</td></tr>
+        <tr><td>You already run one and it mostly works</td><td><b>Improve it.</b> Migration cost is routinely underestimated and rarely the highest-value work available</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The most common correct answer is both.</b> A lake or lakehouse as the landing and
+      processing layer, a warehouse or a fast query engine serving BI. What matters is that <b>curated data has one system
+      of record</b> and the boundary is explicit — not which logo sits in which box.</div>
+    <div class="callout r"><b>The question that settles most debates:</b> <b>who will operate this in two
+      years?</b> An architecture your team cannot run well is worse than a simpler one they can. This is the factor most
+      often left out of the comparison and most often decisive afterwards.</div>
+  </div>
+</div>
+
+<!-- ============ 11. COST ============ -->
+<div class="panel c4">
+  <div class="phead">11 &nbsp;· &nbsp;COST MODELS <span class="sub">how each actually bills you</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>&ldquo;Lakes are cheap and warehouses are expensive&rdquo; is
+      too crude to be useful.</b> Storage is cheap everywhere. <b>Compute dominates in all three</b>, and which is cheaper
+      depends on your usage pattern rather than on the architecture.</div>
+    <table>
+      <thead><tr><th style="width:104px"></th><th>What you pay for</th></tr></thead>
+      <tbody>
+        <tr><td><b>Lake</b></td><td>Object storage per GB, plus <b>request charges</b> — which small files inflate badly. Compute per job on whatever engine you run</td></tr>
+        <tr><td><b>Warehouse</b></td><td>Compute time or bytes scanned, plus managed storage. <b>Idles well</b> — auto-suspend means bursty usage costs little between bursts</td></tr>
+        <tr><td><b>Lakehouse</b></td><td>Cheap storage, compute per engine, <b>plus maintenance jobs</b> — compaction and cleanup are real recurring compute nobody budgets for</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Where the money actually goes</div>
+    <ul>
+      <li><b>Idle compute</b> — clusters and warehouses running with nothing querying. Usually the largest single saving available</li>
+      <li><b>Full scans</b> from partitioning or clustering that does not match query filters</li>
+      <li><b>Small files</b> — request overhead and wasted compute. A genuine cost, not just a performance annoyance</li>
+      <li><b>Duplicated data</b> — the same dataset in the lake and copied into the warehouse, processed twice</li>
+      <li><b>Forgotten pipelines</b> feeding dashboards nobody opens</li>
+      <li><b>Over-frequent refresh</b> — hourly rebuilds of weekly-reviewed data</li>
+    </ul>
+    <div class="callout g"><b>The pattern that determines which is cheaper:</b> <b>spiky, interactive usage
+      favours a warehouse</b>, because it idles cheaply and you buy no baseline. <b>Sustained heavy processing favours a
+      lakehouse</b>, because you control the compute and can use cheaper, interruptible capacity. Estimate against your
+      actual query pattern before accepting either general claim.</div>
+    <div class="callout"><b>Whichever you choose, tag everything from day one.</b> Cost that cannot be attributed
+      to a team or a dataset is cost nobody owns — and backfilling attribution across an existing estate is nearly
+      impossible.</div>
+  </div>
+</div>
+
+<!-- ============ 12. MIGRATION ============ -->
+<div class="panel c6">
+  <div class="phead">12 &nbsp;· &nbsp;MIGRATION PATHS <span class="sub">realistically</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:132px">From → to</th><th>How it actually goes</th></tr></thead>
+      <tbody>
+        <tr><td><b>Lake → lakehouse</b></td><td><b>The easiest path.</b> The files are already there; you add a table format over them and register them in a catalog. Many tables convert in place without rewriting data. <b>Start here if you have a lake</b></td></tr>
+        <tr><td><b>Warehouse → lakehouse</b></td><td>The hardest. Data must be extracted, transformations rewritten, and every downstream consumer repointed. <b>Do it incrementally, domain by domain</b>, never as a single cutover</td></tr>
+        <tr><td><b>Lake → warehouse</b></td><td>Straightforward for structured subsets. You are choosing to give up openness for simplicity, which is a legitimate trade</td></tr>
+        <tr><td><b>Adding a warehouse beside a lakehouse</b></td><td>Common and sensible — a fast serving layer for BI over curated tables. Increasingly the warehouse can read the same open tables directly</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">What makes migrations fail</div>
+    <ul>
+      <li><b>Big-bang cutover.</b> Run both in parallel, reconcile outputs, and move consumers gradually</li>
+      <li><b>Not knowing who consumes what</b> — lineage before migration, or you will discover dependencies by breaking them</li>
+      <li><b>Rewriting transformations without reconciling</b> — <b>compare outputs row by row</b> before switching anything off</li>
+      <li><b>Underestimating the semantic work.</b> Moving data is the easy part; agreeing what each metric means is where the time goes</li>
+      <li><b>No rollback plan.</b> Keep the old system running until the new one has proved itself across a full reporting cycle</li>
+    </ul>
+    <div class="callout r"><b>The uncomfortable question worth asking first: is migration the highest-value work
+      available?</b> A working warehouse with good governance beats a half-migrated lakehouse for years. <b>Migrate for a
+      concrete constraint</b> — cost at scale, ML access, format ownership — not because the current architecture has an
+      older name.</div>
+    <div class="callout g"><b>The low-risk first step, if you are unsure:</b> land raw data immutably in object
+      storage <i>alongside</i> whatever you run today. It is cheap, it is not a migration, and it preserves every future
+      option — including the one where you never migrate.</div>
+  </div>
+</div>
+
+<!-- ============ 13. UNCHANGED ============ -->
+<div class="panel c2 span2">
+  <div class="phead">13 &nbsp;· &nbsp;WHAT DOES NOT CHANGE — THE PARTS EVERY ARCHITECTURE STILL NEEDS
+    <span class="sub"><span class="lvl sr">STAFF</span> the disciplines that determine success, and that no architecture choice provides</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The most useful thing to know when comparing these three: the
+        hard parts are identical across all of them.</b> Choosing an architecture settles roughly a quarter of the problem.
+        The rest is the same work regardless, and it is where platforms actually succeed or fail.</div>
+      <div class="h3">Dimensional modelling still applies</div>
+      <ul>
+        <li><b>Facts and dimensions remain the right shape</b> for BI serving — comprehensible, performant, and already understood by analysts</li>
+        <li><b>Slowly changing dimensions</b> are still a decision per attribute. Overwrite and lose history, or version and keep it</li>
+        <li><b>Conformed dimensions</b> — one definition of customer, product and date shared across marts — remain the difference between a coherent platform and a set of disconnected reports</li>
+        <li><b>&ldquo;Just store it flat and query it&rdquo; does not survive contact with real reporting requirements</b></li>
+      </ul>
+      <div class="h3">Data quality is not architectural</div>
+      <ul>
+        <li>Tests at every boundary — uniqueness, not-null, referential integrity, accepted values</li>
+        <li>Monitoring for <b>freshness, volume, schema and distribution</b></li>
+        <li>An explicit decision per dataset: does a failed check <b>stop the pipeline or flag and continue?</b></li>
+        <li>A published SLA, so &ldquo;the data looks wrong&rdquo; becomes a measurement rather than an argument</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Governance is orthogonal to storage</div>
+      <ul>
+        <li><b>Every dataset needs a named owner.</b> A catalog without ownership is documentation, and it decays</li>
+        <li><b>Lineage</b> — where a number came from, and who breaks if this changes</li>
+        <li><b>Classification</b> of personal and regulated data, ideally automatic</li>
+        <li><b>Access control</b> granted to groups, at row and column level where needed</li>
+        <li><b>A deletion process</b> that reaches raw files, derived tables, exports and backups</li>
+      </ul>
+      <div class="callout r"><b>This is the lesson of the data swamp, and it generalises.</b> The lake did not fail
+        because object storage was inadequate — it failed because nothing above it enforced ownership, discovery or
+        quality. <b>The same failure is fully available in a lakehouse and in a warehouse</b>, and the architecture will
+        not prevent it.</div>
+      <div class="h3">The engineering disciplines are constant</div>
+      <ul>
+        <li><b>Idempotency</b> — orchestrators retry, so non-idempotent transforms duplicate data eventually</li>
+        <li><b>Immutable raw capture</b> — the only thing that makes reprocessing possible, in every architecture</li>
+        <li><b>Version control, testing and CI</b> for transformations. They are code</li>
+        <li><b>Backfill as a first-class, throttled operation</b></li>
+        <li><b>Data contracts</b> with producers — the durable fix for upstream schema change</li>
+        <li><b>Cost attribution</b> from day one, because it cannot be added retrospectively</li>
+      </ul>
+      <div class="callout g"><b>Which reframes the whole comparison.</b> If two organisations pick different
+        architectures and one does the above well, that one wins — regardless of which box they chose. <b>Architecture is
+        necessary and nowhere near sufficient.</b></div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 14. OPERATIONS ============ -->
+<div class="panel c5">
+  <div class="phead">14 &nbsp;· &nbsp;THE OPERATIONAL REALITY <span class="sub">what the diagrams omit</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The small files problem — the most common lakehouse
+      complaint, and it is absent from every architecture diagram.</b> Frequent writes, streaming ingestion or
+      per-partition micro-batches produce thousands of tiny files. Queries then open thousands of objects and
+      <b>metadata and request overhead dominates the actual reading</b>. Performance degrades steadily with no change to
+      data volume or query text.</div>
+    <div class="h3">Maintenance jobs a lakehouse needs, and a warehouse handles for you</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Compaction</b></td><td>Rewrite many small files into fewer large ones. <b>The highest-value maintenance task</b>, and the one most often unscheduled</td></tr>
+        <tr><td><b>Clustering</b></td><td>Co-locate related rows so queries skip more data</td></tr>
+        <tr><td><b>Snapshot expiry</b></td><td>Remove old versions. <b>Trades time-travel depth against storage cost</b> — choose the retention rather than inheriting it</td></tr>
+        <tr><td><b>Orphan cleanup</b></td><td>Delete files left by failed writes that no metadata references</td></tr>
+        <tr><td><b>Statistics</b></td><td>Keep query planning accurate as data grows</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>This is the clearest concrete example of the operational trade.</b> A managed warehouse
+      does all of this invisibly. A lakehouse gives you control over it, which means <b>you now own it</b> — and a
+      lakehouse without scheduled maintenance degrades quietly until someone investigates a slow dashboard and finds a
+      table with millions of files.</div>
+    <div class="h3">Also frequently omitted</div>
+    <ul>
+      <li><b>Concurrency limits</b> — table formats detect write conflicts, and heavy concurrent writers to one table will retry and fail</li>
+      <li><b>Time travel costs storage</b>, and retention must be set deliberately</li>
+      <li><b>Catalog availability is a dependency</b> — if it is down, tables cannot be resolved by any engine</li>
+      <li><b>Version compatibility</b> across engines, formats and catalogs is real coordination work</li>
+    </ul>
+    <div class="callout g"><b>Schedule maintenance from the first table.</b> It is unglamorous, it belongs to
+      nobody by default, and its absence is the most common reason a lakehouse is judged slow.</div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;WHAT GOES WRONG — SYMPTOM, CAUSE AND FIX
+    <span class="sub">the failures specific to each architecture, and the ones common to all three</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Data goes in, nothing comes out</b></td><td><b>The data swamp.</b> No catalog, no ownership, no quality gate</td><td>Catalog with owners; classification; quality gates. <b>Not a storage problem</b></td></tr>
+          <tr><td><b>Queries slower every month, same data</b></td><td>Small files accumulating; no compaction scheduled</td><td>Schedule compaction and clustering; monitor file counts per partition</td></tr>
+          <tr><td><b>Readers see partial data</b></td><td>Plain lake with no table format — a half-written directory is visible</td><td>Adopt a table format. This is precisely the problem it solves</td></tr>
+          <tr><td><b>Warehouse bill grew sharply</b></td><td>Warehouses not auto-suspending, or full scans from poor clustering</td><td>Auto-suspend aggressively; cluster on filter columns; attribute spend per team</td></tr>
+          <tr><td><b>Cannot delete a customer's data</b></td><td>Personal data spread across immutable files, copies and backups</td><td>Consolidate personal data; row-level deletes; crypto-shredding for backups</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Migration stalled halfway, two systems running</b></td><td>Big-bang plan, unknown consumers, unreconciled outputs</td><td>Lineage first; domain by domain; reconcile before switching anything off</td></tr>
+          <tr><td><b>Same data in lake and warehouse, processed twice</b></td><td>No agreed system of record for curated data</td><td>Pick one; let the other read it. <b>Open formats increasingly make this possible</b></td></tr>
+          <tr><td><b>&ldquo;Open format&rdquo; but still cannot switch engines</b></td><td>The catalog is proprietary — the files are open, the metadata is not</td><td>Check REST spec support and metadata export <b>before</b> committing</td></tr>
+          <tr><td><b>Lakehouse slower than the warehouse it replaced</b></td><td>No maintenance, poor layout, or an engine not tuned for BI concurrency</td><td>Compaction and clustering; a serving engine suited to concurrency</td></tr>
+          <tr><td><b>Numbers disagree between systems</b></td><td>The same metric defined twice, in two places</td><td>A semantic layer — define once, serve everywhere</td></tr>
+          <tr><td><b>Cannot reprocess data from last year</b></td><td>Raw was transformed on ingestion, or not retained</td><td><b>Land raw immutably.</b> There is no retrospective fix</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first, in each</div>
+      <table>
+        <thead><tr><th style="width:96px"></th><th>First failure</th></tr></thead>
+        <tbody>
+          <tr><td><b>Lake</b></td><td><b>Trust.</b> Nobody knows what is in it or whether it is correct. Everything else follows from that</td></tr>
+          <tr><td><b>Warehouse</b></td><td><b>Cost, then flexibility.</b> The bill grows, then a workload arrives that does not fit the model</td></tr>
+          <tr><td><b>Lakehouse</b></td><td><b>Operational burden.</b> Maintenance nobody owns, four components to keep compatible</td></tr>
+          <tr><td><b>All three</b></td><td><b>Governance and ownership.</b> By a wide margin the most common failure, and the one no architecture prevents</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note what is absent from that list: scale.</b> All three handle large volumes
+        competently. The failures are trust, cost, operations and ownership — none of which are solved by choosing a
+        different storage architecture.</div>
+      <div class="h3">The questions worth asking of any of them</div>
+      <ul>
+        <li><b>Who owns this dataset</b>, and who is called when it is wrong?</li>
+        <li><b>How do I find a table</b> without asking a person?</li>
+        <li><b>How do I fix data that was wrong last month?</b></li>
+        <li><b>What does this dashboard cost to run?</b></li>
+        <li><b>If we wanted to change engine, what would it take?</b></li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;DECISION &amp; READINESS CHECKLIST <span class="sub">before committing to an architecture</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>The actual constraint named</b> — cost, ML access, concurrency, openness</div>
+      <div>&#9744; <b>Current workload measured</b>, not assumed</div>
+      <div>&#9744; <b>Query pattern known</b> — spiky and interactive, or sustained</div>
+      <div>&#9744; <b>Team capability assessed honestly</b> against operational burden</div>
+      <div>&#9744; <b>&ldquo;Who operates this in two years&rdquo; answered</b></div>
+      <div>&#9744; <b>Comparison claims checked for currency</b> — several common ones are dated</div>
+      <div>&#9744; <b>Raw data landed immutably</b>, whatever sits above it</div>
+      <div>&#9744; <b>Raw retention set</b> against reprocessing needs</div>
+      <div>&#9744; <b>Table format chosen on the rows where they differ</b>, not the ticks</div>
+      <div>&#9744; <b>Partition evolution need considered</b> — it de-risks layout decisions</div>
+      <div>&#9744; <b>Catalog chosen as deliberately as the format</b></div>
+      <div>&#9744; <b>Catalog implements the open REST spec</b>; multi-engine <i>write</i> verified</div>
+      <div>&#9744; <b>Metadata export path confirmed</b> — could you leave?</div>
+      <div>&#9744; <b>Access control enforced consistently</b> across every engine</div>
+      <div>&#9744; <b>Compaction scheduled</b> and file counts monitored</div>
+      <div>&#9744; <b>Snapshot expiry and orphan cleanup running</b></div>
+      <div>&#9744; <b>Time-travel retention set deliberately</b>, with its storage cost understood</div>
+      <div>&#9744; <b>Maintenance compute budgeted</b>, not discovered</div>
+      <div>&#9744; <b>Partitioning matches query filters</b>; no over-partitioning</div>
+      <div>&#9744; <b>Concurrent-writer conflicts considered</b> on hot tables</div>
+      <div>&#9744; <b>Catalog availability treated as a dependency</b></div>
+      <div>&#9744; <b>Every dataset has a named owner</b></div>
+      <div>&#9744; <b>Catalog populated automatically</b>, not by hand</div>
+      <div>&#9744; <b>Lineage captured</b>, column level where possible</div>
+      <div>&#9744; <b>Sensitive data classified</b> and access granted to groups</div>
+      <div>&#9744; <b>Deletion process designed and tested</b> end to end</div>
+      <div>&#9744; <b>Quality tests at every boundary</b></div>
+      <div>&#9744; <b>Freshness, volume, schema and distribution monitored</b></div>
+      <div>&#9744; <b>Stop-or-continue decided per dataset</b> on failed checks</div>
+      <div>&#9744; <b>Every transform idempotent</b></div>
+      <div>&#9744; <b>Backfill a first-class, throttled operation</b></div>
+      <div>&#9744; <b>Transformations version controlled and tested</b></div>
+      <div>&#9744; <b>Dimensional model designed</b>; SCD strategy chosen per attribute</div>
+      <div>&#9744; <b>Conformed dimensions agreed</b> across domains</div>
+      <div>&#9744; <b>Metrics defined once</b> in a semantic layer</div>
+      <div>&#9744; <b>One system of record for curated data</b>; no duplicate processing</div>
+      <div>&#9744; <b>Everything tagged</b> for cost attribution from day one</div>
+      <div>&#9744; <b>Idle compute auto-suspended</b>; budgets and anomaly alerts set</div>
+      <div>&#9744; <b>Migration incremental with reconciliation</b>, never a cutover</div>
+      <div>&#9744; <b>Rollback plan held</b> through a full reporting cycle</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>the architecture label settles roughly a quarter of the
+      problem.</b> Ownership, discovery, quality, idempotency, immutable raw capture and cost attribution are identical
+      work in all three — and they are what actually separates a platform the business relies on from one it works
+      around. Choose deliberately, then spend your effort on the parts the choice does not cover.</div>
+  </div>
+</div>
+
+</div>
