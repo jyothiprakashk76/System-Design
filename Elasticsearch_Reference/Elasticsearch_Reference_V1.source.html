@@ -1,0 +1,1018 @@
+<meta charset="utf-8">
+<title>Elasticsearch — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5875px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5875px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5845px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 470px 584px 933px 586px 505px 553px 486px 489px 421px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>ELASTICSEARCH — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">The inverted index, the mapping you cannot change, and why it is not your database<br>
+    <span style="font-size:13.4px;color:#6d80b6">mapping &amp; analysis · shards &amp; segments · relevance · aggregations · ILM · JVM &amp; circuit breakers · operations
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT ELASTICSEARCH IS — AND THE ONE THING IT IS NOT
+    <span class="sub">start here — the inverted index, near-real-time, and why treating it as a system of record is the root of most trouble</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A <b>distributed search and analytics engine built on Apache
+        Lucene</b>. Each shard is a Lucene index; Elasticsearch adds distribution, replication, a REST API and a query
+        language on top. Understanding that Lucene is underneath explains most of its behaviour — including the parts that
+        surprise people.</div>
+      <div class="callout b"><b>The core data structure is the inverted index.</b> Rather than mapping document to
+        terms, it maps <b>term to the documents containing it</b>. That is why full-text search over hundreds of millions
+        of documents returns in milliseconds — and why the text must be broken into terms first, which is what analysis
+        does and why mappings matter so much.</div>
+      <div class="h3">Near-real-time, stated precisely</div>
+      <div style="font-size:12.9px;line-height:1.45">A document is <b>not searchable the instant it is indexed</b>. It
+        becomes visible after a <b>refresh</b>, which creates a new searchable segment. The default interval is
+        <span class="mono">1s</span>.</div>
+      <div class="callout"><b>The refinement most summaries omit.</b> Indices that have received no search for a
+        period become <b>search-idle</b> and stop refreshing on that schedule — the refresh happens when a search next
+        arrives. So &ldquo;one second&rdquo; is the busy-index case, not a universal guarantee. Use
+        <span class="mono">?refresh=wait_for</span> when a write must be visible to the very next read.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The most important sentence on this sheet: Elasticsearch is not
+        a system of record.</b> There are no multi-document transactions, no rollback, no foreign keys, and no join in the
+        relational sense. Visibility is delayed by design. It is a <b>search and analytics layer over data that lives
+        somewhere else</b>, and it should always be rebuildable from that source.</div>
+      <div class="callout"><b>The practical test.</b> If losing the entire cluster means re-indexing from a database
+        or an event log over some hours, the architecture is sound. If it means losing data that exists nowhere else, the
+        design has a defect — and no replica count or snapshot schedule fully compensates for it.</div>
+      <div class="h3">Use it when</div>
+      <ul>
+        <li><b>Full-text search with relevance ranking</b> is a core requirement — this is what it is for</li>
+        <li><b>Log, metric and trace analytics</b> over large volumes with time-based retention</li>
+        <li><b>Ad-hoc aggregation and exploration</b> across high-cardinality, semi-structured data</li>
+        <li><b>Autocomplete, suggestions, faceted navigation</b>, geospatial and vector similarity search</li>
+        <li>Read-heavy workloads where <b>seconds of visibility delay are acceptable</b></li>
+      </ul>
+      <div class="h3">Do not use it when</div>
+      <ul>
+        <li><b>You need ACID transactions</b> or strict consistency — it offers neither</li>
+        <li><b>It would be the only copy of the data</b></li>
+        <li><b>Highly relational data with frequent joins</b> — denormalise or keep it relational</li>
+        <li><b>Frequent updates to the same documents</b> — an update rewrites the whole document and marks the old one deleted, and the churn is expensive</li>
+        <li><b>Simple key-value lookup at very high write rates</b> — the wrong tool by a wide margin</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">The vocabulary, mapped to what it actually is</div>
+      <table>
+        <thead><tr><th style="width:112px">Term</th><th>What it really is</th></tr></thead>
+        <tbody>
+          <tr><td><b>Index</b></td><td>A logical collection of documents with a shared mapping — <i>not</i> a database table, because the mapping is far less changeable</td></tr>
+          <tr><td><b>Document</b></td><td>A JSON object. The unit of indexing and retrieval</td></tr>
+          <tr><td><b>Mapping</b></td><td>The schema: field names, types and how each is analysed. <b>Largely immutable once set</b></td></tr>
+          <tr><td><b>Shard</b></td><td><b>A complete Lucene index.</b> The unit of distribution, and the unit of resource cost</td></tr>
+          <tr><td><b>Segment</b></td><td>An immutable file within a shard. Written by refresh, combined by merges</td></tr>
+          <tr><td><b>Replica</b></td><td>A copy of a primary shard — availability and read capacity</td></tr>
+          <tr><td><b>Node / cluster</b></td><td>A JVM process; a group of them sharing cluster state</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b><span class="lvl sr">STAFF</span> The licensing history, which comes up.</b>
+        Elasticsearch was Apache 2.0, moved in <b>2021</b> to a dual SSPL and Elastic License 2.0 arrangement, then in
+        <b>September 2024 Elastic added AGPLv3</b> as an OSI-approved option — so it is now tri-licensed and once again
+        open source by the OSI definition. <b>OpenSearch</b> was forked by AWS from <b>7.10.2 in April 2021</b> under
+        Apache 2.0 and moved to the <b>Linux Foundation in September 2024</b>. The architecture on this sheet applies
+        broadly to both, though features have diverged since the fork.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. MAPPING ============ -->
+<div class="panel c5 span2">
+  <div class="phead">2 &nbsp;· &nbsp;MAPPINGS — THE SCHEMA YOU CANNOT CHANGE
+    <span class="sub">the decision that is genuinely hard to reverse · <span class="lvl jr">JUNIOR</span> text versus keyword · <span class="lvl sr">STAFF</span> reindex, aliases, field explosion</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>You cannot change the type or analyser of an existing field.</b>
+        The inverted index was built at index time using those settings — altering them would invalidate every term
+        already written. Adding a <i>new</i> field is fine; changing an existing one requires <b>reindexing into a new
+        index</b>. This is the single biggest difference from a relational schema, and planning for it is not optional.</div>
+      <div class="h3">text versus keyword — the most common mistake here</div>
+      <table>
+        <thead><tr><th style="width:96px"></th><th><span class="mono">text</span></th><th><span class="mono">keyword</span></th></tr></thead>
+        <tbody>
+          <tr><td><b>Analysed?</b></td><td>Yes — broken into terms</td><td>No — stored whole</td></tr>
+          <tr><td><b>For</b></td><td>Full-text search, relevance</td><td>Exact match, filters, sorting, aggregations</td></tr>
+          <tr><td><b>Sort / aggregate</b></td><td><b style="color:#be123c">No</b> — needs fielddata, which is expensive and off by default</td><td><b style="color:#047857">Yes</b> — via doc values</td></tr>
+          <tr><td><b>Exact match</b></td><td>Unreliable — the stored terms are analysed, so a <span class="mono">term</span> query usually fails</td><td>Exact</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>The default handles both, and it is worth knowing why.</b> Dynamic mapping maps a
+        string as <span class="mono">text</span> <b>with a <span class="mono">.keyword</span> sub-field</b>. So
+        <span class="mono">title</span> searches full-text and <span class="mono">title.keyword</span> sorts and
+        aggregates. This is a <b>multi-field</b>, and it is why so much works without anyone defining a mapping — and why
+        the aggregation on <span class="mono">title</span> that failed works when you add <span class="mono">.keyword</span>.</div>
+      <div class="callout"><b>The classic confusion: <span class="mono">match</span> versus <span class="mono">term</span>.</b>
+        <span class="mono">match</span> analyses your query text the same way the field was analysed;
+        <span class="mono">term</span> does not and looks for the literal value. A <span class="mono">term</span> query for
+        <span class="mono">"New York"</span> against an analysed field returns nothing, because the index contains
+        <span class="mono">new</span> and <span class="mono">york</span> separately.</div>
+    </div>
+    <div>
+      <div class="h3">Dynamic mapping, and where it turns dangerous</div>
+      <ul>
+        <li><b>The first document defines the field.</b> Whatever type is inferred is what you are committed to</li>
+        <li><b>A field arriving as <span class="mono">"123"</span> once becomes a string forever</b>, and a later numeric range query on it will not work as expected</li>
+        <li><b>Set <span class="mono">dynamic: strict</span></b> on anything important, so an unexpected field is an error rather than a silent commitment</li>
+      </ul>
+      <div class="callout r"><b>Mapping explosion — a real cause of cluster outages.</b> If field <i>names</i> come
+        from user or customer data — an object keyed by identifier, or arbitrary log attributes — every new key becomes a
+        new mapped field. The mapping grows without limit, the cluster state grows with it, and because cluster state is
+        replicated to every node the <b>whole cluster degrades</b>. There is a default limit of <b>1000 fields per
+        index</b>, and hitting it is a symptom rather than the problem.</div>
+      <div class="callout g"><b>The fix is a modelling one:</b> store such data as an <b>array of key/value
+        pairs</b> — <span class="mono">[{k: "colour", v: "red"}]</span> — which is two fields regardless of how many
+        distinct keys exist. The <span class="mono">flattened</span> field type solves the same problem, mapping an entire
+        object as a single field at the cost of some query flexibility.</div>
+      <div class="h3">Changing a mapping without downtime</div>
+      <div class="code"><span class="c"># applications always read and write through an ALIAS</span>
+PUT /_aliases { "actions": [
+  { "add": { "index": <span class="v">"orders-v1"</span>, "alias": <span class="v">"orders"</span> } } ]}
+
+<span class="c"># 1. create orders-v2 with the corrected mapping</span>
+<span class="c"># 2. reindex, which re-analyses every document</span>
+POST /_reindex { "source": {"index": <span class="v">"orders-v1"</span>},
+                 "dest":   {"index": <span class="v">"orders-v2"</span>} }
+<span class="c"># 3. swap the alias atomically, then drop v1</span></div>
+      <div class="callout"><b>Never point an application at a concrete index name.</b> Always use an alias. It costs
+        nothing on day one and is what makes every future mapping change a routine operation rather than an outage.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. ANALYSIS ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;TEXT ANALYSIS <span class="sub">how text becomes searchable terms</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">Analysis converts a <span class="mono">text</span> field into the terms
+      stored in the inverted index. It runs in three ordered stages, and it applies <b>only to <span class="mono">text</span>
+      fields</b> — never to <span class="mono">keyword</span>, numbers or dates.</div>
+    <div class="code"><span class="c">1. CHARACTER FILTERS</span>   strip HTML, replace chars
+        &darr;
+<span class="c">2. TOKENIZER</span>          split into tokens
+        &darr;              (exactly one)
+<span class="c">3. TOKEN FILTERS</span>      lowercase, stop words,
+                       stemming, synonyms</div>
+    <div class="h3">What each stage contributes</div>
+    <table>
+      <tbody>
+        <tr><td style="width:112px"><b>Char filter</b></td><td>Operates on the raw string before tokenising — removing markup, mapping characters</td></tr>
+        <tr><td><b>Tokenizer</b></td><td><b>Exactly one.</b> <span class="mono">standard</span> splits on word boundaries; <span class="mono">keyword</span> emits the whole input; <span class="mono">ngram</span> and <span class="mono">edge_ngram</span> produce partial-word tokens for autocomplete</td></tr>
+        <tr><td><b>Token filters</b></td><td>Any number, in order. <span class="mono">lowercase</span> makes matching case-insensitive; <span class="mono">stop</span> removes common words; <span class="mono">stemmer</span> reduces to a root so <i>running</i> matches <i>run</i>; <span class="mono">synonym</span> expands equivalents</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Index-time and query-time analysis must be compatible.</b> The query text is analysed
+      with the field's search analyser and the resulting terms are looked up. If the two chains disagree — different
+      stemming, different case handling — <b>nothing matches, and there is no error</b>. It simply returns zero results,
+      which is why this is hard to diagnose without the tool below.</div>
+    <div class="callout g"><b>The <span class="mono">_analyze</span> API is the debugging tool</b> for exactly
+      this. It shows the tokens a given analyser produces, so you can compare what was indexed against what the query
+      generates. It answers &ldquo;why does this search return nothing&rdquo; faster than anything else.</div>
+    <div class="code">GET /orders/_analyze
+{ "field": <span class="v">"description"</span>, "text": <span class="v">"Running Shoes"</span> }
+<span class="c">→ ["run", "shoe"]  with a stemmer applied</span></div>
+    <div class="callout"><b>Changing an analyser requires a reindex</b>, for the same reason a type change does —
+      the existing terms were produced by the old chain. Design the analysis alongside the mapping, and use
+      <span class="mono">edge_ngram</span> or the completion suggester for autocomplete rather than wildcard queries,
+      which cannot use the index efficiently.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — NODES, SHARDS, SEGMENTS, AND THE TWO REQUEST PATHS
+    <span class="sub">what a shard actually is, how a write becomes searchable, and why a search is two round trips</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 860" width="3320" height="860">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+      <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b45309"/></marker>
+    </defs>
+
+    <!-- HIERARCHY -->
+    <rect x="8" y="6" width="1416" height="248" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE HIERARCHY — a shard is a complete Lucene index, and that single fact drives all the sizing guidance</text>
+
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="26" y="44" width="176" height="62" rx="7" fill="#fff" stroke="#1e3a8a" stroke-width="2"/>
+      <text x="114" y="66" font-size="12.2" font-weight="700" fill="#1e3a8a">CLUSTER</text>
+      <text x="114" y="84" fill="#42507a">nodes sharing a</text>
+      <text x="114" y="98" fill="#42507a">cluster state</text>
+
+      <rect x="234" y="44" width="176" height="62" rx="7" fill="#fff" stroke="#0f766e" stroke-width="2"/>
+      <text x="322" y="66" font-size="12.2" font-weight="700" fill="#0f766e">INDEX</text>
+      <text x="322" y="84" fill="#2f4f47">documents sharing</text>
+      <text x="322" y="98" fill="#2f4f47">one mapping</text>
+
+      <rect x="442" y="44" width="176" height="62" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+      <text x="530" y="66" font-size="12.2" font-weight="700" fill="#be123c">SHARD</text>
+      <text x="530" y="84" fill="#7f2b2b">a Lucene index —</text>
+      <text x="530" y="98" fill="#7f2b2b">the unit of cost</text>
+
+      <rect x="650" y="44" width="176" height="62" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="738" y="66" font-size="12.2" font-weight="700" fill="#7c2d92">SEGMENT</text>
+      <text x="738" y="84" fill="#4b3a5e">immutable files,</text>
+      <text x="738" y="98" fill="#4b3a5e">merged over time</text>
+
+      <rect x="858" y="44" width="176" height="62" rx="7" fill="#fff" stroke="#334155" stroke-width="2"/>
+      <text x="946" y="66" font-size="12.2" font-weight="700" fill="#334155">DOCUMENT</text>
+      <text x="946" y="84" fill="#42507a">a JSON object</text>
+      <text x="946" y="98" fill="#42507a">with an _id</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M202,75 L228,75"/><path d="M410,75 L436,75"/><path d="M618,75 L644,75"/><path d="M826,75 L852,75"/>
+    </g>
+
+    <rect x="1050" y="44" width="358" height="62" rx="7" fill="#fff7ea" stroke="#b45309" stroke-width="2"/>
+    <text x="1064" y="64" font-size="11.6" font-weight="700" fill="#b45309">PRIMARY versus REPLICA</text>
+    <text x="1064" y="82" font-size="10.6" fill="#7a3d06">Each shard has one primary and any number of replicas.</text>
+    <text x="1064" y="98" font-size="10.6" fill="#7a3d06">Replicas serve reads and are promoted if the primary is lost.</text>
+
+    <rect x="26" y="118" width="1382" height="60" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="42" y="138" font-size="12.4" font-weight="700" fill="#b91c1c">WHY THIS MATTERS FOR SIZING — the point behind every &ldquo;too many shards&rdquo; warning</text>
+    <text x="42" y="158" font-size="11" fill="#7f2b2b">Every shard is a full Lucene index with its own files, memory overhead and merge activity. <tspan font-weight="700">A thousand tiny shards cost far more than ten right-sized ones holding the same data</tspan> —</text>
+    <text x="42" y="174" font-size="11" fill="#7f2b2b">in heap, in file handles, in cluster state, and in the coordination every search must perform across all of them. Oversharding is the most common self-inflicted problem in Elasticsearch.</text>
+
+    <rect x="26" y="190" width="1382" height="54" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="42" y="210" font-size="12.4" font-weight="700" fill="#047857">SEGMENTS ARE IMMUTABLE — which explains updates, deletes and merges all at once</text>
+    <text x="42" y="230" font-size="11" fill="#2f4f47">A segment is never modified. An <tspan font-weight="700">update</tspan> writes a new document and marks the old one deleted; a <tspan font-weight="700">delete</tspan> only sets that flag. Space is reclaimed when a <tspan font-weight="700">merge</tspan> rewrites several segments into one, dropping the deleted documents.</text>
+
+    <!-- NODE ROLES -->
+    <rect x="1436" y="6" width="1876" height="248" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1454" y="30" font-size="16" font-weight="700" fill="#7c2d92">NODE ROLES — separating them is what makes a cluster stable at scale</text>
+    <g font-size="10.6">
+      <rect x="1454" y="44" width="440" height="88" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1468" y="64" font-size="11.8" font-weight="700" fill="#7c2d92">MASTER-ELIGIBLE</text>
+      <text x="1468" y="82" fill="#4b3a5e">Maintains cluster state: mappings, shard allocation, index metadata.</text>
+      <text x="1468" y="98" fill="#4b3a5e">One is elected; a quorum of the voting configuration must agree.</text>
+      <text x="1468" y="120" font-weight="700" fill="#be123c">Use three dedicated masters in production — they do no data work</text>
+
+      <rect x="1910" y="44" width="440" height="88" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1924" y="64" font-size="11.8" font-weight="700" fill="#7c2d92">DATA</text>
+      <text x="1924" y="82" fill="#4b3a5e">Holds shards, executes queries and aggregations. Sub-roles by tier:</text>
+      <text x="1924" y="98" fill="#4b3a5e">hot, warm, cold and frozen, each with different hardware.</text>
+      <text x="1924" y="120" font-weight="700" fill="#7c2d92">The tier a shard sits on is driven by lifecycle policy — see panel 10</text>
+
+      <rect x="2366" y="44" width="440" height="88" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2380" y="64" font-size="11.8" font-weight="700" fill="#7c2d92">COORDINATING</text>
+      <text x="2380" y="82" fill="#4b3a5e">Every node can coordinate. It receives a request, fans it out to the</text>
+      <text x="2380" y="98" fill="#4b3a5e">relevant shards, and merges the results before replying.</text>
+      <text x="2380" y="120" font-weight="700" fill="#be123c">Merging is memory-hungry — dedicated coordinators protect data nodes</text>
+
+      <rect x="2822" y="44" width="474" height="88" rx="7" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2836" y="64" font-size="11.8" font-weight="700" fill="#7c2d92">INGEST, ML, TRANSFORM</text>
+      <text x="2836" y="82" fill="#4b3a5e">Ingest nodes run pipelines that enrich or reshape documents before</text>
+      <text x="2836" y="98" fill="#4b3a5e">indexing. ML and transform nodes run their own dedicated workloads.</text>
+      <text x="2836" y="120" font-weight="700" fill="#7c2d92">Separate them so a heavy pipeline cannot starve search</text>
+
+      <rect x="1454" y="144" width="900" height="100" rx="7" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+      <text x="1468" y="164" font-size="12.2" font-weight="700" fill="#b91c1c">MASTER ELECTION AND SPLIT BRAIN — the history is worth knowing</text>
+      <text x="1468" y="184" font-size="10.8" fill="#7f2b2b">Before 7.0, the quorum was configured by hand via a minimum-master-nodes setting. Getting it wrong allowed <tspan font-weight="700">two masters to</tspan></text>
+      <text x="1468" y="200" font-size="10.8" fill="#7f2b2b"><tspan font-weight="700">form on either side of a partition</tspan>, each accepting writes — the classic split brain, and a well-known source of data loss.</text>
+      <text x="1468" y="222" font-size="10.8" font-weight="700" fill="#b91c1c">From 7.0 the cluster manages its own voting configuration and the setting is gone. Use three dedicated master-eligible</text>
+      <text x="1468" y="238" font-size="10.8" font-weight="700" fill="#b91c1c">nodes in separate failure domains; a cluster that cannot reach a master quorum stops accepting writes rather than diverging.</text>
+
+      <rect x="2370" y="144" width="926" height="100" rx="7" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+      <text x="2384" y="164" font-size="12.2" font-weight="700" fill="#047857">CLUSTER HEALTH — three words that mean precisely one thing each</text>
+      <text x="2384" y="186" font-size="10.8" fill="#2f4f47"><tspan font-weight="700" fill="#047857">GREEN</tspan> — every primary and every replica is assigned. Normal.</text>
+      <text x="2384" y="206" font-size="10.8" fill="#2f4f47"><tspan font-weight="700" fill="#b45309">YELLOW</tspan> — all primaries assigned, at least one replica is not. <tspan font-weight="700">No data is lost and searches still work</tspan>, but redundancy is gone. A single-node cluster is permanently yellow.</text>
+      <text x="2384" y="228" font-size="10.8" fill="#2f4f47"><tspan font-weight="700" fill="#be123c">RED</tspan> — at least one <tspan font-weight="700">primary</tspan> is unassigned. Part of the data is unavailable right now, and searches touching it return partial results or fail. Investigate immediately.</text>
+    </g>
+
+    <!-- WRITE PATH -->
+    <rect x="8" y="266" width="1656" height="330" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="26" y="290" font-size="16" font-weight="700" fill="#0f766e">THE WRITE PATH — and the three operations people routinely confuse</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="26" y="304" width="150" height="56" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="101" y="326" font-size="11.4" font-weight="700" fill="#0f766e">Client</text>
+      <text x="101" y="344" fill="#2f4f47">bulk request</text>
+      <rect x="206" y="304" width="180" height="56" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="296" y="322" font-size="11.4" font-weight="700" fill="#0f766e">Coordinating node</text>
+      <text x="296" y="340" fill="#2f4f47">hashes _id or routing</text>
+      <text x="296" y="354" fill="#2f4f47">to pick the shard</text>
+      <rect x="416" y="304" width="180" height="56" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="506" y="326" font-size="11.4" font-weight="700" fill="#be123c">Primary shard</text>
+      <text x="506" y="344" fill="#7f2b2b">indexes the document</text>
+      <rect x="626" y="304" width="180" height="56" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+      <text x="716" y="326" font-size="11.4" font-weight="700" fill="#0f766e">Replica shards</text>
+      <text x="716" y="344" fill="#2f4f47">applied in parallel</text>
+      <rect x="836" y="304" width="180" height="56" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="926" y="326" font-size="11.4" font-weight="700" fill="#047857">Acknowledged</text>
+      <text x="926" y="344" fill="#2f4f47">after replicas confirm</text>
+    </g>
+    <g stroke="#0f766e" stroke-width="2.2" fill="none" marker-end="url(#g)">
+      <path d="M176,332 L200,332"/><path d="M386,332 L410,332"/><path d="M596,332 L620,332"/><path d="M806,332 L830,332"/>
+    </g>
+    <text x="1030" y="322" font-size="10.8" fill="#2f4f47">The shard is chosen by hashing the document id, or a</text>
+    <text x="1030" y="338" font-size="10.8" fill="#2f4f47">custom routing value. This is why the primary shard</text>
+    <text x="1030" y="354" font-size="10.8" font-weight="700" fill="#be123c">count is fixed at index creation — changing it would</text>
+    <text x="1030" y="370" font-size="10.8" font-weight="700" fill="#be123c">move every document to a different shard.</text>
+
+    <rect x="26" y="382" width="530" height="200" rx="8" fill="#fff" stroke="#0f766e" stroke-width="1.8"/>
+    <text x="42" y="402" font-size="12.4" font-weight="700" fill="#0f766e">REFRESH vs FLUSH vs MERGE — different jobs entirely</text>
+    <text x="42" y="424" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">REFRESH</tspan> — writes the in-memory buffer to a <tspan font-weight="700">new segment</tspan>, making documents</text>
+    <text x="54" y="440" font-size="10.8" fill="#2f4f47">searchable. Default every 1s on an actively searched index. This is about</text>
+    <text x="54" y="456" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">visibility</tspan>, not durability — a refresh does not make anything safe.</text>
+    <text x="42" y="480" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">FLUSH</tspan> — performs a Lucene commit and clears the translog. This is about</text>
+    <text x="54" y="496" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">durability</tspan>. Managed automatically; rarely triggered by hand.</text>
+    <text x="42" y="520" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">MERGE</tspan> — combines small segments into larger ones, physically removing</text>
+    <text x="54" y="536" font-size="10.8" fill="#2f4f47">deleted documents. Runs in the background and consumes real I/O.</text>
+    <text x="42" y="560" font-size="10.8" font-weight="700" fill="#be123c">Raising refresh_interval on a heavy ingest index is the standard indexing</text>
+    <text x="42" y="576" font-size="10.8" font-weight="700" fill="#be123c">optimisation — fewer segments to create and then merge.</text>
+
+    <rect x="570" y="382" width="530" height="200" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="586" y="402" font-size="12.4" font-weight="700" fill="#b91c1c">THE TRANSLOG — where durability actually comes from</text>
+    <text x="586" y="424" font-size="10.8" fill="#7f2b2b">Segments are only written on refresh and only committed on flush, so a crash</text>
+    <text x="586" y="440" font-size="10.8" fill="#7f2b2b">between the two would lose data. The <tspan font-weight="700">transaction log</tspan> closes that gap: every</text>
+    <text x="586" y="456" font-size="10.8" fill="#7f2b2b">operation is appended to it and replayed on recovery.</text>
+    <text x="586" y="480" font-size="10.8" fill="#7f2b2b">By default it is <tspan font-weight="700">fsynced before each request is acknowledged</tspan>, so an</text>
+    <text x="586" y="496" font-size="10.8" fill="#7f2b2b">acknowledged write survives a node restart.</text>
+    <text x="586" y="520" font-size="10.8" font-weight="700" fill="#b91c1c">Switching translog durability to async makes indexing measurably faster and</text>
+    <text x="586" y="536" font-size="10.8" font-weight="700" fill="#b91c1c">introduces a window in which acknowledged writes can be lost on a crash.</text>
+    <text x="586" y="560" font-size="10.8" fill="#7f2b2b">That is an acceptable trade for logs and a poor one for anything else — and it</text>
+    <text x="586" y="576" font-size="10.8" fill="#7f2b2b">should be a deliberate decision rather than a copied configuration line.</text>
+
+    <rect x="1114" y="382" width="534" height="200" rx="8" fill="#fff7ea" stroke="#e9b669" stroke-width="2"/>
+    <text x="1130" y="402" font-size="12.4" font-weight="700" fill="#a35c00">CONCURRENCY — no transactions, but not nothing</text>
+    <text x="1130" y="424" font-size="10.8" fill="#7a3d06">Every document carries a sequence number and a primary term. A write can</text>
+    <text x="1130" y="440" font-size="10.8" fill="#7a3d06">specify the values it expects and <tspan font-weight="700">fails with a version conflict</tspan> if the document</text>
+    <text x="1130" y="456" font-size="10.8" fill="#7a3d06">changed underneath — optimistic concurrency control, per document.</text>
+    <text x="1130" y="480" font-size="10.8" font-weight="700" fill="#be123c">There is no transaction across documents and no rollback. A bulk request is</text>
+    <text x="1130" y="496" font-size="10.8" font-weight="700" fill="#be123c">not atomic: individual items can fail while others succeed, and the response</text>
+    <text x="1130" y="512" font-size="10.8" font-weight="700" fill="#be123c">must be inspected per item. Ignoring per-item errors silently loses documents.</text>
+    <text x="1130" y="538" font-size="10.8" fill="#7a3d06"><tspan font-weight="700">Bulk sizing:</tspan> start around 5–15 MB per request and tune by measurement.</text>
+    <text x="1130" y="554" font-size="10.8" fill="#7a3d06">Too large causes rejections and circuit breaker trips; too small wastes</text>
+    <text x="1130" y="570" font-size="10.8" fill="#7a3d06">round trips. Retry rejections with backoff rather than failing the batch.</text>
+
+    <!-- SEARCH PATH -->
+    <rect x="1676" y="266" width="1636" height="330" rx="10" fill="#eff6ff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="1694" y="290" font-size="16" font-weight="700" fill="#1d4ed8">THE SEARCH PATH — two phases, and the pagination limit that follows from them</text>
+    <g font-size="10.8" text-anchor="middle">
+      <rect x="1694" y="304" width="160" height="56" rx="6" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="1774" y="326" font-size="11.4" font-weight="700" fill="#1e3a8a">Client search</text>
+      <text x="1774" y="344" fill="#42507a">query DSL</text>
+      <rect x="1884" y="304" width="190" height="56" rx="6" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="1979" y="322" font-size="11.4" font-weight="700" fill="#1e3a8a">QUERY PHASE</text>
+      <text x="1979" y="340" fill="#42507a">every relevant shard</text>
+      <text x="1979" y="354" fill="#42507a">returns ids and scores</text>
+      <rect x="2104" y="304" width="190" height="56" rx="6" fill="#fff7ea" stroke="#b45309" stroke-width="2"/>
+      <text x="2199" y="322" font-size="11.4" font-weight="700" fill="#b45309">Coordinator merges</text>
+      <text x="2199" y="340" fill="#7a3d06">sorts, keeps the</text>
+      <text x="2199" y="354" fill="#7a3d06">top N overall</text>
+      <rect x="2324" y="304" width="190" height="56" rx="6" fill="#fff" stroke="#1e3a8a" stroke-width="1.8"/>
+      <text x="2419" y="322" font-size="11.4" font-weight="700" fill="#1e3a8a">FETCH PHASE</text>
+      <text x="2419" y="340" fill="#42507a">retrieves only those</text>
+      <text x="2419" y="354" fill="#42507a">documents</text>
+      <rect x="2544" y="304" width="170" height="56" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="2629" y="326" font-size="11.4" font-weight="700" fill="#047857">Results</text>
+      <text x="2629" y="344" fill="#2f4f47">returned to client</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M1854,332 L1878,332"/><path d="M2074,332 L2098,332"/><path d="M2294,332 L2318,332"/><path d="M2514,332 L2538,332"/>
+    </g>
+    <text x="2734" y="322" font-size="10.8" fill="#42507a">Two phases exist so that full documents are</text>
+    <text x="2734" y="338" font-size="10.8" fill="#42507a">fetched only for the results actually returned,</text>
+    <text x="2734" y="354" font-size="10.8" fill="#42507a">rather than for every candidate on every shard.</text>
+
+    <rect x="1694" y="382" width="778" height="200" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2"/>
+    <text x="1710" y="402" font-size="12.4" font-weight="700" fill="#b91c1c">DEEP PAGINATION — why page 500 is expensive, and what to use instead</text>
+    <text x="1710" y="424" font-size="10.8" fill="#7f2b2b">To return results 10,000 to 10,010 sorted by relevance, <tspan font-weight="700">every shard must return its own top</tspan></text>
+    <text x="1710" y="440" font-size="10.8" fill="#7f2b2b"><tspan font-weight="700">10,010</tspan> so the coordinator can merge them correctly. With twenty shards that is 200,200</text>
+    <text x="1710" y="456" font-size="10.8" fill="#7f2b2b">entries gathered and sorted to produce ten. Cost grows with the offset, on every shard.</text>
+    <text x="1710" y="480" font-size="10.8" font-weight="700" fill="#b91c1c">This is why from + size is capped at 10,000 results by default. The cap is a guard rail,</text>
+    <text x="1710" y="496" font-size="10.8" font-weight="700" fill="#b91c1c">and raising it to make a report work is how clusters are brought down.</text>
+    <text x="1710" y="520" font-size="10.8" fill="#7f2b2b"><tspan font-weight="700" fill="#047857">The correct approach:</tspan> search_after with a point-in-time reader. Each page carries the sort</text>
+    <text x="1710" y="536" font-size="10.8" fill="#7f2b2b">values of the last hit, so the next page resumes from there at constant cost — and the PIT</text>
+    <text x="1710" y="552" font-size="10.8" fill="#7f2b2b">keeps the view stable while you page through it. Scroll served this purpose historically and</text>
+    <text x="1710" y="568" font-size="10.8" fill="#7f2b2b">is now discouraged for user-facing paging; it remains reasonable for one-off bulk exports.</text>
+
+    <rect x="2488" y="382" width="808" height="200" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="2504" y="402" font-size="12.4" font-weight="700" fill="#047857">QUERY CONTEXT vs FILTER CONTEXT — the cheapest optimisation available</text>
+    <text x="2504" y="424" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">Query context</tspan> asks &ldquo;how well does this match?&rdquo; It computes a relevance score for every</text>
+    <text x="2504" y="440" font-size="10.8" fill="#2f4f47">candidate document, and the result cannot be cached because scores depend on the query.</text>
+    <text x="2504" y="462" font-size="10.8" fill="#2f4f47"><tspan font-weight="700">Filter context</tspan> asks &ldquo;does this match, yes or no?&rdquo; No score is computed, and the result is</text>
+    <text x="2504" y="478" font-size="10.8" fill="#2f4f47">a bitset that Elasticsearch <tspan font-weight="700">caches and reuses across queries</tspan>.</text>
+    <text x="2504" y="502" font-size="10.8" font-weight="700" fill="#047857">Anything that is a yes-or-no condition — a status, a date range, a tenant id, a category —</text>
+    <text x="2504" y="518" font-size="10.8" font-weight="700" fill="#047857">belongs in the filter clause of a bool query, not the must clause. It is faster, it is cached,</text>
+    <text x="2504" y="534" font-size="10.8" font-weight="700" fill="#047857">and it does not distort relevance ranking with irrelevant score contributions.</text>
+    <text x="2504" y="558" font-size="10.8" fill="#2f4f47">In a bool query: <tspan font-family="Menlo,monospace" font-size="10.4">must</tspan> and <tspan font-family="Menlo,monospace" font-size="10.4">should</tspan> score; <tspan font-family="Menlo,monospace" font-size="10.4">filter</tspan> and <tspan font-family="Menlo,monospace" font-size="10.4">must_not</tspan> do not. Moving conditions from</text>
+    <text x="2504" y="574" font-size="10.8" fill="#2f4f47"><tspan font-family="Menlo,monospace" font-size="10.4">must</tspan> to <tspan font-family="Menlo,monospace" font-size="10.4">filter</tspan> is often the single largest search improvement available, for no behavioural change.</text>
+
+    <rect x="8" y="608" width="3304" height="244" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="632" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — the five properties that explain the rest of this sheet</text>
+    <text x="26" y="658" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · A shard is a whole Lucene index, and shard count is fixed at creation.</tspan> This is why sizing must be decided up front, why oversharding is costly, and why growth is handled by rolling over to new indices rather than by resizing existing ones.</text>
+    <text x="26" y="686" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · Segments are immutable.</tspan> Updates and deletes are additive, space is reclaimed only by merges, and merges consume I/O in the background. High update rates are therefore expensive in a way that is not obvious from the API.</text>
+    <text x="26" y="714" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The mapping is written into the index at index time.</tspan> Types and analysers cannot be changed in place; reindexing behind an alias is the supported path, and designing for it on day one is what keeps schema changes routine.</text>
+    <text x="26" y="742" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · Search is scatter-gather across shards.</tspan> Latency is set by the slowest shard, deep offsets multiply work on every shard, and more shards is not automatically faster — past a point it is reliably slower.</text>
+    <text x="26" y="770" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Visibility is delayed and there are no cross-document transactions.</tspan> Elasticsearch is a search and analytics layer, not a system of record, and every design that forgets this eventually pays for it during a recovery.</text>
+    <text x="26" y="804" font-size="11.8" fill="#6b7391">Useful interrogation of any Elasticsearch design: how large is a shard and how many are there, is every application field explicitly mapped, do reads go through an alias, are yes-or-no conditions in filter context, and can the whole cluster be rebuilt from source?</text>
+    <text x="26" y="828" font-size="11.8" font-weight="700" fill="#1e3a8a">The last question is the one that matters most in an incident — and if the answer is uncertain, that uncertainty is the finding.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. INDEXING ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;INDEXING PERFORMANCE — SEGMENTS, MERGES AND THROUGHPUT
+    <span class="sub"><span class="lvl mid">MID</span> the knobs that matter · <span class="lvl sr">STAFF</span> what each one actually trades away</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The levers, in the order worth trying</div>
+      <table>
+        <thead><tr><th style="width:158px">Lever</th><th>Effect, and the cost</th></tr></thead>
+        <tbody>
+          <tr><td><b>Use the bulk API</b></td><td>The single largest win. Around <b>5–15 MB per request</b> as a starting point, tuned by measurement. Never index documents one at a time at volume</td></tr>
+          <tr><td><b>Raise <span class="mono">refresh_interval</span></b></td><td>Fewer segments created and merged. <b>Costs visibility delay</b> — set to <span class="mono">30s</span> for logs, or <span class="mono">-1</span> during a bulk load and restore afterwards</td></tr>
+          <tr><td><b>Index with zero replicas, then add</b></td><td>Only for an initial load into an empty index. <b>No redundancy while it runs</b></td></tr>
+          <tr><td><b>Let Elasticsearch assign ids</b></td><td>A supplied id forces a check for an existing document; an auto-generated one skips it</td></tr>
+          <tr><td><b>Fewer, larger shards</b></td><td>Less coordination and merge overhead per document</td></tr>
+          <tr><td><b>Map only what you query</b></td><td>Disable indexing on fields never searched, and <span class="mono">doc_values</span> on fields never sorted or aggregated</td></tr>
+          <tr><td><b>Faster storage</b></td><td>Merging is I/O bound. <b>Local SSD or NVMe</b> makes a larger difference than most tuning</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Do not use async translog durability by default.</b> It is a genuine speed-up and it
+        introduces a window in which <b>acknowledged writes can be lost</b> on a crash. Acceptable for logs where the source
+        can replay; unacceptable for anything else.</div>
+    </div>
+    <div>
+      <div class="h3">Segments and merging</div>
+      <ul>
+        <li><b>Every refresh creates a segment.</b> Many small segments slow search, because each is consulted separately</li>
+        <li><b>Merging runs continuously</b> in the background, combining small segments and physically dropping deleted documents</li>
+        <li><b>Merging competes with indexing and search</b> for I/O — a heavy ingest period will show elevated merge activity and latency</li>
+        <li><b>Deleted documents occupy space until merged.</b> A high delete or update rate means a persistently inflated index</li>
+      </ul>
+      <div class="callout"><b><span class="mono">force_merge</span> is for read-only indices only.</b> Merging a
+        finished time-based index down to one segment is a genuine and worthwhile optimisation. Running it on an index
+        still receiving writes produces very large segments that future merges struggle with, and the effect is long-lived.
+        The rule is simple: <b>only force-merge an index that will never be written to again</b>.</div>
+      <div class="h3">Rejections and backpressure</div>
+      <ul>
+        <li><b>Write thread pools have bounded queues.</b> When full, requests are <b>rejected</b> — this is deliberate backpressure, not a failure to fix by enlarging the queue</li>
+        <li><b>Rejections must be retried with backoff</b> by the client. Most official clients and Logstash do this; hand-written ingest often does not, and silently drops data</li>
+        <li><b>A rising rejection count means the cluster cannot keep up</b> — the answer is more nodes, better storage, or less work per document, not a bigger queue</li>
+      </ul>
+      <div class="callout g"><b>Check bulk responses per item.</b> A bulk request returns HTTP 200 while individual
+        items failed. Code that checks only the status code loses documents silently — one of the most common and least
+        visible ingest bugs in production.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. SHARD SIZING ============ -->
+<div class="panel c5">
+  <div class="phead">6 &nbsp;· &nbsp;SHARD SIZING <span class="sub">the number to get right first</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Primary shard count is fixed when the index is created.</b> It
+      cannot be changed in place, because the shard for a document is derived from a hash of its id. Splitting and shrinking
+      exist, and both write a new index. In practice, plan it — or use rollover so each new index gets a fresh decision.</div>
+    <div class="h3">The guidance, and what it is based on</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>10–50 GB per shard</b></td><td>The widely used working range. Smaller wastes overhead; much larger slows recovery, relocation and merges</td></tr>
+        <tr><td><b>Around 20 shards or fewer per GB of heap</b></td><td>Per node. A node with 30 GB of heap should stay under roughly 600 shards, and comfortably below that in practice</td></tr>
+        <tr><td><b>Shards ≥ nodes</b></td><td>Fewer shards than data nodes leaves nodes idle for that index</td></tr>
+      </tbody>
+    </table>
+    <div class="code"><span class="c"># worked example: 2 TB of log data, 30-day retention</span>
+daily volume        ≈ 2 TB / 30   ≈ 68 GB/day
+target shard size   ≈ 40 GB
+primaries per day   ≈ 68 / 40     ≈ 2
+with 1 replica      → 4 shards/day
+over 30 days        → 120 shards total
+
+<span class="c"># the wrong instinct — 5 primaries per day "for speed"</span>
+<span class="c">→ 300 shards of ~14 GB each: more overhead,</span>
+<span class="c">  more merging, slower searches. Not faster.</span></div>
+    <div class="callout r"><b>Oversharding is the classic mistake, and it is usually well-intentioned.</b> More
+      shards feels like more parallelism. But each shard is a full Lucene index with fixed overhead, and every search must
+      coordinate across all of them. Past the point where shards are large enough to be efficient, <b>adding shards makes
+      the cluster slower and less stable</b>, not faster.</div>
+    <div class="callout g"><b>For time-based data, use data streams with rollover</b> rather than deciding a shard
+      count once and living with it. Rollover creates a new backing index at a size or age threshold, so each index is
+      sized against actual volume — and retention becomes dropping whole indices, which is nearly free, instead of deleting
+      documents, which is expensive.</div>
+  </div>
+</div>
+
+<!-- ============ 7. SEARCH ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;QUERYING AND RELEVANCE
+    <span class="sub"><span class="lvl jr">JUNIOR</span> the query types · <span class="lvl mid">MID</span> filter context · <span class="lvl sr">STAFF</span> how scoring actually works</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The query types worth knowing</div>
+      <table>
+        <thead><tr><th style="width:132px">Query</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mono">match</span></td><td><b>Analyses the input</b>, then looks for the resulting terms. The default choice for full-text</td></tr>
+          <tr><td><span class="mono">term</span></td><td><b>Does not analyse.</b> Exact term lookup — correct on <span class="mono">keyword</span>, and a common source of empty results on <span class="mono">text</span></td></tr>
+          <tr><td><span class="mono">match_phrase</span></td><td>Terms in order and adjacent</td></tr>
+          <tr><td><span class="mono">multi_match</span></td><td>One query across several fields, with per-field weighting</td></tr>
+          <tr><td><span class="mono">bool</span></td><td>Combines clauses: <span class="mono">must</span>, <span class="mono">should</span>, <span class="mono">filter</span>, <span class="mono">must_not</span>. The workhorse</td></tr>
+          <tr><td><span class="mono">range</span></td><td>Numeric, date and other ordered types. Almost always belongs in filter context</td></tr>
+          <tr><td><span class="mono">wildcard</span> / <span class="mono">regexp</span></td><td><b>Expensive.</b> A leading wildcard cannot use the index at all — use <span class="mono">edge_ngram</span> instead</td></tr>
+          <tr><td><span class="mono">knn</span></td><td>Vector similarity search over dense vectors — semantic search and retrieval for language models</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The optimisation to apply everywhere: move yes-or-no conditions into
+        <span class="mono">filter</span>.</b> They then skip scoring entirely and their results are cached and reused across
+        queries. A status, a tenant id, a date window and a category all belong there. This is frequently the largest single
+        improvement available to a slow search, and it changes no behaviour.</div>
+    </div>
+    <div>
+      <div class="h3">How relevance is calculated</div>
+      <ul>
+        <li><b>BM25 is the default</b> similarity. Three intuitions drive it: a term appearing more often in a document scores higher; a term appearing in <b>fewer documents overall</b> is more discriminating and worth more; and a match in a <b>shorter field</b> counts for more than the same match in a long one</li>
+        <li><b>Scores are relative to one query</b> and are not comparable between queries or across indices. A score of 8 means nothing on its own</li>
+        <li><b><span class="mono">explain</span></b> shows the full scoring breakdown for a document — the way to answer &ldquo;why is this result ranked third&rdquo;</li>
+        <li><b>Boosting</b> weights fields or clauses; <span class="mono">function_score</span> and <span class="mono">rank_feature</span> fold in signals like recency or popularity</li>
+      </ul>
+      <div class="callout"><b><span class="lvl sr">STAFF</span> Why scores can look wrong on a small index.</b>
+        Term statistics are <b>per shard</b>, not cluster-wide. With few documents unevenly distributed, the same term can
+        score differently depending on which shard holds it, and results appear mis-ranked.
+        <span class="mono">dfs_query_then_fetch</span> gathers global statistics first and fixes it, at the cost of an extra
+        round trip. The effect disappears naturally as documents accumulate — so it is mostly a test-environment surprise.</div>
+      <div class="callout b"><b>Getting relevance right is an iterative, measured activity</b>, not a configuration
+        setting. Build a judgement set of queries with expected results, change one thing, and measure. Tuning boosts by
+        intuition until a few examples look right reliably makes other queries worse without anyone noticing.</div>
+      <div class="callout p"><b>Modern retrieval combines both.</b> Keyword search via BM25 and vector search via
+        <span class="mono">knn</span> have complementary failure modes — lexical matching misses paraphrase, semantic
+        matching misses exact identifiers. Hybrid retrieval that combines both rankings is the current practice for
+        search backing language-model applications.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. AGGREGATIONS ============ -->
+<div class="panel c3">
+  <div class="phead">8 &nbsp;· &nbsp;AGGREGATIONS <span class="sub">and their approximations</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Family</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><b>Metric</b></td><td>A value over a set — <span class="mono">avg</span>, <span class="mono">sum</span>, <span class="mono">min</span>, <span class="mono">max</span>, <span class="mono">percentiles</span>, <span class="mono">cardinality</span></td></tr>
+        <tr><td><b>Bucket</b></td><td>Groups documents — <span class="mono">terms</span>, <span class="mono">date_histogram</span>, <span class="mono">range</span>, <span class="mono">filters</span>, <span class="mono">nested</span></td></tr>
+        <tr><td><b>Pipeline</b></td><td>Operates on the output of other aggregations — moving averages, derivatives, bucket selection</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Two results are approximate, and this genuinely surprises people.</b>
+      <b><span class="mono">cardinality</span></b> uses HyperLogLog++ — a distinct count that is close but not exact, in
+      bounded memory. <b><span class="mono">terms</span></b> returns counts that <b>may be slightly wrong</b>, because each
+      shard returns only its own top buckets and a term just outside one shard's cut-off is under-counted. The response
+      reports <span class="mono">doc_count_error_upper_bound</span>, and it is almost universally ignored.</div>
+    <div class="callout g"><b>Raise <span class="mono">shard_size</span> above <span class="mono">size</span></b>
+      when accuracy matters. Each shard then returns more candidates than you need, which shrinks the error at the cost of
+      memory and transfer. Exact counts require either one shard or a different tool.</div>
+    <div class="h3">The mechanism, and the memory limits</div>
+    <ul>
+      <li><b>Aggregations read <span class="mono">doc_values</span></b> — a columnar, on-disk structure held in the filesystem cache rather than on the heap. Enabled by default for non-<span class="mono">text</span> fields</li>
+      <li><b>Aggregating a <span class="mono">text</span> field requires fielddata</b>, which is an <b>on-heap</b> structure and disabled by default for good reason. Aggregate <span class="mono">.keyword</span> instead — enabling fielddata to make an aggregation work is how nodes run out of heap</li>
+      <li><b>There is a cap on total buckets</b> per request, defaulting to 65,536. A <span class="mono">terms</span> aggregation nested inside a <span class="mono">date_histogram</span> multiplies buckets and reaches it quickly</li>
+      <li><b>The cap is a protection, not an obstacle.</b> Raising it to make a dashboard load moves the failure from a clear error to an out-of-memory event</li>
+    </ul>
+    <div class="callout"><b>For repeated aggregations over unchanging history, use a transform</b> to
+      pre-compute results into a summary index. Aggregating the same billion documents on every dashboard refresh is work
+      that only needed doing once.</div>
+  </div>
+</div>
+
+<!-- ============ 9. CLUSTER ============ -->
+<div class="panel c8">
+  <div class="phead">9 &nbsp;· &nbsp;CLUSTER &amp; HIGH AVAILABILITY <span class="sub">topology decisions</span></div>
+  <div class="pbody">
+    <div class="h3">Getting the topology right</div>
+    <ul>
+      <li><b>Three dedicated master-eligible nodes</b>, in separate failure domains. They need little CPU or disk and they keep the cluster stable — a master that is also a busy data node is the classic cause of instability</li>
+      <li><b>At least one replica</b> for every index you cannot afford to lose or to have unavailable</li>
+      <li><b>Dedicated coordinating nodes</b> in front of heavy search or Kibana traffic, so result merging does not consume data-node heap</li>
+      <li><b>Shard allocation awareness</b> so primary and replica never land in the same rack or zone. Without it, replicas are not protecting you from the failure you actually expect</li>
+      <li><b>Separate ingest and ML roles</b> at scale, so a heavy pipeline cannot starve search</li>
+    </ul>
+    <div class="callout r"><b>A yellow cluster is not an emergency; a red one is.</b> Yellow means a replica is
+      unassigned — everything works, redundancy is reduced. Red means a <b>primary</b> is unassigned and some data is
+      unavailable right now. Alerting that treats them the same produces noise that hides the case that matters.</div>
+    <div class="h3">Watermarks — a common surprise</div>
+    <ul>
+      <li><b>Low</b> — no new shards allocated to that node</li>
+      <li><b>High</b> — shards actively relocated away, which itself creates load</li>
+      <li><b>Flood stage</b> — indices on that node are made <b>read-only</b> to protect the disk. Writes start failing and the block <b>must be released manually</b> after space is recovered</li>
+    </ul>
+    <div class="callout"><b>The flood-stage block is the one that causes confused incidents.</b> Disk space is
+      freed, the cluster looks healthy, and writes still fail — because the read-only block persists until it is explicitly
+      removed. Alert on disk usage well before the low watermark.</div>
+    <div class="h3">Across regions</div>
+    <ul>
+      <li><b>Never stretch one cluster across distant regions.</b> Master election is latency-sensitive and a WAN blip becomes an instability event</li>
+      <li><b>Cross-cluster replication</b> — a follower index replicates from a leader, for disaster recovery or local reads</li>
+      <li><b>Cross-cluster search</b> queries several clusters without moving data</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 10. ILM ============ -->
+<div class="panel c4">
+  <div class="phead">10 &nbsp;· &nbsp;LIFECYCLE &amp; DATA TIERS <span class="sub">where cost control lives</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">Time-series data — logs, metrics, events — is written once, queried
+      heavily when new, and rarely afterwards. <b>Index lifecycle management</b> moves indices through tiers matched to that
+      curve, so old data does not sit on expensive hardware.</div>
+    <table>
+      <thead><tr><th style="width:88px">Tier</th><th>Hardware and role</th></tr></thead>
+      <tbody>
+        <tr><td><b>Hot</b></td><td>Actively written and queried. <b>Fast local SSD or NVMe</b>, the most expensive nodes</td></tr>
+        <tr><td><b>Warm</b></td><td>No longer written, still queried. Cheaper storage, often fewer replicas</td></tr>
+        <tr><td><b>Cold</b></td><td>Rarely queried. Can be backed by <b>searchable snapshots</b>, removing the need for a full local replica</td></tr>
+        <tr><td><b>Frozen</b></td><td>Queried very rarely. Data stays in object storage and is fetched on demand — <b>dramatically cheaper, and much slower</b></td></tr>
+      </tbody>
+    </table>
+    <div class="h3">The phases of a policy</div>
+    <ul>
+      <li><b>Rollover</b> — start a new index at a size, age or document threshold. <b>The foundation of the whole approach</b></li>
+      <li><b>Shrink</b> — reduce the shard count once writing has stopped</li>
+      <li><b>Force merge</b> — down to one segment, now safe because the index is read-only</li>
+      <li><b>Searchable snapshot</b> — move the data to object storage while keeping it queryable</li>
+      <li><b>Delete</b> — drop the whole index at end of retention</li>
+    </ul>
+    <div class="callout g"><b>Deleting an index is nearly free; deleting documents is expensive.</b> A
+      <span class="mono">delete_by_query</span> marks every matched document and forces merges to reclaim the space. Dropping
+      a whole index removes files. <b>This is the strongest argument for time-based indices</b> — retention becomes a
+      file deletion rather than a large background job.</div>
+    <div class="callout b"><b>Use data streams for append-only time-series data.</b> They wrap rollover, naming and
+      backing-index management behind one name you write to, and are the current recommended approach — rather than
+      hand-rolled date-suffixed index names and a cron job to delete them.</div>
+    <div class="callout"><b>Component templates compose</b> into index templates, so mappings and settings shared
+      across many indices are defined once. Combined with data streams this makes a new data source a small configuration
+      change rather than a new bespoke pipeline.</div>
+  </div>
+</div>
+
+<!-- ============ 11. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">11 &nbsp;· &nbsp;SECURITY <span class="sub">the defaults are not enough</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>An unsecured Elasticsearch on a reachable network is fully
+      readable and writable by anyone who finds it.</b> The API is HTTP and has no authentication until you enable it.
+      Publicly exposed clusters have been a recurring, large-scale source of data breaches, and they are scanned for
+      continuously.</div>
+    <div class="h3">The layers</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px"><b>Network</b></td><td>Bind to private interfaces. <b>Never expose the HTTP port publicly</b>, regardless of authentication. Firewall the transport port separately</td></tr>
+        <tr><td><b>TLS</b></td><td>On <b>both</b> the HTTP layer and the transport layer between nodes. Transport TLS is what stops an unauthorised node joining the cluster</td></tr>
+        <tr><td><b>Authentication</b></td><td>Native realm, LDAP, Active Directory, SAML, OIDC, Kerberos, PKI — and <b>API keys</b> for services</td></tr>
+        <tr><td><b>Authorisation</b></td><td>Role-based, down to index and action. Built-in and custom roles</td></tr>
+        <tr><td><b>Field and document level</b></td><td>Restrict which fields a role sees, and which documents — the mechanism for multi-tenancy within one index</td></tr>
+        <tr><td><b>Audit logging</b></td><td>Records access and changes. Required in most regulated environments</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Practices worth insisting on</div>
+    <ul>
+      <li><b>API keys per service</b>, scoped and rotatable — not a shared superuser password in a configuration file</li>
+      <li><b>Least privilege</b>: a dashboard needs read on specific indices, not cluster admin</li>
+      <li><b>Kibana is a separate attack surface</b> and needs its own authentication and network controls</li>
+      <li><b>Disable dynamic scripting</b> where it is not needed, and keep script access restricted</li>
+      <li><b>Encrypt snapshots at rest</b> — the repository holds a full copy of everything</li>
+    </ul>
+    <div class="callout"><b>Field-level security is not a substitute for separate indices</b> when tenants are
+      genuinely untrusted. It is enforced correctly, and it puts one misconfigured role between one customer's data and
+      another's. Weigh that against the operational cost of separation deliberately.</div>
+  </div>
+</div>
+
+<!-- ============ 12. JVM ============ -->
+<div class="panel c7 span2">
+  <div class="phead">12 &nbsp;· &nbsp;MEMORY, THE JVM AND CIRCUIT BREAKERS
+    <span class="sub"><span class="lvl sr">STAFF</span> the heap rule that is usually quoted slightly wrong, and why the other half of RAM matters more</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Sizing the heap</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>No more than 50% of RAM</b></td><td>The rest is for the <b>filesystem cache</b>, which Lucene depends on completely</td></tr>
+          <tr><td><b>Stay below the compressed pointer threshold</b></td><td><b>26 GB is safe on essentially all systems</b>, and some can go to around 30 GB. Above it the JVM abandons compressed object pointers and <b>effective capacity falls</b> — more heap yields less usable memory</td></tr>
+          <tr><td><b><span class="mono">Xms</span> = <span class="mono">Xmx</span></b></td><td>Avoids resizing pauses. Set both to the same value</td></tr>
+          <tr><td><b>Lock memory</b></td><td>Prevent the heap from being swapped. A swapping node is catastrophically slow and looks like a network problem</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The commonly repeated version of this rule is &ldquo;50% of RAM, max 32 GB&rdquo;,
+        and it is imprecise.</b> The threshold where compressed pointers stop applying sits <b>below</b> 32 GB, and the
+        documented safe figure is <b>26 GB</b>. A node configured with 32 GB of heap may be performing worse than the same
+        node at 26 GB. Verify rather than assume — the node info API reports whether compressed pointers are in use, and
+        the answer should be yes.</div>
+      <div class="callout b"><b>The half you did not give to the heap is doing the most work.</b> Lucene reads its
+        index files through the operating system's page cache, so <b>the filesystem cache is what makes search fast</b>. A
+        node with 64 GB of RAM and 26 GB of heap has around 38 GB caching index data — and that is usually the better
+        allocation. Raising the heap to 48 GB actively harms search performance.</div>
+    </div>
+    <div>
+      <div class="h3">Circuit breakers</div>
+      <div style="font-size:12.9px;line-height:1.45">Elasticsearch estimates the memory an operation will need and
+        <b>rejects it before allocation</b> if it would breach a limit. A rejected request is far better than a node lost
+        to an out-of-memory error, which takes its shards with it.</div>
+      <table>
+        <thead><tr><th style="width:132px">Breaker</th><th>Guards against</th></tr></thead>
+        <tbody>
+          <tr><td><b>Parent</b></td><td>Total across all breakers — the backstop</td></tr>
+          <tr><td><b>Field data</b></td><td>Loading <span class="mono">text</span> field data onto the heap. Usually triggered by aggregating a <span class="mono">text</span> field</td></tr>
+          <tr><td><b>Request</b></td><td>A single request's structures — most often a very large aggregation</td></tr>
+          <tr><td><b>In-flight requests</b></td><td>The total size of requests being processed — oversized bulk bodies</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Treat a tripped breaker as a diagnosis, not an obstacle.</b> It names the query or
+        the bulk request that would have taken the node down. Raising the limit removes the protection and leaves the cause
+        in place; the fix is the aggregation, the field being aggregated, or the batch size.</div>
+      <div class="h3">Reading the memory picture</div>
+      <ul>
+        <li><b>Heap sawtoothing between roughly 30% and 70%</b> is healthy — allocation and collection working normally</li>
+        <li><b>Heap that stays above 85%</b> means repeated full collections and long pauses. The node may be evicted from the cluster for being unresponsive</li>
+        <li><b>Long garbage-collection pauses</b> are a leading indicator of instability — track pause duration, not just heap percentage</li>
+        <li><b>The most common causes:</b> too many shards per node, aggregations over very high cardinality, deep pagination, and oversized bulk requests</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. SNAPSHOTS ============ -->
+<div class="panel c2">
+  <div class="phead">13 &nbsp;· &nbsp;SNAPSHOTS &amp; RECOVERY <span class="sub">replicas are not a backup</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Replicas protect against hardware failure and nothing else.</b>
+      A mistaken delete, a bad mapping change or a faulty ingest pipeline is <b>replicated faithfully and instantly</b> to
+      every copy. Only a snapshot recovers from those — and they are the failures that actually happen.</div>
+    <div class="h3">How snapshots work</div>
+    <ul>
+      <li><b>Incremental at the segment level.</b> Because segments are immutable, a snapshot copies only segments not already in the repository — so after the first, subsequent snapshots are small and fast</li>
+      <li><b>The repository is external</b> — object storage or a shared filesystem. It must be reachable by every data node</li>
+      <li><b>They do not block indexing</b>; a snapshot is a consistent point in time without a write freeze</li>
+      <li><b>Restore is per index</b>, and you can rename on restore — which makes recovering one index into a live cluster straightforward</li>
+      <li><b>Automate the schedule</b> with a snapshot lifecycle policy, including retention</li>
+    </ul>
+    <div class="h3">The parts people miss</div>
+    <ul>
+      <li><b>Test a restore, and time it.</b> An untested backup is a hypothesis, and restore duration is a number your recovery objective depends on</li>
+      <li><b>Keep the repository in a different failure domain</b> from the cluster</li>
+      <li><b>Snapshot the cluster state too</b>, so templates, ILM policies and roles come back with the data</li>
+      <li><b>Retention must be automated</b>, or the repository grows until it becomes a cost problem nobody owns</li>
+      <li><b>Encrypt at rest</b> — the repository is a complete copy of everything</li>
+    </ul>
+    <div class="callout g"><b>The genuinely strong position: be able to rebuild from source.</b> If the data can
+      be re-indexed from a database or an event log, a total cluster loss is a slow day rather than a disaster. Snapshots
+      then reduce recovery <i>time</i> instead of being the only thing standing between you and permanent loss — and that
+      is a much better place to be.</div>
+  </div>
+</div>
+
+<!-- ============ 14. CONFIG ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;CONFIGURATION, CLIENTS AND OBSERVABILITY
+    <span class="sub">the settings that change behaviour, what the application must get right, and what to watch</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Settings that matter</div>
+      <table>
+        <thead><tr><th style="width:168px">Setting</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">cluster.name<br>node.name</td><td>A shared cluster name is how nodes find each other — an accidental match joins the wrong cluster</td></tr>
+          <tr><td class="mono">node.roles</td><td>Explicit roles per node. Dedicated masters and coordinators come from here</td></tr>
+          <tr><td class="mono">discovery.seed_hosts<br>cluster.initial_master_nodes</td><td>Bootstrapping. <b>Remove the initial-master setting after the first successful start</b> — leaving it can split a cluster on a later restart</td></tr>
+          <tr><td class="mono">path.data / path.logs</td><td>Off the root volume, on the fast disk</td></tr>
+          <tr><td class="mono">bootstrap.memory_lock</td><td>Prevents swapping — pair with the matching OS limits or the node will refuse to start</td></tr>
+          <tr><td class="mono">Heap via jvm.options.d</td><td>Set <span class="mono">Xms</span> and <span class="mono">Xmx</span> equal, below the compressed-pointer threshold. Prefer a JVM options file over environment variables</td></tr>
+          <tr><td class="mono">index.refresh_interval</td><td>Per index. Raise it for ingest-heavy data that tolerates delay</td></tr>
+          <tr><td class="mono">index.number_of_shards<br>index.number_of_replicas</td><td>Shard count is fixed at creation; replica count can change at any time</td></tr>
+          <tr><td class="mono">xpack.security.enabled</td><td>On. There is no acceptable reason to run without it</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Host settings matter as much.</b> Raise the file-descriptor limit and the maximum
+        map count, disable swap, and use a local SSD. Several are checked at startup and will prevent the node booting in
+        production mode — the messages are precise and worth reading rather than working around.</div>
+    </div>
+    <div>
+      <div class="h3">What the client must get right</div>
+      <ul>
+        <li><b>Always read and write through an alias or a data stream</b>, never a concrete index name. This is what makes reindexing invisible to the application</li>
+        <li><b>Use the bulk API</b> for ingest, and <b>check every item in the response</b> — a 200 does not mean every document was indexed</li>
+        <li><b>Retry rejections with exponential backoff.</b> Rejection is backpressure, and treating it as a hard failure loses data</li>
+        <li><b>Set request timeouts</b>, and keep them shorter than your user-facing budget</li>
+        <li><b>Use <span class="mono">search_after</span> with a point-in-time</b> for paging beyond the first few pages</li>
+        <li><b>Put non-scoring conditions in <span class="mono">filter</span></b> — free performance</li>
+        <li><b>Request only the fields you need</b> via source filtering; returning large documents you discard is pure cost</li>
+        <li><b>Use API keys per service</b>, scoped to the indices that service touches</li>
+      </ul>
+      <div class="callout g"><b>The alias habit is the highest-value one on this list.</b> It costs nothing on day
+        one and converts every future mapping change from an outage into a routine background reindex and an atomic swap.</div>
+    </div>
+    <div>
+      <div class="h3">What to monitor</div>
+      <table>
+        <thead><tr><th style="width:160px">Metric</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Cluster status</b></td><td>Red is data unavailable; yellow is reduced redundancy. Alert differently</td></tr>
+          <tr><td><b>Unassigned shards</b></td><td>Persisting means allocation is failing — the explain API gives the reason</td></tr>
+          <tr><td><b>JVM heap and GC pause time</b></td><td>Sustained heap above 85%, or long pauses, precede node instability</td></tr>
+          <tr><td><b>Thread pool rejections</b></td><td>Write and search queues overflowing — the cluster cannot keep up</td></tr>
+          <tr><td><b>Circuit breaker trips</b></td><td>Names the query or batch that would have taken a node down</td></tr>
+          <tr><td><b>Search and index latency</b></td><td>Per index, at high percentiles rather than the mean</td></tr>
+          <tr><td><b>Disk usage vs watermarks</b></td><td>Alert well before the low watermark — flood stage makes indices read-only</td></tr>
+          <tr><td><b>Shard count per node</b></td><td>Against the heap-based guideline. Creeps upward unnoticed</td></tr>
+          <tr><td><b>Segment count and merge time</b></td><td>Merge pressure from heavy indexing or updates</td></tr>
+          <tr><td><b>Snapshot success</b></td><td>A silently failing snapshot means no backups</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The tools.</b> <span class="mono">_cluster/health</span> and
+        <span class="mono">_cat/indices</span> and <span class="mono">_cat/shards</span> for state;
+        <span class="mono">_cluster/allocation/explain</span> for why a shard will not assign;
+        <span class="mono">_nodes/stats</span> for heap and thread pools; the <b>slow log</b> per index for queries over a
+        threshold; and <span class="mono">_tasks</span> to find and cancel a runaway search.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:130px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Nodes leaving, heap constantly high</b></td><td>Too many shards per node, or heavy aggregations</td><td>Reduce shard count; check the heap-per-shard ratio; fix the aggregation</td></tr>
+          <tr><td><b>Search returns nothing, no error</b></td><td>Analyser mismatch, or a <span class="mono">term</span> query against an analysed field</td><td><span class="mono">_analyze</span> to compare tokens; use <span class="mono">match</span>, or query <span class="mono">.keyword</span></td></tr>
+          <tr><td><b>Aggregation or sort fails on a field</b></td><td>It is mapped as <span class="mono">text</span>; <span class="mono">doc_values</span> are unavailable</td><td>Use the <span class="mono">.keyword</span> sub-field. <b>Do not enable fielddata</b></td></tr>
+          <tr><td><b>Writes rejected, cluster looks fine</b></td><td>Disk flood stage set indices read-only</td><td>Free space, then <b>release the read-only block explicitly</b> — it does not clear itself</td></tr>
+          <tr><td><b>Cluster state huge, everything slow</b></td><td>Mapping explosion from dynamic fields on user-controlled keys</td><td>Remodel as key/value pairs or <span class="mono">flattened</span>; set <span class="mono">dynamic: strict</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:130px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>One query takes the cluster down</b></td><td>Deep pagination, an unbounded aggregation, or a leading wildcard</td><td>Slow log to find it; <span class="mono">search_after</span> with PIT; cancel via the tasks API</td></tr>
+          <tr><td><b>Indexing throughput collapses</b></td><td>Merge pressure, slow disk, or oversized bulk requests</td><td>Raise <span class="mono">refresh_interval</span>; tune bulk size; faster storage</td></tr>
+          <tr><td><b>Documents missing after ingest</b></td><td>Per-item bulk failures never inspected</td><td>Check every item in the bulk response; retry rejections with backoff</td></tr>
+          <tr><td><b>Shards will not assign</b></td><td>Allocation filtering, disk watermark, or no matching tier</td><td><span class="mono">_cluster/allocation/explain</span> states the reason directly</td></tr>
+          <tr><td><b>Cannot change a field type</b></td><td>Mappings are fixed once written</td><td>Reindex into a new index behind an alias, then swap</td></tr>
+          <tr><td><b>Relevance looks wrong on a small index</b></td><td>Per-shard term statistics with few documents</td><td>Expected. <span class="mono">dfs_query_then_fetch</span>, or fewer shards; it resolves as data grows</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>JVM heap</b>, usually from too many shards or an unbounded aggregation. By a wide margin the most common cause of instability</td></tr>
+          <tr><td><b>2</b></td><td><b>Shard count per node</b> — creeps up quietly and degrades everything at once</td></tr>
+          <tr><td><b>3</b></td><td><b>Disk watermarks</b>, which stop writes in a way that looks like a healthy cluster</td></tr>
+          <tr><td><b>4</b></td><td><b>A single expensive query</b> — deep paging or a huge aggregation taking down a node</td></tr>
+          <tr><td><b>5</b></td><td><b>Raw indexing throughput</b> — the ceiling people plan for, and the last one reached</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> The limit designs are built around — documents per second — is
+        last. The ones that cause real incidents are memory and shard hygiene, both of which are visible on a dashboard
+        weeks in advance if anyone is looking.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>Cluster unavailable, used for search</b> — the application should degrade to a database query or a cached result, not return an error page</li>
+        <li><b>Cluster unavailable, used for logging</b> — buffer at the shipper and backfill. Never block the application on log delivery</li>
+        <li><b>Partial results</b> — a search across many shards can return successfully with some shards failed. <b>Check the shard failure count in the response</b>, or you will silently show incomplete data</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before an application depends on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Data is rebuildable from a source of truth</b> elsewhere</div>
+      <div>&#9744; <b>Every field explicitly mapped</b>; <span class="mono">dynamic: strict</span> where it matters</div>
+      <div>&#9744; <b>text versus keyword decided per field</b>, deliberately</div>
+      <div>&#9744; <b>No user-controlled field names</b> — key/value or <span class="mono">flattened</span> instead</div>
+      <div>&#9744; <b>Field count monitored</b> against the per-index limit</div>
+      <div>&#9744; <b>Analysers tested with <span class="mono">_analyze</span></b> at index and query time</div>
+      <div>&#9744; <b>Applications read and write through aliases</b>, never index names</div>
+      <div>&#9744; <b>Reindex procedure written down and rehearsed</b></div>
+      <div>&#9744; <b>Shard size in the 10–50 GB range</b></div>
+      <div>&#9744; <b>Shards per node within the heap-based guideline</b></div>
+      <div>&#9744; <b>Not oversharded</b> — shard count justified by data volume, not instinct</div>
+      <div>&#9744; <b>Time-based data uses data streams with rollover</b></div>
+      <div>&#9744; <b>ILM policy defined</b> with tiers and a delete phase</div>
+      <div>&#9744; <b>Retention deletes indices, not documents</b></div>
+      <div>&#9744; <b>Index templates and component templates</b> in place</div>
+      <div>&#9744; <b>Three dedicated master-eligible nodes</b>, separate failure domains</div>
+      <div>&#9744; <b>At least one replica</b> on anything that matters</div>
+      <div>&#9744; <b>Allocation awareness configured</b> so copies span zones</div>
+      <div>&#9744; <b>Dedicated coordinating nodes</b> in front of heavy search</div>
+      <div>&#9744; <b>Heap ≤ 50% of RAM and below the compressed-pointer threshold</b></div>
+      <div>&#9744; <b>Compressed pointers verified as in use</b>, not assumed</div>
+      <div>&#9744; <b><span class="mono">Xms</span> equals <span class="mono">Xmx</span></b>; memory locked; swap off</div>
+      <div>&#9744; <b>Circuit breaker trips alerted on</b>, not raised away</div>
+      <div>&#9744; <b>Bulk API used</b>, sized by measurement</div>
+      <div>&#9744; <b>Every bulk response item checked</b> for per-item failures</div>
+      <div>&#9744; <b>Rejections retried with backoff</b> by the client</div>
+      <div>&#9744; <b>Translog durability left at the default</b> unless loss is acceptable</div>
+      <div>&#9744; <b><span class="mono">force_merge</span> only on read-only indices</b></div>
+      <div>&#9744; <b>Yes-or-no conditions in filter context</b></div>
+      <div>&#9744; <b>No deep pagination</b> — <span class="mono">search_after</span> with a point-in-time</div>
+      <div>&#9744; <b>Aggregation bucket counts bounded</b>; no fielddata on text</div>
+      <div>&#9744; <b>Approximate results understood</b> — cardinality and terms counts</div>
+      <div>&#9744; <b>Shard failure count checked</b> in every search response</div>
+      <div>&#9744; <b>Slow log enabled</b> and reviewed regularly</div>
+      <div>&#9744; <b>Security enabled</b>; TLS on HTTP and transport</div>
+      <div>&#9744; <b>Never exposed to the public internet</b></div>
+      <div>&#9744; <b>API keys per service</b>, least privilege, rotatable</div>
+      <div>&#9744; <b>Snapshots automated</b> to an external repository, with retention</div>
+      <div>&#9744; <b>A restore tested and timed</b>, including cluster state</div>
+      <div>&#9744; <b>Behaviour defined for the cluster being unavailable</b></div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>state how large a shard is and how many exist, whether
+      every field is explicitly mapped, whether applications read through an alias, and how long it would take to rebuild
+      the cluster from source.</b> Those four answers separate a search layer that can be operated and evolved from one
+      that will need an outage to change — and the last is the question worth answering before an incident rather than
+      during one.</div>
+  </div>
+</div>
+
+</div>
