@@ -1,0 +1,915 @@
+<meta charset="utf-8">
+<title>Enterprise Data Platform — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5898px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5898px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5868px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 369px 644px 709px 699px 623px 537px 614px 378px 477px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>ENTERPRISE DATA PLATFORM — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">The layers, the decisions that are hard to reverse, and what actually breaks in production<br>
+    <span style="font-size:13.4px;color:#6d80b6">ingestion · storage &amp; table formats · transformation · orchestration · quality · governance · serving · cost
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A DATA PLATFORM IS FOR — AND THE FOUR DECISIONS THAT ARE HARD TO REVERSE
+    <span class="sub">start here — the layered model exists to decouple change, and most of the cost of getting it wrong lands years later</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">The system that moves data from <b>where it is produced</b> to
+        <b>where decisions are made</b> — reliably, on time, with known quality, and under governance. Everything on this
+        sheet is in service of those four words, and a platform that delivers data fast but untrustworthy has failed as
+        completely as one that delivers nothing.</div>
+      <div class="callout b"><b>Why it is layered at all.</b> Each layer exists so that change on one side does not
+        propagate to the other. A source system changes its schema; the raw layer absorbs it. An analyst needs a new
+        metric; the curated layer serves it without re-ingesting anything. <b>The layers are a decoupling mechanism, not a
+        pipeline diagram</b> — and treating them as stages to pass through rather than boundaries to defend is the most
+        common architectural mistake.</div>
+      <div class="h3">What good looks like</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Trusted</b></td><td>Consumers know the quality and can see where a number came from. This is harder and more valuable than any pipeline</td></tr>
+          <tr><td><b>Timely</b></td><td>Freshness meets a <b>stated</b> requirement, and someone is told when it does not</td></tr>
+          <tr><td><b>Discoverable</b></td><td>People can find data without asking a person</td></tr>
+          <tr><td><b>Governed</b></td><td>Access is controlled, sensitive data is protected, and both are provable</td></tr>
+          <tr><td><b>Affordable</b></td><td>Cost is attributed and someone owns it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">The four decisions that are genuinely hard to reverse</div>
+      <table>
+        <tbody>
+          <tr><td style="width:24px"><b>1</b></td><td><b>Table format and catalog.</b> This determines which engines can read your data, what transactional guarantees you have, and how locked in you are. See panel 5 — it is the single most consequential technical choice on the sheet</td></tr>
+          <tr><td><b>2</b></td><td><b>Partitioning and layout strategy.</b> Rewriting the physical layout of petabytes is expensive and slow. Getting it wrong shows up as cost and latency on <i>every</i> query, forever</td></tr>
+          <tr><td><b>3</b></td><td><b>The operating model.</b> Centralised, federated or mesh — this is an organisational decision that determines who can move quickly and who becomes a bottleneck. Changing it means reorganising people</td></tr>
+          <tr><td><b>4</b></td><td><b>What the raw layer keeps.</b> If you did not land it immutably, you cannot reprocess it. Data not captured on day one is gone, and no later decision recovers it</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Everything else is more changeable than it looks.</b> Orchestrators, transformation
+        tools, BI layers and query engines can all be swapped with effort. The four above are structural — so they deserve
+        most of the design time, and they usually get least.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The failure mode worth naming first: a tool list is not an
+        architecture.</b> Most platform diagrams are inventories of products. What determines whether a platform works is
+        the <b>contracts between the layers</b> — what each guarantees the next, who owns each boundary, and what happens
+        when one breaks. Two organisations with identical tools routinely get opposite outcomes.</div>
+      <div class="h3">The questions that expose a weak design</div>
+      <ul>
+        <li><b>&ldquo;A source changes a column type tomorrow — what happens?&rdquo;</b> If the answer is a broken dashboard discovered by a user, there is no contract</li>
+        <li><b>&ldquo;A pipeline produced wrong data last Tuesday. How do you fix it?&rdquo;</b> This tests immutable raw data, idempotent transforms and a backfill mechanism at once</li>
+        <li><b>&ldquo;Who owns this table?&rdquo;</b> If nobody can answer, governance is aspirational</li>
+        <li><b>&ldquo;What does this dashboard cost to run?&rdquo;</b> Cost that is not attributed is cost that is not managed</li>
+        <li><b>&ldquo;A customer invokes deletion rights. What do you do?&rdquo;</b> Deletion across immutable storage, backups and downstream copies is genuinely hard — see panel 11</li>
+      </ul>
+      <div class="callout"><b>A note on medallion terminology.</b> <b>Bronze, silver and gold</b> is Databricks'
+        naming for raw, cleaned and business-ready layers. The idea is older and vendor-neutral — the same three-layer
+        pattern appears everywhere under different names. Use whichever your organisation knows, and be aware the terms
+        carry a vendor association.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. LAYERS ============ -->
+<div class="panel c2 span2">
+  <div class="phead">2 &nbsp;· &nbsp;THE LAYERS — WHAT EACH ONE GUARANTEES THE NEXT
+    <span class="sub"><span class="lvl jr">JUNIOR</span> what each layer holds · <span class="lvl sr">STAFF</span> the contract it owes downstream, and how it fails</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:104px">Layer</th><th>Its job, and its contract</th></tr></thead>
+        <tbody>
+          <tr><td><b>Sources</b></td><td>Applications, operational databases, event streams, files, third-party APIs. <b>You do not control them</b> — which is why the next layer must absorb their change</td></tr>
+          <tr><td><b>Ingestion</b></td><td>Move data in, without transforming it. <b>Contract: deliver everything, exactly once or idempotently, and record what arrived.</b> Failure here is invisible later, because you cannot miss data you never saw</td></tr>
+          <tr><td><b>Raw / Bronze</b></td><td>Store <b>exactly as received, immutably</b>, partitioned by arrival. <b>Contract: reprocessing is always possible.</b> This layer is the platform's insurance policy and the reason a bad transform is recoverable</td></tr>
+          <tr><td><b>Processing</b></td><td>Clean, deduplicate, conform, join, enrich. <b>Contract: deterministic and idempotent</b> — running it twice produces the same result, which is what makes backfills safe</td></tr>
+          <tr><td><b>Curated / Silver</b></td><td>Conformed, quality-checked, modelled entities. <b>Contract: this data is trustworthy and its schema is stable</b></td></tr>
+          <tr><td><b>Serving / Gold</b></td><td>Business-ready aggregates and marts, shaped for consumption. <b>Contract: fast, correct, and matching agreed definitions</b></td></tr>
+          <tr><td><b>Consumption</b></td><td>BI, notebooks, applications, ML features, APIs. Different consumers need genuinely different shapes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The rule that makes the raw layer worth its cost: never
+        transform on the way in.</b> Every cleaning step applied during ingestion is a decision you cannot revisit without
+        re-extracting from a source that may no longer hold the data. Land it as it came, <b>including the malformed
+        records</b>, and clean it in the next layer where the logic is versioned and re-runnable.</div>
+      <div class="h3">Schema-on-read to schema-on-write</div>
+      <div style="font-size:12.9px;line-height:1.45">The raw layer is deliberately <b>permissive</b> — it accepts
+        whatever arrives so nothing is lost. Each subsequent layer becomes <b>stricter</b>, until the serving layer has a
+        firm, contract-backed schema. Rigour increases as you move right, and that gradient is the design.</div>
+      <div class="callout"><b>The common anti-pattern: a curated layer nobody trusts.</b> When teams bypass it and
+        build directly from raw, you get parallel definitions of the same metric and no single source of truth. The cause
+        is almost never technical — it is that the curated layer was slow to change, so people routed around it. <b>Fix the
+        turnaround time, not the access controls.</b></div>
+      <div class="h3">A correction on ingestion tooling</div>
+      <div class="callout r"><b>Apache Sqoop should not appear in a new design.</b> It was <b>retired to the
+        Apache Attic in 2021</b>, with its last release in 2017. For relational sources today: <b>change data capture</b>
+        with Debezium for continuous replication, managed connectors such as Airbyte or Fivetran, Kafka Connect, or a
+        straightforward Spark JDBC extraction.</div>
+      <div class="callout g"><b>Prefer change data capture over scheduled full extracts</b> wherever the source
+        supports it. It is lower load on the operational database, gives near-real-time freshness, and — importantly —
+        <b>captures deletes</b>, which a query-based incremental extract silently misses.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. BATCH/STREAM ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;BATCH vs STREAMING <span class="sub">the decision, honestly</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Start here: most stated real-time requirements are not
+      real-time.</b> Asked precisely, &ldquo;we need this in real time&rdquo; usually means <b>within fifteen
+      minutes</b> — which a scheduled batch job delivers at a fraction of the cost and complexity. <b>Ask what decision
+      changes if the data is an hour old.</b> If nothing does, batch is the answer.</div>
+    <table>
+      <thead><tr><th style="width:88px"></th><th>Batch</th><th>Streaming</th></tr></thead>
+      <tbody>
+        <tr><td><b>Latency</b></td><td>Minutes to hours</td><td>Sub-second to seconds</td></tr>
+        <tr><td><b>Cost</b></td><td>Lower — compute runs and stops</td><td>Higher — always on</td></tr>
+        <tr><td><b>Complexity</b></td><td>Modest</td><td><b>Substantially higher</b></td></tr>
+        <tr><td><b>Reprocessing</b></td><td>Re-run the job</td><td>Replay the stream — needs planning</td></tr>
+        <tr><td><b>Debugging</b></td><td>Inspect inputs and outputs</td><td>Harder — state is in flight</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">When streaming genuinely earns its cost</div>
+    <ul>
+      <li><b>Fraud and abuse detection</b> — the decision must happen before the transaction completes</li>
+      <li><b>Operational alerting</b> on equipment or systems</li>
+      <li><b>Live personalisation</b> where the session ends before a batch would run</li>
+      <li><b>Event-driven integration</b> between systems, where the stream is the interface rather than an analytics input</li>
+    </ul>
+    <div class="h3">Concepts that only appear in streaming</div>
+    <ul>
+      <li><b>Event time versus processing time</b> — when it happened, versus when you saw it. Almost all correctness bugs live in this gap</li>
+      <li><b>Watermarks</b> — how long to wait for late data before closing a window. <b>Too short loses data, too long delays every result</b></li>
+      <li><b>Exactly-once</b> — achievable end to end, and it requires idempotent or transactional sinks. &ldquo;At least once plus idempotent writes&rdquo; is usually simpler and sufficient</li>
+      <li><b>State management</b> — windows and joins hold state that must be checkpointed and restored</li>
+    </ul>
+    <div class="callout g"><b>The pragmatic middle is micro-batch</b> — running every few minutes with streaming
+      tooling but batch semantics. It covers the large majority of &ldquo;near real-time&rdquo; needs with far less
+      operational burden than true event-at-a-time processing.</div>
+    <div class="callout p"><b>On Lambda and Kappa.</b> Lambda runs batch and streaming paths in parallel and
+      reconciles them — <b>two implementations of the same logic, which drift</b>. Kappa treats the stream as the single
+      source and replays it for reprocessing. Modern table formats make a single pipeline serving both patterns practical,
+      which is why <b>Lambda is now largely a legacy shape</b> rather than a target design.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;REFERENCE ARCHITECTURE — THE FLOW, AND THE CONCERNS THAT CUT ACROSS IT
+    <span class="sub">where each capability sits, and what every layer owes the platform regardless of position</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- FLOW -->
+    <rect x="8" y="6" width="3304" height="196" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE FLOW — each box states what it guarantees the next, because that contract is the architecture</text>
+
+    <g font-size="10.5">
+      <rect x="26" y="44" width="440" height="142" rx="8" fill="#fff" stroke="#334155" stroke-width="2"/>
+      <text x="42" y="64" font-size="12" font-weight="700" fill="#334155">SOURCES</text>
+      <text x="42" y="84" fill="#42507a">Applications and microservices · operational databases (OLTP)</text>
+      <text x="42" y="100" fill="#42507a">Event streams and message queues · logs and telemetry</text>
+      <text x="42" y="116" fill="#42507a">Files and documents · third-party APIs and SaaS platforms</text>
+      <text x="42" y="132" fill="#42507a">IoT and edge devices</text>
+      <text x="42" y="156" font-weight="700" fill="#be123c">You do not control these. They change without notice, which is</text>
+      <text x="42" y="172" font-weight="700" fill="#be123c">exactly why the next two layers exist in the shape they do.</text>
+
+      <rect x="490" y="44" width="440" height="142" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+      <text x="506" y="64" font-size="12" font-weight="700" fill="#0f766e">INGESTION</text>
+      <text x="506" y="84" fill="#2f4f47"><tspan font-weight="700">Batch</tspan> — managed connectors, Spark JDBC, scheduled extracts</text>
+      <text x="506" y="100" fill="#2f4f47"><tspan font-weight="700">CDC</tspan> — Debezium and equivalents, continuous, captures deletes</text>
+      <text x="506" y="116" fill="#2f4f47"><tspan font-weight="700">Streaming</tspan> — Kafka, Kinesis, Pub/Sub, Redpanda</text>
+      <text x="506" y="132" fill="#2f4f47"><tspan font-weight="700">API and file</tspan> — REST, webhooks, object-store drops</text>
+      <text x="506" y="156" font-weight="700" fill="#047857">Guarantees: everything arrives, at-least-once with idempotent</text>
+      <text x="506" y="172" font-weight="700" fill="#047857">writes, and what arrived is recorded. No transformation here.</text>
+
+      <rect x="954" y="44" width="440" height="142" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2"/>
+      <text x="970" y="64" font-size="12" font-weight="700" fill="#b45309">RAW / BRONZE — immutable</text>
+      <text x="970" y="84" fill="#7a3d06">Object storage: S3, ADLS Gen2, GCS — cheap, durable, elastic</text>
+      <text x="970" y="100" fill="#7a3d06">Stored as received, including malformed records</text>
+      <text x="970" y="116" fill="#7a3d06">Partitioned by arrival time · append only · never edited</text>
+      <text x="970" y="132" fill="#7a3d06">File formats: Parquet, Avro, JSON, CSV as delivered</text>
+      <text x="970" y="156" font-weight="700" fill="#be123c">Guarantees: reprocessing is always possible. This layer is why a</text>
+      <text x="970" y="172" font-weight="700" fill="#be123c">bad transform is an inconvenience rather than permanent loss.</text>
+
+      <rect x="1418" y="44" width="440" height="142" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="1434" y="64" font-size="12" font-weight="700" fill="#7c2d92">PROCESSING</text>
+      <text x="1434" y="84" fill="#4b3a5e"><tspan font-weight="700">Batch</tspan> — Spark, Databricks, EMR, warehouse-native SQL</text>
+      <text x="1434" y="100" fill="#4b3a5e"><tspan font-weight="700">Stream</tspan> — Flink, Spark Structured Streaming, Kafka Streams</text>
+      <text x="1434" y="116" fill="#4b3a5e"><tspan font-weight="700">Transform</tspan> — dbt for SQL modelling, tested and versioned</text>
+      <text x="1434" y="132" fill="#4b3a5e"><tspan font-weight="700">Quality</tspan> — expectations and tests run here, not afterwards</text>
+      <text x="1434" y="156" font-weight="700" fill="#7c2d92">Guarantees: deterministic and idempotent. Re-running produces</text>
+      <text x="1434" y="172" font-weight="700" fill="#7c2d92">the same result, which is what makes backfill safe.</text>
+
+      <rect x="1882" y="44" width="440" height="142" rx="8" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+      <text x="1898" y="64" font-size="12" font-weight="700" fill="#047857">CURATED / SILVER + GOLD</text>
+      <text x="1898" y="84" fill="#2f4f47"><tspan font-weight="700">Silver</tspan> — conformed, deduplicated, quality-checked entities</text>
+      <text x="1898" y="100" fill="#2f4f47"><tspan font-weight="700">Gold</tspan> — business aggregates, marts, dimensional models</text>
+      <text x="1898" y="116" fill="#2f4f47">Open table formats: Iceberg, Delta Lake, Hudi — see panel 5</text>
+      <text x="1898" y="132" fill="#2f4f47">Registered in the catalog, owned, documented, with an SLA</text>
+      <text x="1898" y="156" font-weight="700" fill="#047857">Guarantees: trustworthy, stable schema, agreed definitions.</text>
+      <text x="1898" y="172" font-weight="700" fill="#047857">This is the layer the business is actually buying.</text>
+
+      <rect x="2346" y="44" width="440" height="142" rx="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="2362" y="64" font-size="12" font-weight="700" fill="#1d4ed8">SERVING</text>
+      <text x="2362" y="84" fill="#1e3a5f"><tspan font-weight="700">Query engines</tspan> — Trino, Athena, Dremio, Druid, StarRocks</text>
+      <text x="2362" y="100" fill="#1e3a5f"><tspan font-weight="700">Warehouses</tspan> — Snowflake, BigQuery, Redshift, Synapse</text>
+      <text x="2362" y="116" fill="#1e3a5f"><tspan font-weight="700">Semantic layer</tspan> — one definition of each metric</text>
+      <text x="2362" y="132" fill="#1e3a5f"><tspan font-weight="700">Serving stores</tspan> — key-value, search, vector for embeddings</text>
+      <text x="2362" y="156" font-weight="700" fill="#1d4ed8">Guarantees: fast, concurrent, and consistent definitions across</text>
+      <text x="2362" y="172" font-weight="700" fill="#1d4ed8">every consumer that asks the same question.</text>
+
+      <rect x="2810" y="44" width="486" height="142" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2"/>
+      <text x="2826" y="64" font-size="12" font-weight="700" fill="#be123c">CONSUMPTION</text>
+      <text x="2826" y="84" fill="#7f2b2b"><tspan font-weight="700">BI and dashboards</tspan> — Power BI, Tableau, Looker, Superset</text>
+      <text x="2826" y="100" fill="#7f2b2b"><tspan font-weight="700">Analytics and notebooks</tspan> — ad-hoc exploration</text>
+      <text x="2826" y="116" fill="#7f2b2b"><tspan font-weight="700">ML and AI</tspan> — feature stores, training sets, retrieval for LLMs</text>
+      <text x="2826" y="132" fill="#7f2b2b"><tspan font-weight="700">Applications and APIs</tspan> · <tspan font-weight="700">reverse ETL</tspan> back into SaaS tools</text>
+      <text x="2826" y="156" font-weight="700" fill="#b91c1c">Each has different latency, concurrency and freshness needs.</text>
+      <text x="2826" y="172" font-weight="700" fill="#b91c1c">One serving shape rarely satisfies all four well.</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.4" fill="none" marker-end="url(#b)">
+      <path d="M466,115 L484,115"/><path d="M930,115 L948,115"/><path d="M1394,115 L1412,115"/>
+      <path d="M1858,115 L1876,115"/><path d="M2322,115 L2340,115"/><path d="M2786,115 L2804,115"/>
+    </g>
+
+    <!-- CROSS-CUTTING -->
+    <rect x="8" y="214" width="3304" height="196" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="26" y="238" font-size="16" font-weight="700" fill="#7c2d92">CROSS-CUTTING — these apply at every layer, and retrofitting any of them is far harder than building it in</text>
+    <g font-size="10.5">
+      <rect x="26" y="252" width="640" height="146" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="42" y="272" font-size="11.8" font-weight="700" fill="#7c2d92">ORCHESTRATION</text>
+      <text x="42" y="292" fill="#4b3a5e">Airflow, Dagster, Prefect, or a managed equivalent. Schedules and</text>
+      <text x="42" y="308" fill="#4b3a5e">dependencies, retries with backoff, SLAs and alerting, backfill.</text>
+      <text x="42" y="330" font-weight="700" fill="#be123c">The requirement it imposes on everything upstream: every task</text>
+      <text x="42" y="346" font-weight="700" fill="#be123c">must be idempotent. Retries are automatic, so a task that is not</text>
+      <text x="42" y="362" font-weight="700" fill="#be123c">safe to run twice will duplicate data on its first bad night.</text>
+      <text x="42" y="384" fill="#4b3a5e">Asset-oriented tools model what is produced rather than what runs.</text>
+
+      <rect x="690" y="252" width="640" height="146" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="706" y="272" font-size="11.8" font-weight="700" fill="#7c2d92">QUALITY AND OBSERVABILITY</text>
+      <text x="706" y="292" fill="#4b3a5e">Tests at every boundary — dbt tests, Great Expectations, Soda, Deequ.</text>
+      <text x="706" y="312" fill="#4b3a5e">Monitor the five signals: <tspan font-weight="700">freshness, volume, schema, distribution,</tspan></text>
+      <text x="706" y="328" fill="#4b3a5e"><tspan font-weight="700">lineage</tspan>. Most incidents are visible in one of these before a user calls.</text>
+      <text x="706" y="350" font-weight="700" fill="#047857">Decide per dataset whether a failed check stops the pipeline or</text>
+      <text x="706" y="366" font-weight="700" fill="#047857">flags and continues — both are defensible, and the default is</text>
+      <text x="706" y="382" font-weight="700" fill="#047857">usually accidental rather than chosen.</text>
+
+      <rect x="1354" y="252" width="640" height="146" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1370" y="272" font-size="11.8" font-weight="700" fill="#7c2d92">GOVERNANCE</text>
+      <text x="1370" y="292" fill="#4b3a5e"><tspan font-weight="700">Catalog</tspan> — discovery, ownership, documentation, business glossary</text>
+      <text x="1370" y="308" fill="#4b3a5e"><tspan font-weight="700">Lineage</tspan> — column level where possible; OpenLineage is the open standard</text>
+      <text x="1370" y="324" fill="#4b3a5e"><tspan font-weight="700">Classification</tspan> — what is personal, sensitive, regulated</text>
+      <text x="1370" y="340" fill="#4b3a5e"><tspan font-weight="700">Contracts</tspan> — a producer's explicit promise about schema and semantics</text>
+      <text x="1370" y="362" font-weight="700" fill="#be123c">Governance without ownership is documentation. Every dataset needs</text>
+      <text x="1370" y="378" font-weight="700" fill="#be123c">a named owner who is accountable when it is wrong.</text>
+
+      <rect x="2018" y="252" width="640" height="146" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2034" y="272" font-size="11.8" font-weight="700" fill="#7c2d92">SECURITY AND PRIVACY</text>
+      <text x="2034" y="292" fill="#4b3a5e">Encryption in transit and at rest · identity-based access, no shared keys</text>
+      <text x="2034" y="308" fill="#4b3a5e">Role and attribute-based control, down to rows and columns</text>
+      <text x="2034" y="324" fill="#4b3a5e">Masking and tokenisation for personal data · audit logging throughout</text>
+      <text x="2034" y="340" fill="#4b3a5e">Network isolation — private endpoints rather than public exposure</text>
+      <text x="2034" y="362" font-weight="700" fill="#be123c">The hard one is deletion. Erasure requests must reach immutable</text>
+      <text x="2034" y="378" font-weight="700" fill="#be123c">raw data, every downstream copy, and backups. Design for it early.</text>
+
+      <rect x="2682" y="252" width="614" height="146" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2698" y="272" font-size="11.8" font-weight="700" fill="#7c2d92">COST AND PLATFORM</text>
+      <text x="2698" y="292" fill="#4b3a5e">Compute is almost always the dominant cost, not storage.</text>
+      <text x="2698" y="308" fill="#4b3a5e">Tag everything · attribute spend to teams and datasets</text>
+      <text x="2698" y="324" fill="#4b3a5e">Lifecycle rules to colder tiers · auto-suspend idle warehouses</text>
+      <text x="2698" y="340" fill="#4b3a5e">Infrastructure as code · CI/CD for pipelines · environments</text>
+      <text x="2698" y="362" font-weight="700" fill="#047857">Cost that is not attributed is cost nobody owns — and the</text>
+      <text x="2698" y="378" font-weight="700" fill="#047857">largest line is usually a job nobody remembers scheduling.</text>
+    </g>
+
+    <!-- READING -->
+    <rect x="8" y="422" width="3304" height="206" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="446" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — five properties that explain the rest of this sheet</text>
+    <text x="26" y="472" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · The raw layer must be immutable, and it is the platform's insurance.</tspan> Every recovery from a bad transform, every backfill, and every new question about historical data depends on having landed the original faithfully.</text>
+    <text x="26" y="500" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · Idempotency is a platform-wide requirement, not a nicety.</tspan> Orchestrators retry automatically. Any task that is not safe to run twice will eventually duplicate data, and the duplication is usually discovered weeks later by a confused analyst.</text>
+    <text x="26" y="528" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The contracts between layers are the architecture.</tspan> Tools are replaceable; what each layer guarantees the next is not. A platform with weak contracts and excellent tools produces data nobody trusts.</text>
+    <text x="26" y="556" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · The cross-cutting concerns cannot be added later without pain.</tspan> Lineage, ownership, access control and cost attribution are cheap to build in and extremely expensive to retrofit across an estate that already has hundreds of tables.</text>
+    <text x="26" y="584" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Different consumers need genuinely different serving shapes.</tspan> A dashboard, a training pipeline, an operational API and a retrieval index have different latency, concurrency and freshness profiles — one gold table rarely serves all four well.</text>
+    <text x="26" y="612" font-size="11.8" font-weight="700" fill="#1e3a8a">Useful interrogation of any platform: what happens when a source schema changes, how do you fix data that was wrong last Tuesday, who owns this table, what does this dashboard cost, and how do you honour a deletion request?</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. FORMATS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">5 &nbsp;· &nbsp;FILE FORMATS, TABLE FORMATS AND THE CATALOG — THREE DIFFERENT THINGS
+    <span class="sub">the correction worth making carefully · <span class="lvl sr">STAFF</span> the most consequential technical choice on this sheet</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>These are routinely listed together and they operate at
+        different layers.</b> Parquet and Iceberg are not alternatives — <b>an Iceberg table is made of Parquet files</b>.
+        Conflating them is the most common conceptual error in lakehouse diagrams, and it makes the actual decision
+        invisible.</div>
+      <div class="code"><span class="c">┌─────────────────────────────────────────────┐</span>
+<span class="c">│</span> <span class="k">CATALOG</span>       which tables exist, who may  <span class="c">│</span>
+<span class="c">│</span>               read them, where metadata lives<span class="c">│</span>
+<span class="c">├─────────────────────────────────────────────┤</span>
+<span class="c">│</span> <span class="k">TABLE FORMAT</span>  Iceberg · Delta · Hudi        <span class="c">│</span>
+<span class="c">│</span>               ACID, time travel, evolution   <span class="c">│</span>
+<span class="c">├─────────────────────────────────────────────┤</span>
+<span class="c">│</span> <span class="k">FILE FORMAT</span>   Parquet · ORC · Avro          <span class="c">│</span>
+<span class="c">│</span>               how bytes are laid out on disk <span class="c">│</span>
+<span class="c">├─────────────────────────────────────────────┤</span>
+<span class="c">│</span> <span class="k">OBJECT STORE</span>  S3 · ADLS Gen2 · GCS          <span class="c">│</span>
+<span class="c">└─────────────────────────────────────────────┘</span></div>
+      <div class="h3">File formats — how bytes are stored</div>
+      <table>
+        <tbody>
+          <tr><td style="width:88px"><b>Parquet</b></td><td><b>Columnar. The default choice for analytics.</b> Reads only the columns needed, compresses well because a column holds similar values, and carries statistics that let engines skip whole row groups</td></tr>
+          <tr><td><b>ORC</b></td><td>Also columnar, with similar properties. Common in Hive-lineage estates</td></tr>
+          <tr><td><b>Avro</b></td><td><b>Row-oriented</b> with a strong schema. Good for streaming and for writing whole records; poor for analytical scans of a few columns</td></tr>
+          <tr><td><b>JSON / CSV</b></td><td>Interchange only. Uncompressed, untyped, slow — acceptable in the raw layer because that is what arrived, never in the curated layer</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Table formats — what turns files into a table</div>
+      <div style="font-size:12.9px;line-height:1.45">A directory of Parquet files is not a table. A table format adds a
+        metadata layer that provides what a database gives you for free:</div>
+      <ul>
+        <li><b>ACID transactions</b> — a writer's changes appear atomically, so readers never see a half-written update</li>
+        <li><b>Time travel</b> — query the table as it was at a past point, which makes debugging and auditing tractable</li>
+        <li><b>Schema evolution</b> — add, rename and reorder columns safely</li>
+        <li><b>Partition evolution</b> (Iceberg) — <b>change the partitioning without rewriting history</b>, which directly addresses one of the four hard-to-reverse decisions</li>
+        <li><b>Concurrent writers</b> with conflict detection</li>
+        <li><b>Efficient row-level updates and deletes</b> — including the ones privacy law requires</li>
+      </ul>
+      <div class="callout b"><b>The three options.</b> <b>Iceberg</b> — vendor-neutral, the broadest engine support,
+        and the strongest partition-evolution story. <b>Delta Lake</b> — mature and excellent, historically strongest
+        within the Databricks ecosystem. <b>Hudi</b> — designed around upserts and incremental pulls, strong for CDC-heavy
+        ingestion.</div>
+      <div class="callout g"><b><span class="lvl sr">STAFF</span> The important recent development: the format
+        argument is settling into interoperability.</b> The <b>Iceberg REST catalog specification has become the common
+        interface</b>, implemented by Snowflake, AWS Glue, Google BigLake, Dremio and Databricks Unity Catalog.
+        <b>Apache Polaris</b>, an open REST catalog implementation, <b>graduated to a top-level project in February
+        2026</b>. Databricks added native Iceberg support in 2025. <b>Iceberg v3</b> brings deletion vectors, row lineage
+        and a variant type. The practical consequence is that the choice is less locking than it was two years ago — but
+        the <b>catalog</b> is now where lock-in actually lives.</div>
+      <div class="callout"><b>So choose the catalog as deliberately as the format.</b> It holds table metadata,
+        enforces access control, and determines which engines can participate. Ask: does it implement the open REST
+        specification, can multiple engines write as well as read, and what happens to your metadata if you leave?</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. SCHEMA ============ -->
+<div class="panel c4">
+  <div class="phead">6 &nbsp;· &nbsp;SCHEMA CHANGE &amp; DATA CONTRACTS <span class="sub">the top cause of breakage</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The single most common way a data platform breaks: an upstream
+      team changes a schema without knowing anyone depended on it.</b> No malice and no process failure on their part —
+      they simply had no visibility of consumers. Every durable fix for this is organisational before it is technical.</div>
+    <div class="h3">Which changes are safe</div>
+    <table>
+      <thead><tr><th style="width:112px">Change</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>Add a nullable column</b></td><td><b>Safe.</b> Existing readers ignore it</td></tr>
+        <tr><td><b>Add a required column</b></td><td>Breaks readers that write to the table</td></tr>
+        <tr><td><b>Rename a column</b></td><td><b>Breaking.</b> Add the new name, migrate consumers, then remove the old one</td></tr>
+        <tr><td><b>Drop a column</b></td><td>Breaking for anyone using it. Deprecate first, with a date</td></tr>
+        <tr><td><b>Widen a type</b><br><span style="color:#6b7391">int to bigint</span></td><td>Usually safe</td></tr>
+        <tr><td><b>Narrow or change a type</b></td><td><b>Breaking</b>, and often silently — values are truncated or coerced rather than rejected</td></tr>
+        <tr><td><b>Change semantics</b></td><td><b>The worst case.</b> The schema is unchanged, so nothing detects it, and every downstream number is quietly wrong</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>That last row deserves emphasis.</b> A field whose meaning changes — currency switched,
+      a status code repurposed, a timestamp moved from local to UTC — passes every schema check and every null test. It is
+      caught only by <b>distribution monitoring</b> or by a human noticing. This is the strongest argument for owning
+      semantics explicitly rather than relying on structural validation.</div>
+    <div class="h3">Data contracts — the modern answer</div>
+    <div style="font-size:12.9px;line-height:1.45">A <b>versioned, explicit agreement</b> published by the producer:
+      the schema, the semantics of each field, freshness and quality guarantees, the owner, and the deprecation policy.</div>
+    <ul>
+      <li><b>Checked in CI</b> on the producing side, so a breaking change fails the producer's build rather than the consumer's dashboard</li>
+      <li><b>Versioned</b>, with breaking changes requiring a new version and a migration window</li>
+      <li><b>It moves the cost to where the decision is made</b> — which is the entire point, and why it works where documentation does not</li>
+    </ul>
+    <div class="callout g"><b>Start with a schema registry for streams</b> and enforced compatibility rules — it
+      is the cheapest version of this idea and delivers most of the benefit. Full contracts across every dataset are a
+      programme; a registry on your highest-value streams is a sprint.</div>
+  </div>
+</div>
+
+<!-- ============ 7. TRANSFORM ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;TRANSFORMATION AND MODELLING — WHERE ANALYTICS ENGINEERING LIVES
+    <span class="sub"><span class="lvl mid">MID</span> ELT and dbt · <span class="lvl sr">STAFF</span> dimensional modelling still applies, and idempotency is the constraint</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">ETL became ELT, and the reason matters</div>
+      <div style="font-size:12.9px;line-height:1.45">Traditional ETL transformed data <b>before</b> loading, because
+        storage and compute were expensive and scarce. With cheap object storage and elastic compute, the order inverted:
+        <b>load raw, then transform in place</b>. The benefit is that the raw data is still there when the transformation
+        turns out to be wrong — which it will.</div>
+      <div class="callout b"><b>dbt is the dominant tool for this layer</b> and deserves naming explicitly. It
+        brings software engineering practice to SQL transformation: <b>version control, modular models with dependency
+        resolution, tests, documentation and lineage generated from the code itself</b>. Whatever you use, those are the
+        properties to insist on.</div>
+      <div class="h3">Modelling — the classical patterns still apply</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Star schema</b></td><td>Facts surrounded by dimensions. <b>Still the right answer</b> for most BI serving — it is comprehensible, performs well, and analysts already know it</td></tr>
+          <tr><td><b>Wide tables</b></td><td>One denormalised table per subject. Simple and fast on columnar storage; duplicates logic and grows unwieldy</td></tr>
+          <tr><td><b>Data vault</b></td><td>Hubs, links and satellites. Excellent auditability and history, considerable complexity — justified in heavily regulated settings, rarely elsewhere</td></tr>
+          <tr><td><b>Slowly changing dimensions</b></td><td>How you handle attributes that change. <b>Type 1</b> overwrites and loses history; <b>Type 2</b> adds a row with validity dates and preserves it. <b>Decide deliberately</b> — the wrong choice is discovered when someone asks a historical question you cannot answer</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Idempotency is the constraint that shapes every
+        transformation.</b> Orchestrators retry. Backfills re-run. Late data arrives and a window must be recomputed. A
+        transform that appends rather than replacing its target partition will <b>duplicate data on the first retry</b> —
+        and the duplication is typically found weeks later by an analyst wondering why a total is too high.</div>
+      <div class="h3">How to make it idempotent</div>
+      <ul>
+        <li><b>Overwrite by partition</b> rather than appending. Re-running a day replaces that day's output entirely</li>
+        <li><b>Merge on a key</b>, so a re-run updates rather than inserting again</li>
+        <li><b>Derive the output solely from the input</b> — no dependence on wall-clock time, no accumulating state on the side</li>
+        <li><b>Make the run window an explicit parameter</b>, so re-running a past period is the ordinary path rather than a special one</li>
+      </ul>
+      <div class="h3">Incremental processing and backfill</div>
+      <ul>
+        <li><b>Full refresh</b> — simple, correct, and eventually too slow or too expensive</li>
+        <li><b>Incremental</b> — process only what is new. Requires a reliable high-water mark, and must handle <b>late-arriving data</b> that lands behind the mark</li>
+        <li><b>Backfill must be a first-class capability</b>, not a manual script. You will need it for a bug fix, a new column over history, and a definition change — plan for all three</li>
+        <li><b>Bound backfill concurrency.</b> A naive backfill of two years of daily partitions launched at once will saturate the cluster and can cost more than the original build</li>
+      </ul>
+      <div class="callout g"><b>Test transformations like code, because they are code.</b> Uniqueness and
+        not-null on keys, referential integrity between models, accepted values on enumerations, and row-count deltas
+        against the previous run. <b>These catch most breakage before a consumer does</b>, which is the entire objective.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. MAINTENANCE ============ -->
+<div class="panel c5">
+  <div class="phead">8 &nbsp;· &nbsp;TABLE MAINTENANCE <span class="sub">the operational reality nobody plans for</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The small files problem — the most common lakehouse
+      complaint.</b> Frequent writes, especially streaming or per-partition micro-batches, produce thousands of tiny
+      files. Every query then opens thousands of objects, and <b>metadata and request overhead dominates the actual
+      reading</b>. Queries slow steadily with no change to data volume or query text, and object-store request charges
+      climb alongside.</div>
+    <div class="h3">The maintenance jobs every table format needs</div>
+    <table>
+      <thead><tr><th style="width:112px">Job</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><b>Compaction</b></td><td>Rewrites many small files into fewer large ones. <b>The single highest-value maintenance task</b>, and the one most often left unscheduled</td></tr>
+        <tr><td><b>Clustering<br>and sorting</b></td><td>Physically co-locates related rows so queries skip more data. Sometimes called Z-ordering or liquid clustering depending on the platform</td></tr>
+        <tr><td><b>Snapshot expiry</b></td><td>Removes old table versions. <b>Directly trades time-travel depth against storage cost</b> — pick the retention deliberately rather than inheriting a default</td></tr>
+        <tr><td><b>Orphan file removal</b></td><td>Deletes files left by failed writes, which no metadata references and nothing else will ever clean up</td></tr>
+        <tr><td><b>Statistics refresh</b></td><td>Keeps query planning accurate as data grows</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Schedule these from day one.</b> They are unglamorous, they are usually nobody's
+      explicit responsibility, and a lakehouse without them degrades steadily until someone investigates a slow dashboard
+      six months later and finds a table with two million files.</div>
+    <div class="h3">Partitioning — and over-partitioning</div>
+    <ul>
+      <li><b>Partition on what queries filter on</b>, most often a date. A partition that no query uses is pure overhead</li>
+      <li><b>Aim for substantial partitions</b> — a useful working target is hundreds of megabytes to a few gigabytes each</li>
+      <li><b>Over-partitioning is as damaging as under-partitioning.</b> Partitioning by hour and by customer produces millions of tiny partitions, and planning alone becomes the bottleneck</li>
+      <li><b>High-cardinality partition columns are almost always wrong</b> — cluster or sort on them instead</li>
+    </ul>
+    <div class="callout"><b>Iceberg's partition evolution and hidden partitioning reduce the cost of getting this
+      wrong</b> — the partitioning can change without rewriting history, and queries need not know the partition scheme to
+      benefit from it. It is one of the more practically valuable reasons to choose it.</div>
+  </div>
+</div>
+
+<!-- ============ 9. ORCHESTRATION ============ -->
+<div class="panel c3">
+  <div class="phead">9 &nbsp;· &nbsp;ORCHESTRATION <span class="sub">more than a scheduler</span></div>
+  <div class="pbody">
+    <div style="font-size:12.9px;line-height:1.45">The orchestrator owns <b>dependencies, retries, alerting, backfill and
+      the record of what ran</b>. A cron job runs things on time; an orchestrator tells you what depends on what and what
+      to do when something fails.</div>
+    <div class="h3">What it must provide</div>
+    <ul>
+      <li><b>Dependency resolution</b> — a task runs when its inputs are genuinely ready, not at a time someone guessed would be late enough</li>
+      <li><b>Retries with backoff</b>, and a clear distinction between transient and permanent failure</li>
+      <li><b>Backfill</b> as a first-class operation over an arbitrary date range</li>
+      <li><b>SLAs</b> — alert when a dataset is late, not merely when a task errors. <b>Late and silent is the more dangerous failure</b></li>
+      <li><b>Observability</b> — run history, duration trends, and where time is actually spent</li>
+      <li><b>Parameterisation</b>, so the same pipeline runs for any window</li>
+    </ul>
+    <div class="callout b"><b>Task-oriented versus asset-oriented.</b> Traditional orchestrators model <b>tasks</b>
+      — units of work in a graph. Newer ones model <b>assets</b> — the datasets produced, with the graph derived from what
+      depends on what. The asset view maps better onto how people actually reason about a platform: they care that a table
+      is fresh, not that a job succeeded.</div>
+    <div class="callout r"><b>The anti-pattern: one enormous DAG.</b> A single graph containing every pipeline
+      becomes impossible to reason about, and one failure blocks unrelated work. <b>Split by domain and ownership</b>, and
+      connect across boundaries with sensors or asset dependencies rather than shared tasks.</div>
+    <div class="h3">Practices worth insisting on</div>
+    <ul>
+      <li><b>Every task idempotent</b> — a hard requirement, given automatic retries</li>
+      <li><b>Pipelines in version control</b>, reviewed and deployed through CI</li>
+      <li><b>No credentials in DAG code</b> — use the secret backend</li>
+      <li><b>Alerts route to an owner</b>, not a shared inbox nobody reads</li>
+      <li><b>Task duration trended</b> — a job that has quietly grown from four minutes to fifty is a warning before it is an incident</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 10. QUALITY ============ -->
+<div class="panel c2">
+  <div class="phead">10 &nbsp;· &nbsp;DATA QUALITY &amp; OBSERVABILITY <span class="sub">what to measure</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>Data observability rests on five signals.</b> Nearly every
+      incident is visible in one of them <i>before</i> a user notices — which is the difference between finding your own
+      problems and being told about them.</div>
+    <table>
+      <thead><tr><th style="width:104px">Signal</th><th>Catches</th></tr></thead>
+      <tbody>
+        <tr><td><b>Freshness</b></td><td>Did it arrive on time? <b>The highest-value single check</b> — most incidents start here</td></tr>
+        <tr><td><b>Volume</b></td><td>Row counts against expectation. A partial load looks like success and delivers half the data</td></tr>
+        <tr><td><b>Schema</b></td><td>Structure changed — new, missing or retyped columns</td></tr>
+        <tr><td><b>Distribution</b></td><td>Values changed shape — null rate, cardinality, ranges, category mix. <b>The only automated defence against a change in meaning</b></td></tr>
+        <tr><td><b>Lineage</b></td><td>What is upstream and, more importantly, <b>who is affected</b> when this breaks</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Tests, and where they belong</div>
+    <ul>
+      <li><b>At ingestion</b> — did we get what we expected, in the volume we expected?</li>
+      <li><b>After each transformation</b> — uniqueness, not-null, referential integrity, accepted values</li>
+      <li><b>Before publishing</b> — business rules: totals reconcile, no negative quantities, dimensions resolve</li>
+      <li><b>Continuously on serving tables</b> — freshness and volume, alerting to an owner</li>
+    </ul>
+    <div class="callout r"><b>The decision that must be explicit: does a failed check stop the pipeline or flag
+      and continue?</b> Stopping protects consumers from wrong data and makes the dataset late. Continuing keeps it fresh
+      and may publish something incorrect. <b>Both are legitimate and they suit different datasets</b> — a financial
+      report should stop, an engagement dashboard probably should not. What is never acceptable is nobody having decided.</div>
+    <div class="callout g"><b>Publish an SLA per dataset</b> — freshness, expected volume, quality checks, and the
+      owner. It converts &ldquo;the data looks wrong&rdquo; from an argument into a measurement, and it gives the platform
+      team a defensible definition of done.</div>
+  </div>
+</div>
+
+<!-- ============ 11. GOVERNANCE ============ -->
+<div class="panel c6">
+  <div class="phead">11 &nbsp;· &nbsp;GOVERNANCE, SECURITY &amp; PRIVACY <span class="sub">including the hard part</span></div>
+  <div class="pbody">
+    <div class="h3">The layers of control</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Catalog</b></td><td>What exists, what it means, who owns it. <b>Discovery without asking a person</b> is the measure of whether it works</td></tr>
+        <tr><td><b>Lineage</b></td><td>Column level where achievable. Answers &ldquo;where did this number come from&rdquo; and &ldquo;what breaks if I change this&rdquo;. <b>OpenLineage</b> is the open standard</td></tr>
+        <tr><td><b>Classification</b></td><td>Tag what is personal, sensitive or regulated — <b>automatically where possible</b>, since manual classification decays</td></tr>
+        <tr><td><b>Access control</b></td><td>Role and attribute-based, with row and column filtering. Grant to groups, never to individuals</td></tr>
+        <tr><td><b>Masking</b></td><td>Dynamic masking by role; tokenisation where the value must be joinable but not readable</td></tr>
+        <tr><td><b>Audit</b></td><td>Who accessed what, and when. Required in most regulated environments and useful in all</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The genuinely hard problem: deletion.</b> A privacy request to erase an individual
+      must reach <b>immutable raw files, every derived table, aggregates, exports, backups and any downstream SaaS copy</b>.
+      Most platforms discover they cannot do this only when the first request arrives.</div>
+    <div class="h3">Designing for deletion in advance</div>
+    <ul>
+      <li><b>Keep personal data in few, known places</b> and reference it by key elsewhere — this alone makes erasure tractable</li>
+      <li><b>Use a table format with efficient row-level deletes</b>, so erasure does not mean rewriting a partition</li>
+      <li><b>Crypto-shredding</b> — encrypt per subject and destroy the key. <b>Often the only practical answer for backups</b></li>
+      <li><b>Track lineage to downstream copies</b>, including reverse-ETL destinations that left the platform</li>
+      <li><b>Set retention deliberately.</b> Data you no longer hold is data you need not delete, secure or explain</li>
+    </ul>
+    <div class="callout g"><b>Governance succeeds or fails on ownership.</b> A catalog with no named owner per
+      dataset is documentation. <b>Someone accountable when data is wrong</b> is the mechanism; the tooling only records
+      it.</div>
+  </div>
+</div>
+
+<!-- ============ 12. SERVING ============ -->
+<div class="panel c7 span2">
+  <div class="phead">12 &nbsp;· &nbsp;SERVING AND CONSUMPTION — MATCHING THE SHAPE TO THE CONSUMER
+    <span class="sub"><span class="lvl mid">MID</span> engines and warehouses · <span class="lvl sr">STAFF</span> the semantic layer, and serving AI workloads</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Four consumers, four different requirements</div>
+      <table>
+        <thead><tr><th style="width:112px">Consumer</th><th>Needs</th></tr></thead>
+        <tbody>
+          <tr><td><b>BI and dashboards</b></td><td>Low latency at <b>high concurrency</b>, stable definitions, modest data volumes per query. Pre-aggregation and caching pay off here more than anywhere</td></tr>
+          <tr><td><b>Analysts and notebooks</b></td><td>Flexible access to detail, tolerant of slower queries, unpredictable shapes. A query engine over the lake fits well</td></tr>
+          <tr><td><b>ML and AI</b></td><td>Large historical extracts for training, <b>low-latency lookups for inference</b>, and — critically — the <b>same feature computed identically in both</b></td></tr>
+          <tr><td><b>Applications and APIs</b></td><td>Millisecond point lookups at high request rates. <b>An analytical store is the wrong tool</b> — publish into a serving database instead</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The mistake this table exists to prevent: pointing a customer-facing application
+        at the warehouse.</b> It works during the pilot and fails at production concurrency, generally with a cost surprise
+        alongside the latency one. Analytical engines are built for scans, not for thousands of concurrent point reads.</div>
+      <div class="h3">Query engine or warehouse?</div>
+      <ul>
+        <li><b>Query engines over the lake</b> — Trino, Athena, Dremio, Starburst. Data stays in open formats, several engines can read it, and you keep control of storage</li>
+        <li><b>Cloud warehouses</b> — Snowflake, BigQuery, Redshift. Excellent performance and concurrency with far less to operate, historically at the cost of data living in a proprietary format</li>
+        <li><b>The distinction is narrowing</b> — warehouses increasingly read and write open table formats directly, which makes a hybrid estate genuinely practical</li>
+        <li><b>Real-time analytical stores</b> — Druid, Pinot, ClickHouse, StarRocks — for sub-second aggregation over fresh data at high concurrency</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The semantic layer is the fix for a specific, universal
+        problem: the same metric computed differently in four dashboards.</b> Defining metrics <b>once</b>, in versioned
+        code, and serving every tool from that definition is what stops meetings that debate whose revenue number is
+        correct. It is one of the highest-leverage additions to a platform that already works.</div>
+      <div class="h3">Serving AI and ML workloads</div>
+      <ul>
+        <li><b>Feature stores</b> exist to solve <b>training-serving skew</b> — the same feature computed one way in a training pipeline and another way at inference, producing a model that performs worse in production than in evaluation. Define once, serve both</li>
+        <li><b>Vector stores and vector-capable databases</b> hold embeddings for semantic retrieval — increasingly a standard platform component rather than a specialist one</li>
+        <li><b>Retrieval pipelines are data pipelines</b> — the same requirements for freshness, lineage, quality and access control apply. Documents fed to a language model inherit their permissions from somewhere, and that somewhere should be your governance layer</li>
+        <li><b>Reproducibility</b> — knowing exactly which data trained a model. Time travel makes this straightforward and its absence makes it nearly impossible</li>
+      </ul>
+      <div class="callout g"><b>Reverse ETL</b> pushes curated data back into operational tools — the CRM, the
+        support platform, the marketing system — so insight reaches people where they work. <b>Treat those destinations as
+        governed consumers</b>: they are copies that leave your perimeter, and they must appear in lineage and in your
+        deletion process.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. COST ============ -->
+<div class="panel c4">
+  <div class="phead">13 &nbsp;· &nbsp;COST <span class="sub">where the money actually goes</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Compute dominates, not storage.</b> Object storage is
+      inexpensive enough that teams optimise it out of habit while the actual bill is warehouse credits, cluster hours and
+      query scanning. <b>Look at compute first</b> — it is almost always where the surprise is.</div>
+    <div class="h3">The most common sources of waste</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Idle compute</b></td><td>Warehouses and clusters running while nothing is querying. <b>Auto-suspend aggressively</b> — this is often the single largest saving available</td></tr>
+        <tr><td><b>Full scans</b></td><td>Queries reading whole tables because partitioning or clustering does not match the filters</td></tr>
+        <tr><td><b>Small files</b></td><td>Request overhead and wasted compute — see panel 8. A real cost, not only a performance one</td></tr>
+        <tr><td><b>Forgotten pipelines</b></td><td>Jobs feeding dashboards nobody opens. <b>Check consumption before renewing a schedule</b></td></tr>
+        <tr><td><b>Over-frequent refresh</b></td><td>Hourly rebuilds of data reviewed weekly</td></tr>
+        <tr><td><b>Duplicated datasets</b></td><td>Several teams independently building the same table — a symptom of poor discovery rather than of cost management</td></tr>
+        <tr><td><b>Oversized dev environments</b></td><td>Production-scale clusters for testing</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Controls worth putting in place</div>
+    <ul>
+      <li><b>Tag everything</b> by team, domain and environment — <b>attribution must exist before optimisation is possible</b></li>
+      <li><b>Show teams their spend.</b> Visibility alone reduces cost measurably, before any technical change</li>
+      <li><b>Lifecycle policies</b> moving cold data to cheaper tiers automatically</li>
+      <li><b>Query limits and timeouts</b>, so one runaway query cannot produce a memorable bill</li>
+      <li><b>Right-size on measurement</b>, not on the initial guess</li>
+      <li><b>Budgets and anomaly alerts</b>, so a change is noticed within days rather than at month end</li>
+    </ul>
+    <div class="callout g"><b>The framing that works with engineers: cost is a design constraint, not a
+      procurement problem.</b> A partitioning choice, a refresh interval and a file size are all cost decisions made by
+      engineers — and they are far more effective than negotiating the contract.</div>
+  </div>
+</div>
+
+<!-- ============ 14. OPERATING MODEL ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;OPERATING MODEL, OWNERSHIP AND BUILD ORDER
+    <span class="sub"><span class="lvl sr">STAFF</span> the organisational decisions that determine whether the platform is used — and what to build first</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Three operating models</div>
+      <table>
+        <thead><tr><th style="width:112px">Model</th><th>How it behaves</th></tr></thead>
+        <tbody>
+          <tr><td><b>Centralised</b></td><td>One team builds and owns every pipeline. <b>Consistent and high quality, and it becomes the bottleneck</b> — every request queues behind that team. Works well early and stops scaling at a predictable size</td></tr>
+          <tr><td><b>Data mesh</b></td><td>Domain teams own their data as a product; a platform team provides the infrastructure. <b>Scales</b>, and demands real maturity — without strong standards it produces inconsistency rather than autonomy</td></tr>
+          <tr><td><b>Hybrid</b><br><span style="color:#6b7391">most common</span></td><td>A central platform team owns infrastructure, standards, shared dimensions and governance. Domain teams build their own pipelines on it. <b>The pragmatic answer for most organisations</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Mesh is an organisational commitment before it is an architecture.</b> It requires
+        domain teams that have data engineering capability, are accountable for quality, and will maintain their outputs
+        for years. Adopting the technical shape without those conditions produces the same central bottleneck with more
+        tools and less clarity about who is responsible.</div>
+      <div class="callout g"><b>The useful test for any model:</b> <b>how long does it take to add a new data
+        source and expose one metric from it?</b> If the answer is months, the model is the constraint — not the tooling,
+        and not the cloud bill.</div>
+    </div>
+    <div>
+      <div class="h3">Who owns what</div>
+      <table>
+        <thead><tr><th style="width:132px">Role</th><th>Accountable for</th></tr></thead>
+        <tbody>
+          <tr><td><b>Platform engineering</b></td><td>Infrastructure, the catalog, orchestration, security controls, CI/CD, cost visibility. <b>They build the paved road</b> — they do not build every pipeline on it</td></tr>
+          <tr><td><b>Data engineering</b></td><td>Ingestion and processing to the curated layer; reliability and freshness of those datasets</td></tr>
+          <tr><td><b>Analytics engineering</b></td><td>Transformation from curated to business-ready; metric definitions, tests, documentation. <b>The role that most often does not exist and most often should</b></td></tr>
+          <tr><td><b>Domain teams</b></td><td>The meaning and correctness of their data; the contracts they publish</td></tr>
+          <tr><td><b>Governance</b></td><td>Policy, classification standards, compliance evidence — <b>enabling and auditing, not gatekeeping</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>The failure this table describes.</b> When a central team owns every pipeline, they
+        become a queue and domain knowledge stays outside the platform. When domains own everything with no paved road, you
+        get six incompatible approaches. <b>The platform team's product is the road, and its users are engineers.</b></div>
+    </div>
+    <div>
+      <div class="h3">Build order — what to do first</div>
+      <ol>
+        <li><b>Pick one high-value use case</b> and deliver it end to end. A platform with no consumer is a project that gets cancelled</li>
+        <li><b>Land raw data immutably</b> from the sources it needs. This is the irreversible one — start capturing early even if you cannot yet use it</li>
+        <li><b>Storage, table format and catalog</b> — the decisions from panel 5, made once, deliberately</li>
+        <li><b>Orchestration</b>, with idempotency required from the first pipeline rather than retrofitted</li>
+        <li><b>Transformation with tests and version control</b> from the beginning. Adding tests to a hundred untested models later is a project nobody funds</li>
+        <li><b>Freshness and volume monitoring</b> — the cheapest observability, and it catches most incidents</li>
+        <li><b>The catalog with ownership</b>, populated automatically. Manual catalogues decay within months</li>
+        <li><b>Access control and classification</b> before the estate is large enough to make retrofitting painful</li>
+        <li><b>Cost attribution</b> — tagging from day one, because backfilling it is nearly impossible</li>
+        <li><b>Then broaden</b> — more sources, more domains, self-service</li>
+      </ol>
+      <div class="callout g"><b>The ordering principle: build what is expensive to retrofit early, and defer
+        what is cheap to add later.</b> Raw capture, idempotency, tagging and ownership are all far cheaper on day one than
+        in year two — and all four are routinely postponed in favour of visible features.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Dashboard shows yesterday's data, nobody noticed</b></td><td>A pipeline failed silently, or succeeded with no input</td><td><b>Freshness monitoring with an owner.</b> Alert on the dataset, not only on the task</td></tr>
+          <tr><td><b>Pipeline broke after an upstream deploy</b></td><td>Schema changed with no contract and no visibility of consumers</td><td>Schema registry with compatibility rules; contracts checked in the producer's CI</td></tr>
+          <tr><td><b>Numbers disagree between two dashboards</b></td><td>The metric is defined twice, in two tools</td><td><b>Semantic layer</b> — define once, serve everywhere</td></tr>
+          <tr><td><b>Duplicate rows after a retry</b></td><td>A non-idempotent transform that appends</td><td>Overwrite by partition, or merge on a key</td></tr>
+          <tr><td><b>Queries slower every month, same data</b></td><td>Small files accumulating; no compaction scheduled</td><td>Schedule compaction and clustering. Check file counts per partition</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Cloud bill doubled, nobody knows why</b></td><td>No tagging or attribution; often one new job or an unsuspended warehouse</td><td>Tag everything; per-team dashboards; anomaly alerts</td></tr>
+          <tr><td><b>Cannot fix data that was wrong last month</b></td><td>Raw data was transformed on ingestion, or not retained</td><td><b>Land raw immutably.</b> No retrospective fix exists — this is why it is decision four in panel 1</td></tr>
+          <tr><td><b>Cannot honour a deletion request</b></td><td>Personal data spread across immutable files, copies and backups</td><td>Consolidate personal data; row-level deletes; crypto-shredding for backups</td></tr>
+          <tr><td><b>Teams building the same table repeatedly</b></td><td>No discovery — nobody knew it existed</td><td>Catalog with ownership, populated automatically</td></tr>
+          <tr><td><b>App times out against the warehouse</b></td><td>Analytical engine serving operational point lookups</td><td>Publish to a serving store built for concurrency</td></tr>
+          <tr><td><b>Backfill saturated the platform</b></td><td>Two years of partitions launched at once</td><td>Bound concurrency; backfill as a first-class, throttled operation</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>An upstream schema or semantic change.</b> By a wide margin the most frequent, and the only durable fix is organisational</td></tr>
+          <tr><td><b>2</b></td><td><b>Silent freshness failures</b> — data that is late and stale rather than visibly broken</td></tr>
+          <tr><td><b>3</b></td><td><b>Trust</b>, once two sources disagree. Cheap to lose and slow to rebuild</td></tr>
+          <tr><td><b>4</b></td><td><b>Cost</b>, which grows quietly until someone escalates it</td></tr>
+          <tr><td><b>5</b></td><td><b>Raw scale</b> — the thing platforms are designed for, and the last thing to become a problem</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> The concern most platform designs optimise for — volume and
+        throughput — is last. The failures that actually occur are contracts, monitoring and ownership, none of which are
+        solved by choosing better technology.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>Ingestion down</b> — data accumulates at the source if the queue retains it. <b>Check retention against your worst realistic outage</b>, or an incident becomes permanent loss</li>
+        <li><b>Processing down</b> — serving data goes stale. Consumers should be able to see the freshness, not guess it</li>
+        <li><b>Serving down</b> — cached dashboards keep working, ad-hoc analysis stops</li>
+        <li><b>Bad data published</b> — the worst case, because it is <b>acted upon</b>. Keep the ability to roll back a table to a previous version, and know how to notify affected consumers</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before the business depends on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>One high-value use case delivered end to end</b></div>
+      <div>&#9744; <b>Raw data landed immutably</b>, untransformed, including bad records</div>
+      <div>&#9744; <b>Raw retention set</b> against reprocessing needs</div>
+      <div>&#9744; <b>CDC used where sources support it</b> — deletes captured</div>
+      <div>&#9744; <b>No retired tooling in the design</b> (Sqoop, unmaintained connectors)</div>
+      <div>&#9744; <b>Table format chosen deliberately</b>, not by default</div>
+      <div>&#9744; <b>Catalog chosen with exit in mind</b>; open REST spec preferred</div>
+      <div>&#9744; <b>File formats correct per layer</b> — columnar in curated</div>
+      <div>&#9744; <b>Partitioning matches query filters</b>; no over-partitioning</div>
+      <div>&#9744; <b>Compaction scheduled</b> and file counts monitored</div>
+      <div>&#9744; <b>Snapshot expiry and orphan cleanup running</b></div>
+      <div>&#9744; <b>Every transform idempotent</b> — overwrite or merge, never append</div>
+      <div>&#9744; <b>Backfill is a first-class, throttled operation</b></div>
+      <div>&#9744; <b>Late-arriving data handled</b> explicitly</div>
+      <div>&#9744; <b>Transformations version controlled, tested and reviewed</b></div>
+      <div>&#9744; <b>SCD strategy decided per dimension</b></div>
+      <div>&#9744; <b>Batch versus streaming justified per pipeline</b></div>
+      <div>&#9744; <b>Watermarks and event-time semantics defined</b> for streams</div>
+      <div>&#9744; <b>Schema registry with compatibility rules</b> on streams</div>
+      <div>&#9744; <b>Data contracts on critical datasets</b>, checked in producer CI</div>
+      <div>&#9744; <b>Freshness monitored and alerted per dataset</b></div>
+      <div>&#9744; <b>Volume, schema and distribution monitored</b></div>
+      <div>&#9744; <b>Stop-or-continue decided per dataset</b> on failed checks</div>
+      <div>&#9744; <b>Published SLA per serving dataset</b></div>
+      <div>&#9744; <b>Lineage captured automatically</b>, column level where possible</div>
+      <div>&#9744; <b>Every dataset has a named owner</b></div>
+      <div>&#9744; <b>Catalog populated automatically</b>, not by hand</div>
+      <div>&#9744; <b>Sensitive data classified</b>, ideally automatically</div>
+      <div>&#9744; <b>Access granted to groups</b>, row and column level where needed</div>
+      <div>&#9744; <b>Masking or tokenisation on personal data</b></div>
+      <div>&#9744; <b>Deletion process designed and tested</b> end to end</div>
+      <div>&#9744; <b>Retention policies set and enforced</b></div>
+      <div>&#9744; <b>Audit logging enabled</b> and retained</div>
+      <div>&#9744; <b>Metrics defined once</b> in a semantic layer</div>
+      <div>&#9744; <b>Operational apps served from a serving store</b>, not the warehouse</div>
+      <div>&#9744; <b>Reverse-ETL destinations governed</b> and in lineage</div>
+      <div>&#9744; <b>Everything tagged</b> for cost attribution</div>
+      <div>&#9744; <b>Idle compute auto-suspended</b>; budgets and anomaly alerts set</div>
+      <div>&#9744; <b>Infrastructure as code; CI/CD for pipelines</b>; environments separated</div>
+      <div>&#9744; <b>Operating model and ownership boundaries explicit</b></div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>say what happens when an upstream schema changes, how
+      you fix data that was wrong last month, who owns each serving dataset, what a given dashboard costs, and how you
+      honour a deletion request.</b> Those five answers separate a platform the business can rely on from a collection of
+      pipelines — and not one of them is a question about which tools were chosen.</div>
+  </div>
+</div>
+
+</div>
