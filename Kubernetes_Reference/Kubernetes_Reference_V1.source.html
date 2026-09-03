@@ -1,0 +1,880 @@
+<meta charset="utf-8">
+<title>Kubernetes — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5571px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5571px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5541px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 415px 466px 709px 497px 560px 572px 543px 417px 544px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>KUBERNETES — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Declared desired state, reconciled continuously — and the settings that decide whether it stays up<br>
+    <span style="font-size:13.4px;color:#6d80b6">workloads · networking · storage · scheduling &amp; resources · probes · security · operations · upgrades
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT KUBERNETES IS — THE RECONCILIATION MODEL, AND WHEN NOT TO USE IT
+    <span class="sub">start here — one idea explains the whole system, and the honest answer on whether you need it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A <b>container orchestration platform</b> built around a single
+        idea: you <b>declare the state you want</b> as API objects, and <b>controllers continuously work to make reality
+        match</b>. You never tell Kubernetes to do something — you tell it what should be true, and it keeps making that
+        true.</div>
+      <div class="callout b"><b>The reconciliation loop is the whole mental model.</b> Every controller runs the
+        same loop: observe actual state, compare with declared state, take one step to close the gap, repeat forever. A
+        node dies and pods are rescheduled; a pod is deleted and the ReplicaSet creates another. <b>Nothing is
+        event-driven in the way people assume</b> — it is a continuous convergence process, which is why it is resilient
+        and why it is sometimes slow.</div>
+      <div class="h3">The consequences worth internalising</div>
+      <table>
+        <tbody>
+          <tr><td style="width:24px"><b>1</b></td><td><b>Everything is an API object</b> stored in etcd. <span class="mono">kubectl</span>, controllers and your CI all speak the same API. There is no privileged back door</td></tr>
+          <tr><td><b>2</b></td><td><b>Nothing you create by hand survives.</b> Delete a pod created by a Deployment and it comes back — because the declaration did not change. Fighting a controller always loses</td></tr>
+          <tr><td><b>3</b></td><td><b>Failures are normal and expected.</b> Pods are cattle. Nodes are replaceable. Anything relying on a specific pod living forever is working against the design</td></tr>
+          <tr><td><b>4</b></td><td><b>Extensibility is the point.</b> Custom resources plus a controller means <i>your</i> domain object gets the same reconciliation behaviour — this is what operators are</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Use it when</div>
+      <ul>
+        <li><b>Many services</b> that need to be deployed, scaled and connected independently</li>
+        <li><b>You need self-healing and rolling updates</b> without building them yourself</li>
+        <li><b>Workloads vary</b> — batch, services, cron, machine learning — and you want one scheduling layer</li>
+        <li><b>Multiple teams</b> sharing infrastructure with real isolation and quotas</li>
+        <li><b>You have, or will build, platform capability.</b> This is the actual precondition</li>
+      </ul>
+      <div class="callout r"><b>Do not use it when — and this is worth saying plainly.</b> Kubernetes is a
+        <b>large, permanent operational commitment</b>. For a single application, a small team, or a workload that a
+        managed container service or a few virtual machines would run happily, it adds a great deal of complexity for
+        benefits you will not use. <b>&ldquo;We might need to scale one day&rdquo; is not a reason</b> — you can move later,
+        and moving later is cheaper than operating a cluster you did not need.</div>
+      <div class="callout"><b>The honest test:</b> can you name three problems you have <i>today</i> that
+        Kubernetes solves? If the list is speculative, a managed platform-as-a-service or serverless containers will serve
+        you better and cost less attention.</div>
+      <div class="h3">On running databases here</div>
+      <div style="font-size:12.9px;line-height:1.45">It is entirely possible with StatefulSets and mature operators,
+        and many organisations do it well. It is also <b>strictly harder</b> than a managed database, and the failure modes
+        are ones your team must understand. <b>Do it when you have a specific reason</b>, not by default because everything
+        else is on the cluster.</div>
+    </div>
+    <div>
+      <div class="callout p" style="margin-top:0"><b><span class="lvl sr">STAFF</span> The release cadence is an
+        operational fact, not a footnote.</b> Kubernetes ships <b>roughly three minor releases a year</b>, each supported
+        for about fourteen months. That means <b>you are always upgrading</b> — a cluster left alone for two years is
+        unsupported and on a path with no easy exit. Budget for continuous upgrades from the start; it is the single
+        largest ongoing cost people fail to plan for.</div>
+      <div class="h3">Recent changes worth knowing</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>In-place pod resize</b></td><td>CPU and memory can now be adjusted <b>without restarting the pod</b> — a genuine improvement for right-sizing long-running workloads</td></tr>
+          <tr><td><b>Traffic distribution</b></td><td><span class="mono">PreferSameNode</span> and <span class="mono">PreferSameZone</span> keep service traffic local, reducing latency and cross-zone data charges</td></tr>
+          <tr><td><b>Gateway API</b></td><td><b>GA and the strategic direction</b> for ingress. See panel 5</td></tr>
+          <tr><td><b>Ingress NGINX retiring</b></td><td>The project moved to best-effort maintenance and archival. <b>If you run it, plan a migration</b> — this affects a very large number of clusters</td></tr>
+          <tr><td><b>containerd 1.x ending</b></td><td>Recent releases are the last supporting it — move to 2.x before upgrading past them</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Two removals that still surprise people.</b> <b>Dockershim was removed in
+        1.24</b> — the runtime is containerd or CRI-O, and Docker as a runtime is gone (images are unaffected, they are
+        just OCI images). <b>PodSecurityPolicy was removed in 1.25</b> — replaced by Pod Security Admission. Material
+        written before those dates teaches things that no longer exist.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. WORKLOADS ============ -->
+<div class="panel c2 span2">
+  <div class="phead">2 &nbsp;· &nbsp;WORKLOAD OBJECTS — WHAT TO USE FOR WHAT
+    <span class="sub"><span class="lvl jr">JUNIOR</span> the objects · <span class="lvl mid">MID</span> when each is correct · <span class="lvl sr">STAFF</span> StatefulSet's real guarantees</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:118px">Object</th><th>Purpose and behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><b>Pod</b></td><td>The smallest deployable unit — one or more containers sharing a network namespace and storage. <b>Ephemeral, and you should almost never create one directly</b></td></tr>
+          <tr><td><b>ReplicaSet</b></td><td>Keeps <i>n</i> identical pods running. <b>You do not manage these</b> — Deployments do</td></tr>
+          <tr><td><b>Deployment</b></td><td><b>The default for stateless services.</b> Manages ReplicaSets to give rolling updates and rollback. Pods are interchangeable and get random names</td></tr>
+          <tr><td><b>StatefulSet</b></td><td>For workloads needing <b>stable identity</b>. Pods get ordinal names that persist across restarts, each keeps its own volume, and start-up and shutdown are ordered</td></tr>
+          <tr><td><b>DaemonSet</b></td><td><b>One pod per node</b> — log collectors, node agents, CNI components, monitoring. Automatically covers new nodes</td></tr>
+          <tr><td><b>Job</b></td><td>Runs to completion. Handles retries and parallelism</td></tr>
+          <tr><td><b>CronJob</b></td><td>Creates Jobs on a schedule. <b>Set history limits</b> or completed Jobs accumulate indefinitely</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>A CronJob is not a reliable scheduler.</b> It can miss runs if the controller is
+        unavailable past the deadline, and it can run twice under some conditions. <b>Make the job idempotent</b>, set
+        <span class="mono">startingDeadlineSeconds</span>, and choose a <span class="mono">concurrencyPolicy</span>
+        deliberately.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>What a StatefulSet actually guarantees, precisely.</b> Stable
+        network identity, stable storage bound to each ordinal, and ordered rolling operations. <b>It does not make your
+        application distributed, consistent or highly available</b> — a clustered database still needs to do that work
+        itself. StatefulSet provides the primitives; the application provides the correctness.</div>
+      <div class="h3">Multi-container patterns</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Init containers</b></td><td>Run to completion <b>before</b> app containers start, in order. For migrations, waiting on a dependency, or fetching configuration</td></tr>
+          <tr><td><b>Sidecar</b></td><td>A container running alongside the main one — proxy, log shipper, secret refresher. <b>Native sidecar support</b> (an init container with <span class="mono">restartPolicy: Always</span>) fixed the long-standing problem of sidecars not starting first and not shutting down last</td></tr>
+          <tr><td><b>Ambassador / adapter</b></td><td>A sidecar that proxies outbound connections, or reshapes output for a monitoring system</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Native sidecars are worth adopting.</b> Before them, a Job with a service-mesh
+        sidecar would never complete because the sidecar kept running, and app containers could start before their proxy
+        was ready. The native form starts before app containers, shuts down after them, and does not block Job completion.</div>
+      <div class="h3">Labels and selectors</div>
+      <ul>
+        <li><b>Labels are how everything finds everything.</b> Services select pods by label; Deployments own pods by label. There is no other linkage</li>
+        <li><b>A Deployment's selector is immutable</b> — plan the label scheme before you ship</li>
+        <li><b>Adopt a consistent set</b> — the recommended <span class="mono">app.kubernetes.io/*</span> labels give you consistent querying and cost attribution</li>
+        <li><b>Annotations</b> carry non-identifying metadata; they cannot be selected on</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. CONFIG ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;CONFIG &amp; SECRETS <span class="sub">and a widespread misconception</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Secrets are not encrypted by default — they are
+      base64-encoded, which is not encryption.</b> Anyone who can read the Secret object, or read etcd, sees the value.
+      This is the most common security misunderstanding in Kubernetes, and it is worth stating without hedging.</div>
+    <div class="h3">Making Secrets actually secret</div>
+    <ul>
+      <li><b>Enable encryption at rest</b> for etcd, ideally with a KMS provider so keys live outside the cluster</li>
+      <li><b>Restrict access with RBAC</b> — very few roles need to read Secrets, and <span class="mono">get secrets</span> in a namespace is equivalent to holding those credentials</li>
+      <li><b>Prefer an external secret store</b> — Vault, or a cloud secrets manager via the External Secrets Operator or the CSI secret store driver. The value then lives outside etcd entirely</li>
+      <li><b>Never commit Secrets to git.</b> If you want them in git, use Sealed Secrets or SOPS so what is committed is encrypted</li>
+      <li><b>Prefer workload identity over static credentials</b> — a pod assuming a cloud role removes the secret altogether, which is strictly better than protecting it</li>
+    </ul>
+    <div class="h3">ConfigMaps and Secrets in practice</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>As env vars</b></td><td>Simple, and <b>values do not update</b> without a pod restart. The snapshot is taken at start</td></tr>
+        <tr><td><b>As volume mounts</b></td><td><b>Updates propagate</b> to the file after a delay — but your application must notice and reload, which most do not</td></tr>
+        <tr><td><b>Immutable</b></td><td>Marking them immutable improves cluster performance at scale and prevents accidental edits. Roll a new object to change</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The reliable pattern: change configuration, roll the pods.</b> Include a hash of
+      the ConfigMap in the pod template annotation, so any config change produces a new template and triggers a normal
+      rolling update. You then get the same rollout safety and rollback for configuration as for code — rather than a
+      silent partial update where some pods have the new value and some do not.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — THE CONTROL PLANE, THE NODES, AND WHAT HAPPENS WHEN YOU APPLY A MANIFEST
+    <span class="sub">every component and its job, and the path from a YAML file to a running container</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- CONTROL PLANE -->
+    <rect x="8" y="6" width="1810" height="292" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">CONTROL PLANE — the desired state, and the controllers that pursue it</text>
+
+    <g font-size="10.5">
+      <rect x="26" y="44" width="400" height="126" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+      <text x="42" y="64" font-size="12" font-weight="700" fill="#be123c">API SERVER — everything goes through it</text>
+      <text x="42" y="84" fill="#7f2b2b">· The only component that talks to etcd</text>
+      <text x="42" y="100" fill="#7f2b2b">· Authentication, then authorisation (RBAC), then admission</text>
+      <text x="42" y="116" fill="#7f2b2b">· Validates and persists every object</text>
+      <text x="42" y="132" fill="#7f2b2b">· Serves watches — how controllers learn of changes</text>
+      <text x="42" y="152" font-weight="700" fill="#b91c1c">Stateless, so run several behind a load balancer.</text>
+      <text x="42" y="166" font-weight="700" fill="#b91c1c">Its availability is the cluster's control-plane availability.</text>
+
+      <rect x="442" y="44" width="400" height="126" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+      <text x="458" y="64" font-size="12" font-weight="700" fill="#b45309">etcd — the only stateful component</text>
+      <text x="458" y="84" fill="#7a3d06">· Distributed key-value store holding all cluster state</text>
+      <text x="458" y="100" fill="#7a3d06">· Raft consensus, so an odd number of members — three or five</text>
+      <text x="458" y="116" fill="#7a3d06">· Extremely sensitive to disk latency and network jitter</text>
+      <text x="458" y="136" font-weight="700" fill="#be123c">Back it up, test the restore, and give it fast local disks.</text>
+      <text x="458" y="152" font-weight="700" fill="#be123c">Losing etcd without a backup means rebuilding the cluster</text>
+      <text x="458" y="166" font-weight="700" fill="#be123c">and every object in it from source.</text>
+
+      <rect x="858" y="44" width="470" height="126" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+      <text x="874" y="64" font-size="12" font-weight="700" fill="#7c2d92">CONTROLLER MANAGER — the reconciliation loops</text>
+      <text x="874" y="84" fill="#4b3a5e">· Runs dozens of controllers in one process: Deployment, ReplicaSet,</text>
+      <text x="886" y="100" fill="#4b3a5e">Node, Job, EndpointSlice, ServiceAccount and many more</text>
+      <text x="874" y="120" fill="#4b3a5e">· Each watches objects and works to close the gap to desired state</text>
+      <text x="874" y="140" fill="#4b3a5e">· The cloud controller manager handles provider integration —</text>
+      <text x="886" y="154" fill="#4b3a5e">load balancers, node lifecycle, routes</text>
+      <text x="874" y="170" font-weight="700" fill="#7c2d92">This is where &ldquo;Kubernetes does something&rdquo; actually happens.</text>
+
+      <rect x="1344" y="44" width="458" height="126" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+      <text x="1360" y="64" font-size="12" font-weight="700" fill="#0f766e">SCHEDULER — placement only</text>
+      <text x="1360" y="84" fill="#2f4f47">· Watches for pods with no node assigned</text>
+      <text x="1360" y="100" fill="#2f4f47">· <tspan font-weight="700">Filters</tspan> nodes that cannot run it — insufficient resources,</text>
+      <text x="1372" y="114" fill="#2f4f47">taints not tolerated, affinity rules unmet</text>
+      <text x="1360" y="134" fill="#2f4f47">· <tspan font-weight="700">Scores</tspan> the survivors and picks the best, then writes the binding</text>
+      <text x="1360" y="154" font-weight="700" fill="#be123c">It only decides where. It never starts anything — and it</text>
+      <text x="1360" y="168" font-weight="700" fill="#be123c">schedules on requests, not on actual usage. See panel 7.</text>
+
+      <rect x="26" y="184" width="1776" height="102" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2.5"/>
+      <text x="42" y="204" font-size="12.6" font-weight="700" fill="#047857">ADMISSION CONTROL — the extension point that matters most for governance</text>
+      <text x="42" y="224" font-size="11" fill="#2f4f47">Between authorisation and persistence, every request passes through admission plugins and webhooks. <tspan font-weight="700">Mutating</tspan> webhooks change the object — injecting a sidecar, adding default labels.</text>
+      <text x="42" y="244" font-size="11" fill="#2f4f47"><tspan font-weight="700">Validating</tspan> webhooks accept or reject it — enforcing that images come from an approved registry, that resource requests are set, that no pod runs as root.</text>
+      <text x="42" y="266" font-size="11" font-weight="700" fill="#047857">This is how policy is enforced cluster-wide — Kyverno, Gatekeeper, or the built-in Validating Admission Policy. It is also a real availability risk: a webhook that is down or slow can block</text>
+      <text x="42" y="282" font-size="11" font-weight="700" fill="#047857">every write to the cluster. Set a failure policy deliberately, exclude critical namespaces, and give webhooks tight timeouts.</text>
+    </g>
+
+    <!-- NODE -->
+    <rect x="1836" y="6" width="1476" height="292" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1854" y="30" font-size="16" font-weight="700" fill="#7c2d92">WORKER NODE — where containers actually run</text>
+    <g font-size="10.5">
+      <rect x="1854" y="44" width="470" height="126" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="1870" y="64" font-size="12" font-weight="700" fill="#7c2d92">KUBELET</text>
+      <text x="1870" y="84" fill="#4b3a5e">· The node agent. Watches for pods bound to its node</text>
+      <text x="1870" y="100" fill="#4b3a5e">· Instructs the runtime to pull images and start containers</text>
+      <text x="1870" y="116" fill="#4b3a5e">· <tspan font-weight="700">Runs the probes</tspan> and reports pod status back</text>
+      <text x="1870" y="132" fill="#4b3a5e">· Mounts volumes; enforces resource limits via cgroups</text>
+      <text x="1870" y="152" font-weight="700" fill="#be123c">· Evicts pods under node pressure — memory, disk, PIDs.</text>
+      <text x="1870" y="166" font-weight="700" fill="#be123c">Eviction order depends on QoS class. See panel 7.</text>
+
+      <rect x="2340" y="44" width="470" height="126" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2356" y="64" font-size="12" font-weight="700" fill="#7c2d92">KUBE-PROXY / CNI DATAPLANE</text>
+      <text x="2356" y="84" fill="#4b3a5e">· Implements Service networking on the node</text>
+      <text x="2356" y="100" fill="#4b3a5e">· Programs iptables, IPVS or eBPF rules so a ClusterIP</text>
+      <text x="2368" y="114" fill="#4b3a5e">resolves to a healthy backing pod</text>
+      <text x="2356" y="134" fill="#4b3a5e">· Modern CNIs such as Cilium can replace it with eBPF</text>
+      <text x="2356" y="154" font-weight="700" fill="#7c2d92">Service load balancing happens here, on every node —</text>
+      <text x="2356" y="168" font-weight="700" fill="#7c2d92">there is no central proxy in the data path.</text>
+
+      <rect x="2826" y="44" width="470" height="126" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2842" y="64" font-size="12" font-weight="700" fill="#7c2d92">CONTAINER RUNTIME</text>
+      <text x="2842" y="84" fill="#4b3a5e">· containerd or CRI-O, spoken to via the CRI interface</text>
+      <text x="2842" y="100" fill="#4b3a5e">· Pulls images, creates containers, manages their lifecycle</text>
+      <text x="2842" y="120" fill="#4b3a5e">· <tspan font-weight="700">Dockershim was removed in 1.24</tspan> — Docker is no longer</text>
+      <text x="2854" y="134" fill="#4b3a5e">a runtime, though Docker-built images work unchanged</text>
+      <text x="2842" y="154" font-weight="700" fill="#be123c">Recent releases are the last to support containerd 1.x —</text>
+      <text x="2842" y="168" font-weight="700" fill="#be123c">move to 2.x before upgrading past them.</text>
+
+      <rect x="1854" y="184" width="1442" height="102" rx="8" fill="#fff7ea" stroke="#e9b669" stroke-width="2.5"/>
+      <text x="1870" y="204" font-size="12.6" font-weight="700" fill="#a35c00">FROM MANIFEST TO RUNNING CONTAINER — the path, and where each step can stall</text>
+      <text x="1870" y="224" font-size="11" fill="#7a3d06"><tspan font-weight="700">1</tspan> kubectl apply sends to the API server → <tspan font-weight="700">2</tspan> authn, authz, admission webhooks → <tspan font-weight="700">3</tspan> persisted to etcd → <tspan font-weight="700">4</tspan> the Deployment controller sees it and creates a ReplicaSet →</text>
+      <text x="1870" y="244" font-size="11" fill="#7a3d06"><tspan font-weight="700">5</tspan> the ReplicaSet controller creates Pod objects, unscheduled → <tspan font-weight="700">6</tspan> the scheduler filters and scores nodes, writes a binding → <tspan font-weight="700">7</tspan> the kubelet on that node sees it →</text>
+      <text x="1870" y="264" font-size="11" fill="#7a3d06"><tspan font-weight="700">8</tspan> the runtime pulls the image and starts containers → <tspan font-weight="700">9</tspan> probes pass → <tspan font-weight="700">10</tspan> the pod becomes Ready and is added to Service endpoints.</text>
+      <text x="1870" y="282" font-size="11" font-weight="700" fill="#be123c">Pending means step 6 failed — no node fits. ContainerCreating means step 8 — usually an image pull or a volume mount. CrashLoopBackOff means the container starts and exits.</text>
+    </g>
+
+    <!-- READING -->
+    <rect x="8" y="310" width="3304" height="318" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="334" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — six properties that explain the rest of this sheet</text>
+    <text x="26" y="360" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · Controllers reconcile continuously; they do not execute commands.</tspan> This is why the system heals itself, why deleting a managed pod does nothing lasting, and why changes are eventually rather than immediately consistent.</text>
+    <text x="26" y="388" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · The API server is the single gateway and etcd is the single source of truth.</tspan> Control-plane availability is API server availability; durability is etcd's backup. Everything else — kubelets, controllers, your CI — is a client.</text>
+    <text x="26" y="416" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The scheduler places pods using requests, not actual usage.</tspan> A node can be scheduled to capacity while sitting idle, or be overcommitted and start evicting. Requests are the most consequential number you write — see panel 7.</text>
+    <text x="26" y="444" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · Admission control is where cluster-wide policy lives</tspan> — and it sits in the write path for every object. It is the right place to enforce standards, and a misconfigured webhook can block all writes, so treat its failure policy and timeouts as availability settings.</text>
+    <text x="26" y="472" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Service networking is distributed to every node.</tspan> There is no central proxy in the data path — each node programs rules locally. This scales well and means network debugging happens on the node, not at a chokepoint.</text>
+    <text x="26" y="500" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">6 · The kubelet, not the control plane, decides to evict under pressure.</tspan> Node-level resource exhaustion is handled locally and by QoS class — which is why a pod with no resource requests is the first thing killed on a busy node.</text>
+    <text x="26" y="534" font-size="11.8" fill="#6b7391">Useful interrogation of any cluster: is etcd backed up and has a restore been tested, do all workloads set resource requests, what is the pod security and network policy default, how are upgrades performed, and what happens if an admission webhook goes down?</text>
+    <text x="26" y="562" font-size="11.8" font-weight="700" fill="#1e3a8a">Those five questions separate a cluster that is operated from one that is merely running — and the first and last are the ones most often answered with a pause.</text>
+    <text x="26" y="596" font-size="11.8" fill="#42507a"><tspan font-weight="700">On managed control planes:</tspan> EKS, GKE and AKS run the API server, etcd, scheduler and controller manager for you, with backups and upgrades handled. You still own nodes, workloads, networking policy, security posture</text>
+    <text x="26" y="616" font-size="11.8" fill="#42507a">and cost. <tspan font-weight="700">This removes the hardest component to operate well and none of the ones you interact with daily</tspan> — which is why self-managing the control plane needs a specific justification.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. NETWORKING ============ -->
+<div class="panel c1 span2">
+  <div class="phead">5 &nbsp;· &nbsp;NETWORKING — SERVICES, DNS, AND INGRESS VERSUS GATEWAY API
+    <span class="sub"><span class="lvl mid">MID</span> the Service types · <span class="lvl sr">STAFF</span> what is changing at the edge, and what is not</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The model in one line: every pod gets a routable IP, and any
+        pod can reach any other pod without NAT.</b> That flat network is provided by the CNI plugin, and it is why
+        Kubernetes networking feels simple until you need to restrict it.</div>
+      <table>
+        <thead><tr><th style="width:112px">Service type</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><b>ClusterIP</b></td><td><b>The default.</b> A stable virtual IP reachable only inside the cluster, load-balancing across ready pods</td></tr>
+          <tr><td><b>NodePort</b></td><td>Opens a port on every node. Mostly a building block for LoadBalancer — rarely the right thing to expose directly</td></tr>
+          <tr><td><b>LoadBalancer</b></td><td>Provisions a cloud load balancer. <b>One per Service, which becomes expensive</b> — this is the main reason ingress exists</td></tr>
+          <tr><td><b>ExternalName</b></td><td>A DNS CNAME to something outside the cluster. No proxying</td></tr>
+          <tr><td><b>Headless</b><br><span style="color:#6b7391">clusterIP: None</span></td><td><b>No virtual IP</b> — DNS returns pod addresses directly. What StatefulSets use so each replica is individually addressable</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">DNS and endpoints</div>
+      <ul>
+        <li><b>Every Service gets a DNS name</b> — <span class="mono">svc.namespace.svc.cluster.local</span>, shortened to <span class="mono">svc</span> within the namespace</li>
+        <li><b>EndpointSlices</b> track which pods are ready and back the Service. <b>Only <span class="mono">Ready</span> pods receive traffic</b> — which is what makes readiness probes matter</li>
+        <li><b>CoreDNS is a critical dependency.</b> If it is unhealthy, everything appears broken in confusing ways. Give it resources, run enough replicas, and monitor it</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Getting traffic in: Ingress and Gateway API</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Ingress</b></td><td>The long-standing HTTP routing API. Simple, and its limitations pushed every implementation into <b>vendor-specific annotations</b> — so Ingress manifests are not really portable</td></tr>
+          <tr><td><b>Gateway API</b></td><td><b>GA and the strategic direction.</b> A richer, role-oriented model: infrastructure teams own <span class="mono">GatewayClass</span> and <span class="mono">Gateway</span>, application teams own <span class="mono">HTTPRoute</span>. Native support for traffic splitting, header matching and cross-namespace routing — expressed in the API rather than in annotations</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The nuance that matters: Ingress is not being removed.</b> It is GA, still
+        supported, and clusters running it are not on a deadline. <b>Gateway API is where new capability is going</b>, and
+        it is the right choice for new work — but this is a migration to plan, not an emergency.</div>
+      <div class="callout r"><b>One thing <i>is</i> urgent, though.</b> The widely used <b>Ingress NGINX
+        controller has moved to best-effort maintenance and archival</b>. A very large number of clusters run it. If yours
+        does, plan a move — to Gateway API with a maintained implementation, or to another actively developed controller.
+        <b>This is the single most actionable item on this panel.</b></div>
+      <div class="h3">Network policy</div>
+      <ul>
+        <li><b>The default is allow-all.</b> Without policies, any pod can reach any other pod in the cluster, across namespaces. People consistently assume otherwise</li>
+        <li><b>Start with a default-deny ingress policy per namespace</b>, then allow what is needed. This is the highest-value security change available</li>
+        <li><b>Policies are enforced by the CNI</b> — and <b>not every CNI implements them</b>. Verify yours does before relying on it</li>
+        <li><b>Do not forget egress</b> — restricting outbound traffic limits what a compromised pod can reach</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. STORAGE ============ -->
+<div class="panel c8">
+  <div class="phead">6 &nbsp;· &nbsp;STORAGE <span class="sub">and the access-mode misconception</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:118px">Object</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><b>Volume</b></td><td>Storage attached to a pod. <span class="mono">emptyDir</span> lives and dies with the pod; <span class="mono">configMap</span> and <span class="mono">secret</span> project data in</td></tr>
+        <tr><td><b>PersistentVolume</b></td><td>A piece of storage in the cluster, usually provisioned dynamically rather than created by hand</td></tr>
+        <tr><td><b>PersistentVolumeClaim</b></td><td><b>What a pod actually references</b> — a request for storage of a size and class</td></tr>
+        <tr><td><b>StorageClass</b></td><td>Defines <i>how</i> storage is provisioned — the disk type, parameters and reclaim behaviour</td></tr>
+        <tr><td><b>CSI driver</b></td><td>The interface storage vendors implement. Everything modern goes through it</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The access-mode misconception.</b> <span class="mono">ReadWriteOnce</span> means the
+      volume is mounted read-write by <b>one node</b>, not one pod — several pods on the same node can share it.
+      <span class="mono">ReadWriteMany</span> allows many nodes and <b>requires a filesystem that supports it</b>, such as
+      NFS or a cloud file service. <b>Most block storage is ReadWriteOnce only</b>, which is why a Deployment with several
+      replicas sharing one block volume will not schedule.</div>
+    <div class="h3">Behaviour worth knowing</div>
+    <ul>
+      <li><b>Reclaim policy</b> — <span class="mono">Delete</span> destroys the underlying disk when the claim goes; <span class="mono">Retain</span> keeps it. <b>Check the default of your StorageClass</b> before deleting anything you care about</li>
+      <li><b>StatefulSet volumes are deliberately not deleted</b> when the StatefulSet is. This is a safety feature and a common source of orphaned disks and unexpected cost</li>
+      <li><b>Expansion</b> is supported by most drivers — grow the claim; shrinking is not possible</li>
+      <li><b>Volumes are usually zone-bound.</b> A pod with a claim in one zone cannot be scheduled to another — which quietly constrains rescheduling during an incident</li>
+      <li><b><span class="mono">VolumeAttributesClass</span></b>, now stable, allows changing volume parameters such as IOPS after provisioning</li>
+    </ul>
+    <div class="callout g"><b>Prefer managed services for databases and object storage for blobs.</b> Running
+      stateful workloads on Kubernetes is entirely achievable with good operators, and it is <b>strictly more work</b>
+      than the managed alternative. Make it a deliberate decision with a stated reason rather than a default.</div>
+  </div>
+</div>
+
+<!-- ============ 7. RESOURCES ============ -->
+<div class="panel c5 span2">
+  <div class="phead">7 &nbsp;· &nbsp;RESOURCES AND SCHEDULING — REQUESTS, LIMITS AND WHY PODS GET KILLED
+    <span class="sub">the most consequential numbers in any manifest · <span class="lvl sr">STAFF</span> the CPU-limit debate</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>The distinction everything rests on.</b>
+        <b><span class="mono">requests</span> are for scheduling</b> — the scheduler uses them to decide whether a pod
+        fits on a node, and it never looks at actual usage. <b><span class="mono">limits</span> are for enforcement</b> —
+        the kubelet caps the container at runtime. They are different numbers doing different jobs, and conflating them
+        causes both wasted money and unexplained restarts.</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>CPU</b></td><td><b>Compressible.</b> Exceeding the limit causes <b>throttling</b> — the container is slowed, not killed</td></tr>
+          <tr><td><b>Memory</b></td><td><b>Not compressible.</b> Exceeding the limit means the container is <b>OOM-killed immediately</b>. There is no graceful degradation</td></tr>
+        </tbody>
+      </table>
+      <div class="h3">Quality of service, which decides who dies first</div>
+      <table>
+        <thead><tr><th style="width:112px">Class</th><th>When, and eviction order</th></tr></thead>
+        <tbody>
+          <tr><td><b>Guaranteed</b></td><td>Requests equal limits for every resource. <b>Evicted last.</b> Use for anything critical</td></tr>
+          <tr><td><b>Burstable</b></td><td>Requests set, lower than limits. The common case. Evicted after BestEffort</td></tr>
+          <tr><td><b>BestEffort</b></td><td><b>No requests or limits at all. Evicted first</b>, and scheduled as though it needs nothing — so it lands on already-full nodes</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Which gives the rule: always set requests.</b> A pod without them is invisible to
+        the scheduler, gets placed on saturated nodes, and is the first thing killed under pressure. <b>The great majority
+        of &ldquo;Kubernetes randomly killed my pod&rdquo; reports are missing resource requests.</b></div>
+    </div>
+    <div>
+      <div class="callout p" style="margin-top:0"><b><span class="lvl sr">STAFF</span> The CPU-limit debate,
+        stated fairly.</b> Setting a CPU limit causes throttling <b>even when the node has idle CPU</b> — the container is
+        held at its ceiling regardless. Many practitioners therefore recommend <b>setting CPU requests but omitting CPU
+        limits</b>, while <b>always setting memory limits</b> (since memory cannot be reclaimed by throttling). The
+        counter-argument is that unlimited CPU allows a noisy neighbour to degrade others. <b>Both positions are
+        defensible</b>; what matters is choosing one deliberately and knowing that latency-sensitive services throttled by
+        a low CPU limit is a very common and very confusing performance problem.</div>
+      <div class="h3">Placement controls</div>
+      <table>
+        <tbody>
+          <tr><td style="width:132px"><b>nodeSelector<br>node affinity</b></td><td>Restrict pods to nodes with certain labels. Affinity adds soft preferences and richer expressions</td></tr>
+          <tr><td><b>Pod affinity<br>and anti-affinity</b></td><td>Place pods near or away from other pods. <b>Anti-affinity is how you stop all replicas landing on one node</b></td></tr>
+          <tr><td><b>Taints and tolerations</b></td><td>The inverse — a node <b>repels</b> pods unless they tolerate the taint. How you reserve nodes for specific workloads, such as GPU hosts</td></tr>
+          <tr><td><b>Topology spread</b></td><td><b>The modern and better tool</b> for spreading replicas evenly across zones or nodes. Prefer it to anti-affinity, which is harder to express and slower to evaluate</td></tr>
+          <tr><td><b>PriorityClass</b></td><td>Higher-priority pods can <b>preempt</b> lower-priority ones when capacity is short. Powerful and easy to misuse — a high priority everywhere means no priority</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Right-size from measurement, not from guesses.</b> Use the Vertical Pod Autoscaler
+        in recommendation mode, or actual usage percentiles, to set requests. <b>In-place pod resize now allows adjusting
+        CPU and memory without a restart</b>, which makes this a far less disruptive exercise than it used to be.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. AUTOSCALING ============ -->
+<div class="panel c4">
+  <div class="phead">8 &nbsp;· &nbsp;AUTOSCALING <span class="sub">three axes, easily confused</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:112px">Scaler</th><th>Scales</th></tr></thead>
+      <tbody>
+        <tr><td><b>HPA</b><br><span style="color:#6b7391">horizontal pod</span></td><td><b>The number of pod replicas</b>, on CPU, memory or custom metrics. The one you will use most</td></tr>
+        <tr><td><b>VPA</b><br><span style="color:#6b7391">vertical pod</span></td><td><b>The requests and limits of a pod.</b> Historically required a restart to apply — in-place resize is changing that. Excellent in recommendation-only mode</td></tr>
+        <tr><td><b>Cluster Autoscaler</b></td><td><b>The number of nodes</b>, when pods cannot be scheduled. Works within node groups you define</td></tr>
+        <tr><td><b>Karpenter</b></td><td>Provisions nodes directly, choosing instance types to fit pending pods. <b>Faster and usually cheaper</b> than node-group scaling, at the cost of being another component</td></tr>
+        <tr><td><b>KEDA</b></td><td>Event-driven scaling from queue depth, stream lag, or almost any external signal — <b>and it can scale to zero</b>, which the HPA alone cannot</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Do not run HPA and VPA on the same resource for the same workload.</b> They will
+      fight — VPA raises requests, which lowers CPU utilisation percentage, which makes HPA scale in, which raises
+      utilisation again. Use VPA for memory and HPA for CPU, or VPA in recommendation mode only.</div>
+    <div class="h3">Making autoscaling actually work</div>
+    <ul>
+      <li><b>Requests must be set</b> — the HPA computes utilisation as a percentage <i>of the request</i>. No request means no scaling</li>
+      <li><b>The metrics server must be running</b> for CPU and memory metrics. Its absence is the usual reason an HPA reports unknown targets</li>
+      <li><b>Tune stabilisation windows</b> so the workload does not flap. Scaling in aggressively then back out is worse than scaling slowly</li>
+      <li><b>Node scaling takes minutes</b>, pod scaling takes seconds. <b>Keep headroom</b>, or use low-priority placeholder pods that get preempted, so a traffic spike does not wait for a node to boot</li>
+      <li><b>Scale on the signal that reflects load</b> — queue depth or in-flight requests are often far better proxies than CPU</li>
+    </ul>
+    <div class="callout g"><b>Scaling exposes what was already fragile.</b> A service that cannot start quickly,
+      or that holds a database connection per replica, will fail under autoscaling in ways it never did at fixed size.
+      <b>Test scaling deliberately</b> rather than discovering it during a spike.</div>
+  </div>
+</div>
+
+<!-- ============ 9. PROBES ============ -->
+<div class="panel c7">
+  <div class="phead">9 &nbsp;· &nbsp;PROBES &amp; LIFECYCLE <span class="sub">the most misconfigured feature</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Probe</th><th>What failure does</th></tr></thead>
+      <tbody>
+        <tr><td><b>Liveness</b></td><td><b>Restarts the container.</b> Only for genuinely unrecoverable states — a deadlock. If your app can recover by itself, do not use one</td></tr>
+        <tr><td><b>Readiness</b></td><td><b>Removes the pod from Service endpoints</b> — no restart. This is the one that controls traffic, and the one most workloads actually need</td></tr>
+        <tr><td><b>Startup</b></td><td>Disables the other two until it passes. <b>The correct fix for slow-starting applications</b>, instead of long liveness delays</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>The classic outage: an aggressive liveness probe.</b> Under load the app slows, the
+      liveness probe times out, the container is restarted, the remaining replicas absorb more load and also slow, and
+      <b>the whole service enters a restart cascade</b> — caused entirely by the probe. Liveness probes should be
+      generous, cheap, and check only that the process is fundamentally alive.</div>
+    <div class="callout g"><b>The two rules that prevent most of this.</b> <b>Never make a liveness probe check a
+      dependency</b> — if it queries the database, a database blip restarts every pod in the fleet and turns a degradation
+      into an outage. And <b>make liveness far more tolerant than readiness</b>: readiness should shed traffic quickly,
+      liveness should restart reluctantly.</div>
+    <div class="h3">Graceful shutdown, which is genuinely subtle</div>
+    <ol>
+      <li>The pod is marked terminating and <b>removed from endpoints</b> — but this propagates to every node <b>asynchronously</b></li>
+      <li><span class="mono">SIGTERM</span> is sent to the container at the same time</li>
+      <li>After <span class="mono">terminationGracePeriodSeconds</span> — 30 by default — <span class="mono">SIGKILL</span> follows</li>
+    </ol>
+    <div class="callout r"><b>Steps 1 and 2 race, and this causes dropped requests during every deploy.</b> Your
+      pod may receive <span class="mono">SIGTERM</span> while traffic is still arriving. <b>The fix is a
+      <span class="mono">preStop</span> hook that sleeps a few seconds</b> before shutdown begins, giving endpoint removal
+      time to propagate. Then handle <span class="mono">SIGTERM</span> by draining in-flight requests.</div>
+    <div class="callout"><b>PodDisruptionBudget</b> caps how many replicas may be voluntarily unavailable at
+      once, protecting you during node drains and upgrades. <b>Set one for every service that matters</b> — without it, a
+      routine node drain can take all replicas down simultaneously.</div>
+  </div>
+</div>
+
+<!-- ============ 10. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">10 &nbsp;· &nbsp;SECURITY <span class="sub">defaults are permissive</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Kubernetes defaults are optimised for things working, not for
+      being safe.</b> Out of the box: pods may run as root, network traffic is unrestricted between all pods, Secrets are
+      not encrypted, and containers can often request more privilege than they need. <b>Every item below is something you
+      must turn on.</b></div>
+    <div class="h3">The layers</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>RBAC</b></td><td>Roles and bindings, namespaced or cluster-wide. <b>Least privilege, granted to groups.</b> Audit for wildcards and for anyone holding <span class="mono">cluster-admin</span></td></tr>
+        <tr><td><b>Pod Security Admission</b></td><td><b>PodSecurityPolicy was removed in 1.25.</b> PSA applies one of three profiles per namespace — <span class="mono">privileged</span>, <span class="mono">baseline</span>, <span class="mono">restricted</span> — in enforce, audit or warn mode. <b>Aim for restricted</b>, and use audit mode first to see what would break</td></tr>
+        <tr><td><b>securityContext</b></td><td><span class="mono">runAsNonRoot</span>, <span class="mono">readOnlyRootFilesystem</span>, drop all capabilities, <span class="mono">allowPrivilegeEscalation: false</span>. Cheap, and it closes most container-escape paths</td></tr>
+        <tr><td><b>NetworkPolicy</b></td><td><b>Default-deny per namespace</b>, then allow explicitly. The default is allow-all</td></tr>
+        <tr><td><b>Admission policy</b></td><td>Kyverno, Gatekeeper or Validating Admission Policy to enforce standards cluster-wide — approved registries, required labels, no privileged pods</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Supply chain and identity</div>
+    <ul>
+      <li><b>Scan images</b> in CI and at admission; <b>sign them</b> and verify signatures before they run</li>
+      <li><b>Pin by digest</b> rather than by mutable tag. <span class="mono">:latest</span> in production is an unpinned dependency</li>
+      <li><b>Disable service account token automounting</b> where the pod does not call the API — it is on by default</li>
+      <li><b>Use workload identity</b> so pods assume cloud roles instead of holding static credentials</li>
+      <li><b>Enable audit logging</b> and ship it off-cluster</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 11. OBSERVABILITY ============ -->
+<div class="panel c3">
+  <div class="phead">11 &nbsp;· &nbsp;OBSERVABILITY <span class="sub">what to watch</span></div>
+  <div class="pbody">
+    <div class="h3">The stack</div>
+    <ul>
+      <li><b>metrics-server</b> — the minimum. Powers <span class="mono">kubectl top</span> and the HPA. <b>Not a monitoring system</b> and keeps no history</li>
+      <li><b>Prometheus</b> with kube-state-metrics and node-exporter — the standard for cluster and workload metrics</li>
+      <li><b>Logs go to stdout</b>; a DaemonSet agent collects and ships them. <b>Never write logs to a file inside the container</b> — they vanish with the pod</li>
+      <li><b>OpenTelemetry</b> for traces, and increasingly for metrics and logs too</li>
+      <li><b>Events</b> are the first place to look in an incident — and they <b>expire after about an hour</b>, so ship them somewhere durable</li>
+    </ul>
+    <div class="h3">Cluster signals worth alerting on</div>
+    <table>
+      <tbody>
+        <tr><td style="width:132px"><b>Pods not Ready</b></td><td>Persisting beyond a rollout window</td></tr>
+        <tr><td><b>CrashLoopBackOff</b></td><td>Any occurrence, per workload</td></tr>
+        <tr><td><b>Pending pods</b></td><td>Nothing fits — capacity, taints or volume zone constraints</td></tr>
+        <tr><td><b>OOMKilled count</b></td><td>Memory limits too low, or a leak</td></tr>
+        <tr><td><b>CPU throttling</b></td><td><b>Frequently the hidden cause of latency.</b> Watch it explicitly</td></tr>
+        <tr><td><b>Node conditions</b></td><td>Memory, disk and PID pressure; nodes NotReady</td></tr>
+        <tr><td><b>API server latency<br>and error rate</b></td><td>Control-plane health</td></tr>
+        <tr><td><b>etcd latency and size</b></td><td>Leading indicator of control-plane trouble</td></tr>
+        <tr><td><b>Certificate expiry</b></td><td>A boring and genuinely cluster-ending failure</td></tr>
+        <tr><td><b>PVC usage</b></td><td>Volumes filling up — silent until writes fail</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Alert on symptoms your users feel, not on every Kubernetes condition.</b> A pod
+      restarting is normal; <b>a service failing its error budget is not</b>. Cluster-level signals belong on a dashboard
+      for diagnosis; user-facing SLOs belong on the pager.</div>
+  </div>
+</div>
+
+<!-- ============ 12. DELIVERY ============ -->
+<div class="panel c2 span2">
+  <div class="phead">12 &nbsp;· &nbsp;PACKAGING, DELIVERY AND ROLLOUTS
+    <span class="sub"><span class="lvl mid">MID</span> Helm and Kustomize · <span class="lvl sr">STAFF</span> GitOps, and safe rollout strategies</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Packaging</div>
+      <table>
+        <tbody>
+          <tr><td style="width:104px"><b>Raw YAML</b></td><td>Fine for a handful of objects. Duplicates rapidly across environments</td></tr>
+          <tr><td><b>Kustomize</b></td><td><b>Built into kubectl.</b> Overlays patch a base per environment. No templating language — what you read is YAML. Ideal for your own applications</td></tr>
+          <tr><td><b>Helm</b></td><td>Templated, versioned, parameterised charts with release management. <b>The standard for distributing third-party software</b>, and heavier for your own</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>A common and sensible split: Helm for other people's software, Kustomize for
+        yours.</b> Helm's templating earns its complexity when a chart must serve thousands of unknown users; for your own
+        services, overlays are simpler to read and to debug.</div>
+      <div class="h3">GitOps</div>
+      <ul>
+        <li><b>Git is the desired state</b>, and an in-cluster agent — Argo CD or Flux — continuously reconciles the cluster toward it</li>
+        <li><b>The same reconciliation model as Kubernetes itself</b>, extended to your deployments. That symmetry is why it fits so well</li>
+        <li><b>Drift is detected and corrected</b>, so a manual change made during an incident does not silently persist</li>
+        <li><b>The audit trail is the git history</b>, and rollback is a revert</li>
+        <li><b>No cluster credentials in CI</b> — the agent pulls, rather than CI pushing. A meaningful security improvement</li>
+      </ul>
+      <div class="callout"><b>The discipline it demands:</b> stop using <span class="mono">kubectl apply</span>
+        against production. <b>Every change goes through git</b>, or the agent will revert it — which is the point, and it
+        is a real behavioural change for teams used to hot-fixing.</div>
+    </div>
+    <div>
+      <div class="h3">Rollout strategies</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>RollingUpdate</b></td><td><b>The default.</b> <span class="mono">maxSurge</span> controls how many extra pods may exist; <span class="mono">maxUnavailable</span> how many may be down. <b>Set <span class="mono">maxUnavailable: 0</span></b> for services that must not lose capacity mid-deploy</td></tr>
+          <tr><td><b>Recreate</b></td><td>All old pods stop, then new ones start. Downtime, and necessary when versions cannot coexist — a schema change, or a single-writer volume</td></tr>
+          <tr><td><b>Blue-green</b></td><td>Two full environments; switch traffic at once. Instant rollback, double the resources</td></tr>
+          <tr><td><b>Canary</b></td><td>Route a small share of traffic to the new version and watch. <b>The safest for user-facing services</b>, and it needs traffic splitting — from Gateway API or a service mesh</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Progressive delivery tools</b> — Argo Rollouts or Flagger — automate canary
+        analysis: shift traffic in steps, watch metrics, and <b>roll back automatically</b> when error rate or latency
+        degrades. This converts rollback from a human decision made under pressure into a mechanism.</div>
+      <div class="h3">Making rollouts safe</div>
+      <ul>
+        <li><b>Readiness probes that mean something</b> — a rolling update trusts them completely to decide the new pod is healthy</li>
+        <li><b><span class="mono">minReadySeconds</span></b> so a pod must stay ready before the rollout proceeds. Catches pods that pass a probe then immediately fail</li>
+        <li><b>PodDisruptionBudgets</b> so voluntary disruption cannot take everything</li>
+        <li><b>Backward-compatible changes</b> — during a rolling update both versions run at once, and they may share a database</li>
+        <li><b>Watch <span class="mono">kubectl rollout status</span></b> in CI and fail the pipeline on timeout</li>
+        <li><b>Keep <span class="mono">revisionHistoryLimit</span></b> high enough to roll back to a known-good version</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. TENANCY ============ -->
+<div class="panel c6">
+  <div class="phead">13 &nbsp;· &nbsp;MULTI-TENANCY &amp; QUOTAS <span class="sub">what a namespace is not</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>A namespace is not a security boundary on its own.</b> It is a
+      scope for names and a place to attach policy. <b>Without RBAC, network policy, resource quota and pod security
+      applied to it, a namespace isolates nothing</b> — pods in different namespaces can reach each other freely and
+      compete for the same node resources.</div>
+    <div class="h3">What makes a namespace an actual boundary</div>
+    <ul>
+      <li><b>RBAC</b> scoped to it, so teams cannot read or change each other's objects — <b>including Secrets</b></li>
+      <li><b>NetworkPolicy</b> with default-deny, so traffic does not cross without an explicit rule</li>
+      <li><b>ResourceQuota</b> capping total CPU, memory, storage and object counts, so one team cannot consume the cluster</li>
+      <li><b>LimitRange</b> setting defaults and maxima per container — <b>this is how you stop pods with no requests being created at all</b></li>
+      <li><b>Pod Security Admission</b> label enforcing a profile</li>
+      <li><b>Separate node pools</b> with taints, where workloads must not share hardware</li>
+    </ul>
+    <div class="callout g"><b>LimitRange is the underrated one.</b> It sets a default request on any container
+      that omits one, which quietly eliminates the BestEffort pods that cause most unexplained evictions. It costs one
+      object per namespace.</div>
+    <div class="h3">How far isolation goes</div>
+    <table>
+      <tbody>
+        <tr><td style="width:118px"><b>Soft</b><br><span style="color:#6b7391">trusted teams</span></td><td>Namespaces with the controls above. <b>Sufficient for teams within one organisation.</b> The kernel is still shared</td></tr>
+        <tr><td><b>Harder</b></td><td>Dedicated node pools, plus a sandboxed runtime such as gVisor or Kata for stronger workload isolation</td></tr>
+        <tr><td><b>Hard</b><br><span style="color:#6b7391">untrusted</span></td><td><b>Separate clusters.</b> Virtual-cluster tools give tenants their own API server on shared infrastructure — a genuine middle ground</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>The honest position: Kubernetes does not offer hard multi-tenancy by default.</b>
+      Tenants share a kernel, a control plane and a network. <b>For genuinely untrusted workloads, use separate
+      clusters</b> — and treat the cost as the price of the guarantee.</div>
+  </div>
+</div>
+
+<!-- ============ 14. OPERATIONS ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;OPERATIONS — UPGRADES, CAPACITY, COST AND DISASTER RECOVERY
+    <span class="sub">the continuous work of running a cluster, and the parts that are easy to defer until they are urgent</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Upgrades — the permanent background task</div>
+      <ul>
+        <li><b>Roughly three releases a year, about fourteen months of support each.</b> There is no steady state; there is only staying current</li>
+        <li><b>Upgrade the control plane first, then nodes.</b> The kubelet may be older than the API server within the supported skew, never newer</li>
+        <li><b>One minor version at a time.</b> Skipping is not supported</li>
+        <li><b>Removed APIs are what actually breaks upgrades.</b> Check manifests against the deprecation list — <span class="mono">kubectl convert</span> and tools like Pluto or kubent find them</li>
+        <li><b>Node upgrades mean draining</b>, which respects PodDisruptionBudgets — a workload without one can lose every replica at once, and a badly configured one can block the drain forever</li>
+        <li><b>Rehearse on a non-production cluster</b> that matches production, including CNI, storage drivers and admission webhooks</li>
+      </ul>
+      <div class="callout r"><b>The failure to plan for: an upgrade blocked by an add-on.</b> CNI, CSI drivers,
+        the ingress controller and operators all have their own version compatibility. <b>Check every add-on before
+        starting</b> — being stranded on an unsupported version because one component has not caught up is a common and
+        painful position.</div>
+    </div>
+    <div>
+      <div class="h3">Disaster recovery</div>
+      <ul>
+        <li><b>etcd backups on a schedule</b>, stored off-cluster and encrypted — the whole cluster state is in there</li>
+        <li><b>Test the restore.</b> An untested backup is a hypothesis, and etcd restore is genuinely fiddly</li>
+        <li><b>Velero</b> for namespace and volume-level backup and restore, and for migration between clusters</li>
+        <li><b>Persistent volumes need their own backups</b> — snapshotting etcd does not capture your data</li>
+        <li><b>Be able to rebuild the cluster from git</b> — with GitOps, cluster loss becomes recreate-and-resync rather than a recovery project. <b>This is the strongest DR position available</b></li>
+        <li><b>Write down and rehearse</b>: total cluster loss, control-plane loss, one zone lost</li>
+      </ul>
+      <div class="h3">Capacity and reliability</div>
+      <ul>
+        <li><b>Spread nodes across availability zones</b>, and use topology spread so replicas follow</li>
+        <li><b>Keep scheduling headroom</b> so a node loss does not leave pods Pending</li>
+        <li><b>Control plane HA</b> — three or five etcd members, several API servers. Managed services handle this</li>
+        <li><b>Watch pods-per-node limits</b>, which are usually lower than resource capacity suggests</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Cost — where it actually goes</div>
+      <table>
+        <thead><tr><th style="width:132px">Source</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Over-requested resources</b></td><td><b>By far the largest waste.</b> Requests set from guesswork reserve capacity nobody uses, since the scheduler reserves against requests. Right-size from measurement</td></tr>
+          <tr><td><b>Idle nodes</b></td><td>Cluster autoscaler or Karpenter with aggressive consolidation</td></tr>
+          <tr><td><b>Wrong instance types</b></td><td>Match workload shape; use spot or preemptible for fault-tolerant work</td></tr>
+          <tr><td><b>One load balancer per Service</b></td><td>Consolidate behind an ingress or Gateway</td></tr>
+          <tr><td><b>Cross-zone traffic</b></td><td>Real money at volume. <b>Topology-aware routing keeps traffic in-zone</b></td></tr>
+          <tr><td><b>Orphaned volumes</b></td><td>StatefulSet volumes outlive the workload deliberately. Audit for unattached disks</td></tr>
+          <tr><td><b>Forgotten environments</b></td><td>Namespaces nobody has opened in months</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Attribute cost before optimising it.</b> Consistent labels plus a tool such as
+        OpenCost or Kubecost turn a single cluster bill into per-team, per-namespace figures. <b>Showing teams their own
+        number reduces spend before any technical change</b> — and the largest line is usually over-requested memory.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Pod <span class="mono">Pending</span></b></td><td>No node fits — insufficient resources, an untolerated taint, unmet affinity, or a volume in another zone</td><td><span class="mono">kubectl describe pod</span> states the reason explicitly. Read the events</td></tr>
+          <tr><td><b><span class="mono">CrashLoopBackOff</span></b></td><td>The container starts and exits — bad config, a missing dependency, or a failing liveness probe</td><td><span class="mono">logs --previous</span> for the last attempt. Check whether the probe is the cause</td></tr>
+          <tr><td><b><span class="mono">OOMKilled</span></b></td><td>Memory limit exceeded — too low, or a leak</td><td>Measure actual usage; raise the limit or fix the leak. <b>Memory is not compressible</b></td></tr>
+          <tr><td><b>Latency high, CPU looks low</b></td><td><b>CPU throttling from a low limit</b> — the container is capped even with idle node capacity</td><td>Check throttling metrics. Raise or remove the CPU limit; see panel 7</td></tr>
+          <tr><td><b>Requests dropped on every deploy</b></td><td>Endpoint removal races SIGTERM</td><td><span class="mono">preStop</span> sleep; handle SIGTERM by draining; <span class="mono">maxUnavailable: 0</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Whole service restart cascade</b></td><td>Liveness probe checking a dependency, or too aggressive under load</td><td>Make liveness generous and dependency-free; use readiness to shed traffic</td></tr>
+          <tr><td><b>All writes to the cluster fail</b></td><td>An admission webhook is down or timing out</td><td>Set failure policy deliberately; exclude critical namespaces; tight timeouts</td></tr>
+          <tr><td><b>Everything broken in odd ways</b></td><td>CoreDNS unhealthy or under-resourced</td><td>Check CoreDNS first when symptoms are diffuse. Give it resources and replicas</td></tr>
+          <tr><td><b>Node drain hangs forever</b></td><td>A PodDisruptionBudget that can never be satisfied</td><td>Review PDBs against replica counts — one replica with <span class="mono">minAvailable: 1</span> blocks every drain</td></tr>
+          <tr><td><b>Upgrade blocked or breaks apps</b></td><td>Removed APIs, or an add-on not yet compatible</td><td>Scan manifests for deprecated APIs; check every add-on before starting</td></tr>
+          <tr><td><b>Random pods killed on a busy node</b></td><td>BestEffort pods with no requests, evicted first</td><td><b>Set requests on everything</b>; add a LimitRange per namespace</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>Missing or wrong resource requests.</b> The root of evictions, Pending pods, throttling and most cost waste — and the cheapest to fix</td></tr>
+          <tr><td><b>2</b></td><td><b>Misconfigured probes</b>, which turn a degradation into a restart cascade</td></tr>
+          <tr><td><b>3</b></td><td><b>Upgrades deferred</b> until the version is unsupported and add-ons have moved on</td></tr>
+          <tr><td><b>4</b></td><td><b>etcd or control-plane health</b>, usually disk latency</td></tr>
+          <tr><td><b>5</b></td><td><b>Raw cluster scale</b> — the thing people design for, and the last to bind</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> Nothing in the top three is about scale or architecture. They
+        are numbers in a manifest, probe configuration and maintenance discipline — all visible in advance, and all fixable
+        without new infrastructure.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>API server down</b> — running pods keep running. You lose all control, scaling and self-healing. <b>Serious but not immediately user-facing</b></li>
+        <li><b>etcd down</b> — the control plane is read-only at best. Workloads continue; nothing can change</li>
+        <li><b>One node lost</b> — pods are rescheduled if capacity exists. <b>This is the case Kubernetes handles best</b></li>
+        <li><b>A zone lost</b> — survivable only if nodes and replicas were spread across zones. Verify this before you need it</li>
+        <li><b>CNI or CoreDNS degraded</b> — the most confusing outage available, because everything fails oddly rather than cleanly</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before workloads depend on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Resource requests set on every container</b></div>
+      <div>&#9744; <b>Memory limits set</b>; CPU limit policy decided deliberately</div>
+      <div>&#9744; <b>LimitRange per namespace</b> so nothing lands as BestEffort</div>
+      <div>&#9744; <b>Requests right-sized from measurement</b>, not guesses</div>
+      <div>&#9744; <b>QoS class understood</b> for every critical workload</div>
+      <div>&#9744; <b>Readiness probes on everything serving traffic</b></div>
+      <div>&#9744; <b>Liveness probes generous and dependency-free</b>, or absent</div>
+      <div>&#9744; <b>Startup probes for slow starters</b></div>
+      <div>&#9744; <b><span class="mono">preStop</span> hook and SIGTERM handling</b> for graceful shutdown</div>
+      <div>&#9744; <b>PodDisruptionBudget per service</b>, satisfiable at current replica count</div>
+      <div>&#9744; <b>Topology spread across zones and nodes</b></div>
+      <div>&#9744; <b>Anti-affinity or spread</b> so replicas never share one node</div>
+      <div>&#9744; <b><span class="mono">maxUnavailable: 0</span></b> where capacity must not drop</div>
+      <div>&#9744; <b><span class="mono">minReadySeconds</span> set</b> on critical rollouts</div>
+      <div>&#9744; <b>Images pinned by digest</b>; no <span class="mono">:latest</span></div>
+      <div>&#9744; <b>Images scanned and signed</b>; signatures verified at admission</div>
+      <div>&#9744; <b>Pod Security Admission enforced</b>, aiming at restricted</div>
+      <div>&#9744; <b><span class="mono">securityContext</span> set</b> — non-root, read-only root, capabilities dropped</div>
+      <div>&#9744; <b>Default-deny NetworkPolicy per namespace</b>; egress considered</div>
+      <div>&#9744; <b>CNI verified to enforce NetworkPolicy</b></div>
+      <div>&#9744; <b>RBAC least-privilege</b>; wildcards and cluster-admin audited</div>
+      <div>&#9744; <b>Service account token automounting disabled</b> where unused</div>
+      <div>&#9744; <b>etcd encryption at rest enabled</b>, ideally with KMS</div>
+      <div>&#9744; <b>Secrets from an external store</b>, never committed to git</div>
+      <div>&#9744; <b>Workload identity instead of static cloud credentials</b></div>
+      <div>&#9744; <b>Admission webhook failure policy and timeouts set</b></div>
+      <div>&#9744; <b>Critical namespaces excluded from webhooks</b></div>
+      <div>&#9744; <b>Ingress controller actively maintained</b> — Ingress NGINX users have a migration to plan</div>
+      <div>&#9744; <b>Gateway API considered</b> for new edge work</div>
+      <div>&#9744; <b>CoreDNS resourced, replicated and monitored</b></div>
+      <div>&#9744; <b>StorageClass reclaim policy understood</b> before deleting anything</div>
+      <div>&#9744; <b>Persistent volumes backed up separately</b> from etcd</div>
+      <div>&#9744; <b>etcd backed up off-cluster and a restore tested</b></div>
+      <div>&#9744; <b>Cluster rebuildable from git</b></div>
+      <div>&#9744; <b>Upgrade cadence planned</b>; deprecated APIs scanned for</div>
+      <div>&#9744; <b>Add-on compatibility checked</b> before every upgrade</div>
+      <div>&#9744; <b>Metrics, logs and events shipped off-cluster</b></div>
+      <div>&#9744; <b>Alerting on user-facing SLOs</b>, not on every pod restart</div>
+      <div>&#9744; <b>CPU throttling monitored explicitly</b></div>
+      <div>&#9744; <b>Cost attributed per team via consistent labels</b></div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>state whether every container has resource requests,
+      what happens to a pod when its liveness probe fails under load, what the network policy and pod security defaults
+      are in each namespace, when etcd was last restored from backup, and how the next version upgrade will be
+      performed.</b> Those five answers cover almost every incident this platform will hand you — and none of them are
+      about how many nodes it can run.</div>
+  </div>
+</div>
+
+</div>
