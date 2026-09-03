@@ -1,0 +1,921 @@
+<meta charset="utf-8">
+<title>Apache Airflow — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5936px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5936px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5906px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 451px 663px 709px 651px 560px 662px 453px 469px 470px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>APACHE AIRFLOW — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Orchestrate, don't compute — the data interval model, concurrency, and what Airflow 3 removed<br>
+    <span style="font-size:13.4px;color:#6d80b6">concepts · scheduling · authoring · executors · deployment · concurrency · operations · security
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT AIRFLOW IS, WHAT IT IS NOT, AND WHAT AIRFLOW 3 CHANGED
+    <span class="sub">start here — the single most valuable principle is that Airflow orchestrates work rather than performing it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A platform to <b>author, schedule and monitor workflows as
+        code</b>. Workflows are Python files defining a <b>directed acyclic graph</b> of tasks with dependencies between
+        them. Airflow decides <i>what runs when</i>, in what order, and what to do when something fails.</div>
+      <div class="callout r"><b>The principle that prevents most Airflow problems: orchestrate, do not
+        compute.</b> Airflow should <b>tell other systems to do work</b> — trigger a Spark job, run a warehouse query,
+        call an API — and track the outcome. It should not load a dataframe, join it and write it back. Tasks that process
+        data themselves make workers the bottleneck, make memory a scheduling concern, and make the platform impossible to
+        scale independently of the work.</div>
+      <div class="h3">What it is not, stated plainly</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>Not a data processing engine</b></td><td>Use Spark, dbt or the warehouse. Airflow launches them</td></tr>
+          <tr><td><b>Not a streaming platform</b></td><td>It is batch-oriented. Sub-minute or event-per-record work belongs in Kafka, Flink or a queue consumer</td></tr>
+          <tr><td><b>Not a low-latency scheduler</b></td><td>Scheduling latency is measured in seconds. It is not a cron replacement for second-level precision</td></tr>
+          <tr><td><b>Not an ETL tool</b></td><td>It is the conductor. The instruments are elsewhere</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Where it genuinely excels:</b> batch pipelines with real dependency graphs,
+        heterogeneous systems that must be coordinated, work needing retries and backfills, and anywhere the <b>schedule
+        and dependency logic itself is complex enough to deserve version control</b>.</div>
+    </div>
+    <div>
+      <div class="callout b" style="margin-top:0"><b><span class="lvl sr">STAFF</span> Airflow 3 arrived in 2025
+        and it is a genuine break, not a point release.</b> A reference written for 2.x will teach several things that no
+        longer work. The headline changes are worth knowing whichever version you run, because they signal the
+        direction.</div>
+      <div class="h3">What Airflow 3 added</div>
+      <ul>
+        <li><b>Task SDK and a Task Execution API</b> — tasks run with <b>full isolation from the metadata database</b>, which removes a long-standing security and coupling problem. Authors now import from the <span class="mono">airflow.sdk</span> namespace</li>
+        <li><b>DAG versioning</b> — structural changes are tracked over time, so you can inspect the DAG as it was when a historical run executed. This closes a real gap in debugging</li>
+        <li><b>Assets</b> — the dataset model renamed and redesigned, with an <span class="mono">@asset</span> decorator and a cleaner event-driven model. Airflow can now <b>watch external assets and trigger on change</b></li>
+        <li><b>Edge Executor</b> for distributed and edge workloads, now generally available</li>
+        <li><b>A rebuilt UI</b> on React and FastAPI, with version-aware views and backfill management</li>
+        <li><b>Scheduler-managed backfills</b>, rather than a separate CLI-driven mechanism</li>
+      </ul>
+      <div class="callout r"><b>What Airflow 3 removed — check your DAGs against this list.</b>
+        <b>SubDAGs</b> and <span class="mono">SubDagOperator</span> are gone entirely; use TaskGroups.
+        <b>SequentialExecutor</b> is gone; LocalExecutor now handles SQLite and is the local-testing answer.
+        <b>SLAs</b> are removed. <b>DAG and XCom pickling</b> are removed. <span class="mono">execution_date</span> is
+        removed. And <span class="mono">schedule_interval</span>, deprecated since 2.4, is removed in favour of
+        <span class="mono">schedule</span>.</div>
+    </div>
+    <div>
+      <div class="h3">Deprecated patterns still widely copied</div>
+      <table>
+        <thead><tr><th style="width:170px">Do not use</th><th>Use instead</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">from airflow.utils.dates<br>import days_ago</td><td><b>Removed.</b> Use a fixed date, or <span class="mono">pendulum.today("UTC").add(days=-N)</span>. A dynamic <span class="mono">start_date</span> was always a bug — it makes the schedule shift every time the file is parsed</td></tr>
+          <tr><td class="mono">schedule_interval=</td><td><span class="mono">schedule=</span> — deprecated in 2.4, removed in 3</td></tr>
+          <tr><td class="mono">execution_date</td><td><span class="mono">logical_date</span>, and the data interval fields. See panel 2</td></tr>
+          <tr><td class="mono">SubDagOperator</td><td><span class="mono">TaskGroup</span></td></tr>
+          <tr><td class="mono">SequentialExecutor</td><td><span class="mono">LocalExecutor</span></td></tr>
+          <tr><td class="mono">from airflow import DAG</td><td>On 3.x, <span class="mono">from airflow.sdk import DAG, dag, task</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>A note on the ecosystem.</b> Airflow's real strength is the <b>provider
+        packages</b> — hundreds of them, covering every major cloud, database, warehouse and SaaS platform. Before writing
+        a custom operator, check whether a provider already does it; a maintained provider handles authentication,
+        pagination, retries and deferrability that a hand-written hook will not.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. CONCEPTS ============ -->
+<div class="panel c5 span2">
+  <div class="phead">2 &nbsp;· &nbsp;CORE CONCEPTS AND THE DATA INTERVAL — THE PART EVERYONE GETS WRONG
+    <span class="sub"><span class="lvl jr">JUNIOR</span> the vocabulary · <span class="lvl sr">STAFF</span> why your daily DAG runs a day &ldquo;late&rdquo;, and why that is correct</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:132px">Concept</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><b>DAG</b></td><td>A Python file describing tasks and their dependencies. <b>A definition, not a run</b></td></tr>
+          <tr><td><b>Task</b></td><td>A node in the graph — one unit of work</td></tr>
+          <tr><td><b>Operator</b></td><td>A template for a task. <span class="mono">BashOperator</span>, <span class="mono">PythonOperator</span>, and hundreds from providers</td></tr>
+          <tr><td><b>Task instance</b></td><td>One specific execution of a task, for one DAG run. <b>This is what actually has a state</b></td></tr>
+          <tr><td><b>DAG run</b></td><td>One execution of the whole DAG, for one logical date</td></tr>
+          <tr><td><b>Hook</b></td><td>The connection layer to an external system. Operators use hooks</td></tr>
+          <tr><td><b>Sensor</b></td><td>A task that waits for a condition. <b>See panel 11 — these cause more trouble than any other task type</b></td></tr>
+          <tr><td><b>XCom</b></td><td>Small messages passed between tasks, stored in the metadata database</td></tr>
+          <tr><td><b>Pool</b></td><td>A named concurrency limit shared across tasks</td></tr>
+          <tr><td><b>Asset</b></td><td>A logical dataset a DAG produces or consumes, enabling <b>data-aware scheduling</b> instead of time-based</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The state model to know:</b> a task is
+        <span class="mono">scheduled</span> → <span class="mono">queued</span> → <span class="mono">running</span> →
+        <span class="mono">success</span> or <span class="mono">failed</span>, with
+        <span class="mono">up_for_retry</span>, <span class="mono">up_for_reschedule</span>,
+        <span class="mono">skipped</span> and <span class="mono">upstream_failed</span> along the way. <b>Tasks stuck in
+        <span class="mono">queued</span> mean the executor cannot place them</b> — a capacity or pool problem, not a code
+        one.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The data interval is the single most confusing concept in
+        Airflow, and it is worth being precise about.</b> A scheduled DAG run does not represent &ldquo;now&rdquo;. It
+        represents a <b>period of data</b> — and it runs <b>after that period has ended</b>, because only then is the data
+        complete.</div>
+      <div class="code"><span class="c"># a DAG with schedule="@daily"</span>
+
+data_interval_start   2026-03-01 00:00
+data_interval_end     2026-03-02 00:00
+                            &darr;
+<span class="k">the run is triggered at 2026-03-02 00:00</span>
+<span class="c"># because only then is 1 March complete</span>
+
+<span class="c"># so on the morning of 2 March, the most recent</span>
+<span class="c"># successful run is labelled 1 March.</span>
+<span class="c"># This is correct. It is not a delay.</span></div>
+      <div class="callout"><b>Use the interval, not the clock.</b> A task that queries
+        <span class="mono">WHERE date = today()</span> is not idempotent and will produce different results on a rerun or
+        a backfill. Use <span class="mono">data_interval_start</span> and <span class="mono">data_interval_end</span> from
+        the context, and the same task run at any time produces the same result — <b>which is what makes backfills
+        meaningful</b>.</div>
+      <div class="callout b"><b>A version note that matters when reading older material.</b> In Airflow 2,
+        <span class="mono">logical_date</span> equalled <span class="mono">data_interval_start</span>. <b>In Airflow 3 it
+        equals the run-after time</b> instead. The data interval fields are unchanged and are what you should reference in
+        task logic either way.</div>
+      <div class="callout r"><b>And the footgun: <span class="mono">catchup</span> defaults to true.</b> Deploy a
+        DAG with a <span class="mono">start_date</span> two years ago and Airflow will attempt to run <b>every missed
+        interval</b> — hundreds of runs launching at once, saturating workers and possibly hammering a source system.
+        <b>Set <span class="mono">catchup=False</span> unless you specifically want history</b>, and pair it with
+        <span class="mono">max_active_runs</span>.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. SCHEDULING ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;SCHEDULING <span class="sub">time-based and data-aware</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:132px">Form</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><b>Cron</b></td><td><span class="mono">"0 6 * * *"</span> — daily at 06:00. Standard five-field syntax</td></tr>
+        <tr><td><b>Presets</b></td><td><span class="mono">@daily</span>, <span class="mono">@hourly</span>, <span class="mono">@weekly</span>, <span class="mono">@monthly</span>, <span class="mono">@once</span></td></tr>
+        <tr><td><b>Timedelta</b></td><td><span class="mono">timedelta(hours=6)</span> — relative to the previous run rather than to a wall clock</td></tr>
+        <tr><td><b><span class="mono">None</span></b></td><td>Triggered manually or by another DAG only</td></tr>
+        <tr><td><b>Timetable</b></td><td>A custom Python class. <b>The answer for business days, trading calendars or irregular schedules</b> that cron cannot express</td></tr>
+        <tr><td><b>Assets</b></td><td>Run when an upstream DAG produces a dataset — <b>data-aware rather than time-based</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Asset-based scheduling is the most under-used feature here.</b> Instead of guessing
+      that upstream finishes by 06:00 and scheduling for 06:30, declare that your DAG consumes an asset the upstream DAG
+      produces. It then runs <b>when the data is actually ready</b> — no padding, no silent breakage when upstream slows
+      down. Airflow 3 extends this to watching external assets and triggering on external events.</div>
+    <div class="h3">Catchup and backfill</div>
+    <ul>
+      <li><b><span class="mono">catchup=True</span> is the default</b> and will run every interval since <span class="mono">start_date</span></li>
+      <li><b>Backfill</b> re-runs a historical range deliberately. In Airflow 3 this is scheduler-managed and visible in the UI rather than a detached CLI process</li>
+      <li><b>Bound it.</b> A backfill over two years of daily partitions launched at full concurrency will saturate the cluster — use <span class="mono">max_active_runs</span> and a pool</li>
+      <li><b>Backfill only works if tasks are idempotent</b> and derive their window from the data interval</li>
+    </ul>
+    <div class="h3">Trigger rules</div>
+    <table>
+      <tbody>
+        <tr><td style="width:150px" class="mono">all_success</td><td><b>The default.</b> Run when every upstream succeeded</td></tr>
+        <tr><td class="mono">all_done</td><td>Run when upstreams finish, whatever the outcome. <b>The one to use for cleanup and notification tasks</b></td></tr>
+        <tr><td class="mono">one_success<br>one_failed</td><td>Run as soon as any upstream succeeds or fails</td></tr>
+        <tr><td class="mono">none_failed_min_one_success</td><td>The correct rule for a task that joins branches</td></tr>
+        <tr><td class="mono">always</td><td>Run regardless</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Branching needs the right join rule.</b> After a branch, the untaken path is
+      <span class="mono">skipped</span> — and the default <span class="mono">all_success</span> treats a skipped upstream
+      as not satisfied, so the join never runs. <span class="mono">none_failed_min_one_success</span> is what you want.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — THE COMPONENTS, AND HOW A TASK ACTUALLY GETS RUN
+    <span class="sub">what each process does, where state lives, and the loop that turns a DAG file into a running task</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- COMPONENTS -->
+    <rect x="8" y="6" width="2124" height="290" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE COMPONENTS — each is a separate process, and each scales independently</text>
+
+    <g font-size="10.5">
+      <rect x="26" y="44" width="330" height="118" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+      <text x="42" y="64" font-size="12" font-weight="700" fill="#be123c">SCHEDULER — the heart of it</text>
+      <text x="42" y="84" fill="#7f2b2b">· Reads parsed DAGs and decides what is due</text>
+      <text x="42" y="100" fill="#7f2b2b">· Creates DAG runs and task instances</text>
+      <text x="42" y="116" fill="#7f2b2b">· Checks dependencies, pools and concurrency</text>
+      <text x="42" y="132" fill="#7f2b2b">· Hands ready tasks to the executor</text>
+      <text x="42" y="152" font-weight="700" fill="#b91c1c">Run two or more — HA is supported since 2.0</text>
+
+      <rect x="372" y="44" width="330" height="118" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+      <text x="388" y="64" font-size="12" font-weight="700" fill="#b45309">DAG PROCESSOR</text>
+      <text x="388" y="84" fill="#7a3d06">· Parses Python files into DAG objects</text>
+      <text x="388" y="100" fill="#7a3d06">· Runs repeatedly on an interval, per file</text>
+      <text x="388" y="116" fill="#7a3d06">· Writes serialised DAGs to the metadata DB</text>
+      <text x="388" y="136" font-weight="700" fill="#be123c">Slow parsing here delays every schedule.</text>
+      <text x="388" y="152" font-weight="700" fill="#be123c">This is where top-level code hurts you.</text>
+
+      <rect x="718" y="44" width="330" height="118" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+      <text x="734" y="64" font-size="12" font-weight="700" fill="#0f766e">EXECUTOR</text>
+      <text x="734" y="84" fill="#2f4f47">· Decides <tspan font-style="italic">where</tspan> a task runs</text>
+      <text x="734" y="100" fill="#2f4f47">· Local, Celery, Kubernetes or Edge</text>
+      <text x="734" y="116" fill="#2f4f47">· Runs inside the scheduler process</text>
+      <text x="734" y="136" font-weight="700" fill="#0f766e">Not a separate service — a strategy the</text>
+      <text x="734" y="152" font-weight="700" fill="#0f766e">scheduler uses. See panel 6.</text>
+
+      <rect x="1064" y="44" width="330" height="118" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+      <text x="1080" y="64" font-size="12" font-weight="700" fill="#7c2d92">WORKERS</text>
+      <text x="1080" y="84" fill="#4b3a5e">· Where task code actually executes</text>
+      <text x="1080" y="100" fill="#4b3a5e">· Celery workers, or Kubernetes pods</text>
+      <text x="1080" y="116" fill="#4b3a5e">· Need the DAG files and all dependencies</text>
+      <text x="1080" y="136" font-weight="700" fill="#be123c">Scale these for throughput. Everything else</text>
+      <text x="1080" y="152" font-weight="700" fill="#be123c">is coordination.</text>
+
+      <rect x="1410" y="44" width="330" height="118" rx="8" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+      <text x="1426" y="64" font-size="12" font-weight="700" fill="#047857">TRIGGERER</text>
+      <text x="1426" y="84" fill="#2f4f47">· Runs deferrable operators asynchronously</text>
+      <text x="1426" y="100" fill="#2f4f47">· One process handles thousands of waits</text>
+      <text x="1426" y="116" fill="#2f4f47">· Frees worker slots while waiting</text>
+      <text x="1426" y="136" font-weight="700" fill="#047857">Deploy it. Without it, deferrable operators</text>
+      <text x="1426" y="152" font-weight="700" fill="#047857">simply do not work — and sensors eat slots.</text>
+
+      <rect x="1756" y="44" width="360" height="118" rx="8" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+      <text x="1772" y="64" font-size="12" font-weight="700" fill="#1e3a8a">API SERVER / WEBSERVER</text>
+      <text x="1772" y="84" fill="#42507a">· UI, REST API, logs, DAG and run inspection</text>
+      <text x="1772" y="100" fill="#42507a">· In Airflow 3, also serves the Task Execution API</text>
+      <text x="1772" y="116" fill="#42507a">· Stateless — run several behind a load balancer</text>
+      <text x="1772" y="136" font-weight="700" fill="#1e3a8a">Losing it stops visibility, not execution.</text>
+      <text x="1772" y="152" font-weight="700" fill="#1e3a8a">Scheduled tasks keep running without it.</text>
+
+      <rect x="26" y="176" width="2090" height="108" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2.5"/>
+      <text x="42" y="196" font-size="12.6" font-weight="700" fill="#b91c1c">METADATA DATABASE — every component's shared state, and the single point of failure worth protecting</text>
+      <text x="42" y="216" font-size="11" fill="#7f2b2b">PostgreSQL or MySQL 8. It holds DAG runs, task instance states, serialised DAGs, XComs, connections, variables, pools, users and every log reference. <tspan font-weight="700">If it is down, Airflow is down.</tspan></text>
+      <text x="42" y="236" font-size="11" fill="#7f2b2b">Every scheduler loop, every UI page load and — in Airflow 2 — every task queries it. Run it as a managed, highly available instance with real monitoring, not as a container beside the scheduler.</text>
+      <text x="42" y="258" font-size="11" font-weight="700" fill="#b91c1c">It also grows without limit. Task instance, log and XCom tables accumulate forever unless you run a cleanup job — see panel 12. An unmaintained metadata database is the most common cause of a</text>
+      <text x="42" y="274" font-size="11" font-weight="700" fill="#b91c1c">gradually slowing Airflow, and the symptom looks like &ldquo;the scheduler got slow&rdquo; rather than like a database problem.</text>
+    </g>
+
+    <!-- LOOP -->
+    <rect x="2150" y="6" width="1162" height="290" rx="10" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="2168" y="30" font-size="16" font-weight="700" fill="#0f766e">HOW A TASK GETS RUN — the loop</text>
+    <g font-size="10.8" fill="#2f4f47">
+      <text x="2168" y="56"><tspan font-weight="700" fill="#0f766e">1 ·</tspan> The DAG processor parses the Python file and writes the</text>
+      <text x="2188" y="72">serialised DAG to the metadata database.</text>
+      <text x="2168" y="96"><tspan font-weight="700" fill="#0f766e">2 ·</tspan> The scheduler reads it, sees an interval has completed, and</text>
+      <text x="2188" y="112">creates a <tspan font-weight="700">DAG run</tspan> plus a <tspan font-weight="700">task instance</tspan> per task.</text>
+      <text x="2168" y="136"><tspan font-weight="700" fill="#0f766e">3 ·</tspan> Each loop it checks which task instances have satisfied</text>
+      <text x="2188" y="152">dependencies, and whether pools and concurrency limits allow them.</text>
+      <text x="2168" y="176"><tspan font-weight="700" fill="#0f766e">4 ·</tspan> Eligible tasks move to <tspan font-family="Menlo,monospace" font-size="10.4">queued</tspan> and are handed to the executor.</text>
+      <text x="2168" y="200"><tspan font-weight="700" fill="#0f766e">5 ·</tspan> The executor places them — a local subprocess, a Celery queue,</text>
+      <text x="2188" y="216">or a new Kubernetes pod.</text>
+      <text x="2168" y="240"><tspan font-weight="700" fill="#0f766e">6 ·</tspan> The worker runs the task and reports state back.</text>
+      <text x="2168" y="264" font-weight="700" fill="#be123c">A task stuck in queued is step 5 failing — no capacity, a full pool,</text>
+      <text x="2168" y="280" font-weight="700" fill="#be123c">or workers that cannot start. It is never a problem with your code.</text>
+    </g>
+
+    <!-- READING -->
+    <rect x="8" y="308" width="3304" height="320" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="332" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — five properties that explain the rest of this sheet</text>
+    <text x="26" y="358" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · DAG files are parsed repeatedly, not once.</tspan> Every file is re-executed on an interval — commonly every thirty seconds. Any code at module level runs every single time: an API call, a database query, a <tspan font-family="Menlo,monospace" font-size="11">Variable.get()</tspan>. This is the</text>
+    <text x="26" y="378" font-size="11.8" fill="#42507a">single largest performance mistake available in Airflow, and it presents as a slow scheduler rather than as a slow DAG. Keep module level to imports and cheap literals; put everything else inside tasks.</text>
+    <text x="26" y="406" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · The metadata database is the shared state and the hard dependency.</tspan> It is queried constantly by every component. Make it highly available, size it properly, and clean it on a schedule — it grows forever by default, and a bloated instance</text>
+    <text x="26" y="426" font-size="11.8" fill="#42507a">slows every scheduler loop and every UI page. Airflow 3's Task Execution API removes direct database access from tasks, which is a meaningful reduction in both load and blast radius.</text>
+    <text x="26" y="454" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · Workers are where throughput lives; everything else is coordination.</tspan> If tasks are slow, add workers or make the task do less. If tasks are not <tspan font-style="italic">starting</tspan>, the problem is the scheduler, a pool, or a concurrency limit — a</text>
+    <text x="26" y="474" font-size="11.8" fill="#42507a">completely different investigation, and the distinction between the two is the fastest triage available.</text>
+    <text x="26" y="502" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · Retries are automatic, so every task must be idempotent.</tspan> A task that appends rather than replacing will duplicate data the first time it retries — and it will retry, on some night nobody is watching. Derive the window from the data</text>
+    <text x="26" y="522" font-size="11.8" fill="#42507a">interval and overwrite or merge rather than appending. This is not a best practice; it is a requirement of the execution model.</text>
+    <text x="26" y="550" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Losing the webserver is not an outage.</tspan> Scheduling and execution continue without it — you lose visibility and manual control, not the pipelines. Losing the scheduler stops new work; losing the metadata database stops everything.</text>
+    <text x="26" y="578" font-size="11.8" fill="#6b7391">Useful interrogation of any Airflow deployment: how long does DAG parsing take, is the metadata database cleaned on a schedule, what are the concurrency limits at each of the four levels, is a triggerer deployed, and how do DAG files reach the workers?</text>
+    <text x="26" y="606" font-size="11.8" font-weight="700" fill="#1e3a8a">Those five questions surface most production problems — and the first and last are the ones teams most often cannot answer.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. AUTHORING ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;WRITING DAGS — THE MODERN PATTERNS
+    <span class="sub"><span class="lvl mid">MID</span> TaskFlow and dynamic mapping · <span class="lvl sr">STAFF</span> the top-level code rule</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="code"><span class="c"># Airflow 3 — the airflow.sdk namespace</span>
+<span class="k">from</span> airflow.sdk <span class="k">import</span> dag, task
+<span class="k">import</span> pendulum
+
+@dag(
+    <span class="c"># a FIXED start date, never a relative one</span>
+    start_date=pendulum.datetime(2026, 1, 1, tz=<span class="v">"UTC"</span>),
+    schedule=<span class="v">"0 6 * * *"</span>,      <span class="c"># not schedule_interval</span>
+    catchup=<span class="v">False</span>,             <span class="c"># default is True!</span>
+    max_active_runs=1,
+    default_args={<span class="v">"retries"</span>: 3,
+                  <span class="v">"retry_delay"</span>: timedelta(minutes=5)},
+    tags=[<span class="v">"example"</span>],
+)
+<span class="k">def</span> daily_pipeline():
+
+    @task
+    <span class="k">def</span> extract(**context):
+        <span class="c"># use the interval, never datetime.now()</span>
+        start = context[<span class="v">"data_interval_start"</span>]
+        end   = context[<span class="v">"data_interval_end"</span>]
+        <span class="k">return</span> fetch_rows(start, end)
+
+    @task
+    <span class="k">def</span> load(rows):  <span class="c"># dependency is implicit</span>
+        write(rows)
+
+    load(extract())
+
+daily_pipeline()</div>
+      <div class="callout g"><b>The TaskFlow API is the modern way to write DAGs.</b> Decorated functions,
+        dependencies inferred from how values are passed, and XComs handled for you. It is far more readable than
+        explicitly wiring operators with <span class="mono">&gt;&gt;</span>, and it is what new material assumes.</div>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The rule that matters most: nothing expensive at module
+        level.</b> The DAG file is re-executed on every parse — <b>commonly every thirty seconds, forever</b>. A
+        <span class="mono">Variable.get()</span>, a database query, an API call or a large import at module level runs
+        every time, for every file. It slows every schedule for every DAG, and it presents as &ldquo;the scheduler is
+        slow&rdquo; rather than as a problem with your file.</div>
+      <div class="code"><span class="r"># WRONG — runs every 30 seconds, forever</span>
+config = Variable.get(<span class="v">"my_config"</span>)
+df = pd.read_csv(<span class="v">"s3://bucket/big.csv"</span>)
+
+<span class="v"># RIGHT — runs only when the task runs</span>
+@task
+<span class="k">def</span> work():
+    config = Variable.get(<span class="v">"my_config"</span>)</div>
+      <div class="h3">Dynamic task mapping</div>
+      <div class="code">@task
+<span class="k">def</span> process(f): <span class="k">return</span> handle(f)
+
+<span class="c"># one task instance per file, decided at runtime</span>
+process.expand(f=list_files())</div>
+      <div style="font-size:12.9px;line-height:1.45;margin-top:6px">Creates a variable number of parallel task
+        instances from a runtime value. <b>This replaced the old pattern of generating tasks in a loop at parse time</b>,
+        which forced the DAG structure to be known before the run and made parsing expensive.</div>
+      <div class="h3">Structure and organisation</div>
+      <ul>
+        <li><b>TaskGroups</b> for visual and logical grouping — <b>SubDAGs are removed</b>, and TaskGroups were always the better answer</li>
+        <li><b>One DAG per logical pipeline.</b> Hundreds of tasks in one DAG is hard to operate and slow to parse</li>
+        <li><b>Keep tasks small and single-purpose</b> — a failed task should be re-runnable on its own</li>
+        <li><b>Put shared logic in an importable module</b>, not copied across DAG files</li>
+        <li><b>Set <span class="mono">retries</span> and <span class="mono">retry_delay</span></b> in <span class="mono">default_args</span>. The default of no retries is rarely what you want</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. EXECUTORS ============ -->
+<div class="panel c3">
+  <div class="phead">6 &nbsp;· &nbsp;EXECUTORS <span class="sub">where tasks actually run</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:112px">Executor</th><th>Use, and trade-offs</th></tr></thead>
+      <tbody>
+        <tr><td><b>LocalExecutor</b></td><td>Runs tasks as subprocesses on the scheduler host. <b>Simple, genuinely useful, and correct for small production deployments.</b> Bounded by one machine, and now the answer for local development too</td></tr>
+        <tr><td><b>CeleryExecutor</b></td><td><b>The most common production choice.</b> Distributes tasks to a pool of persistent workers via Redis or RabbitMQ. Mature and predictable; workers are always running, so you pay for idle capacity, and the broker is another component to operate</td></tr>
+        <tr><td><b>KubernetesExecutor</b></td><td><b>One pod per task.</b> Strong isolation, per-task resources and images, and scales to zero. Pod startup adds latency per task, which hurts for many short tasks, and it requires real Kubernetes competence</td></tr>
+        <tr><td><b>EdgeExecutor</b></td><td>Added in Airflow 3 for distributed and edge-compute workloads where workers sit outside the core cluster</td></tr>
+        <tr><td><b>Multiple executors</b></td><td>Recent versions allow <b>configuring several and choosing per DAG or per task</b> — which supersedes the older hybrid executors</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Two corrections worth noting.</b> <b>SequentialExecutor has been removed</b> —
+      LocalExecutor handles SQLite and is the local answer. And the <b>hybrid Celery-Kubernetes executor is superseded</b>
+      by native multi-executor configuration, which is cleaner and does not require a special executor class.</div>
+    <div class="callout g"><b>Choosing, briefly.</b> Small and simple → <b>LocalExecutor</b>. Steady load with
+      many similar tasks → <b>Celery</b>. Varied resource needs, per-task dependencies, or spiky load where scale-to-zero
+      matters → <b>Kubernetes</b>. Already on Kubernetes with a platform team → Kubernetes. Otherwise Celery is the lower
+      operational burden.</div>
+    <div class="callout"><b>The Kubernetes trade-off, precisely.</b> Pod startup is measured in seconds. For
+      tasks that run for minutes or hours, that is irrelevant and the isolation is worth a great deal. For thousands of
+      tasks that each take five seconds, the overhead dominates and Celery will be dramatically better.</div>
+  </div>
+</div>
+
+<!-- ============ 7. DEPLOYMENT ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;DEPLOYMENT — TOPOLOGY, AND GETTING DAG FILES TO THE WORKERS
+    <span class="sub"><span class="lvl mid">MID</span> the topologies · <span class="lvl sr">STAFF</span> DAG delivery, which is the decision people skip</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:118px">Topology</th><th>Shape</th></tr></thead>
+        <tbody>
+          <tr><td><b>Single node</b><br><span style="color:#6b7391">dev and test</span></td><td>Everything on one host with LocalExecutor and Postgres. Fine for development, and <b>acceptable for small production</b> if you accept the single point of failure</td></tr>
+          <tr><td><b>Celery cluster</b><br><span style="color:#6b7391">common production</span></td><td>Two or more schedulers, several API servers behind a load balancer, a triggerer, a worker fleet, a Redis or RabbitMQ broker, and a managed Postgres. <b>The standard shape</b></td></tr>
+          <tr><td><b>Kubernetes</b></td><td>The same components as deployments, with tasks as pods. Deployed via the official Helm chart or a vendor distribution</td></tr>
+          <tr><td><b>Managed</b></td><td>Astronomer, AWS MWAA, Google Cloud Composer, Azure Data Factory Managed Airflow. <b>You give up some configuration control and stop operating the metadata database</b> — usually a good trade</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Run more than one scheduler.</b> Highly available active-active schedulers have
+        been supported since Airflow 2.0, they need no leader election, and the second one removes the most obvious single
+        point of failure. There is little reason to run only one in production.</div>
+      <div class="h3">Sizing, as a starting point</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Scheduler</b></td><td>2–4 vCPU, 4–8 GB. <b>CPU-bound on DAG parsing</b>, so parsing cost drives this more than DAG count</td></tr>
+          <tr><td><b>API server</b></td><td>2 vCPU, 4 GB. Scale horizontally for many UI users</td></tr>
+          <tr><td><b>Worker</b></td><td>Entirely workload-dependent. <b>Size from what tasks actually do</b>, and remember that if tasks only trigger external systems these can be small</td></tr>
+          <tr><td><b>Triggerer</b></td><td>Modest — one process handles thousands of concurrent deferrals</td></tr>
+          <tr><td><b>Metadata DB</b></td><td>4+ vCPU, 8+ GB, fast disk. <b>Highly available.</b> The most important component to get right</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The decision most deployment guides omit: how do DAG files
+        reach every component?</b> The scheduler, the DAG processor and <b>every worker</b> need the same files and the
+        same Python dependencies. Getting this wrong produces the confusing failure where a DAG is visible in the UI and
+        its tasks fail on the worker with an import error.</div>
+      <table>
+        <thead><tr><th style="width:118px">Method</th><th>Trade-offs</th></tr></thead>
+        <tbody>
+          <tr><td><b>Baked into the image</b></td><td><b>The most reproducible.</b> DAGs and dependencies are versioned together and a deploy is an image roll. Changing a DAG requires a deployment, which is a feature in regulated settings and friction in fast-moving ones</td></tr>
+          <tr><td><b>Git-sync sidecar</b></td><td>A sidecar pulls from a repository on an interval. <b>Fast iteration, no redeploy.</b> Python dependencies still come from the image, so they can drift out of step with the DAGs</td></tr>
+          <tr><td><b>Shared volume</b></td><td>A network filesystem mounted everywhere. Simple, and it introduces a shared dependency and a performance risk on parse</td></tr>
+          <tr><td><b>Object storage sync</b></td><td>Used by several managed offerings — you upload to a bucket and it distributes</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Whichever you choose, the dependency problem is the same one.</b> A DAG importing a
+        library the worker image lacks fails only at task runtime. <b>Keep DAG and dependency versions moving together</b>,
+        and test the image the workers will actually use.</div>
+      <div class="h3">Logs</div>
+      <ul>
+        <li><b>Configure remote logging</b> to object storage from day one. Local logs disappear when a Kubernetes pod exits, and the UI then shows nothing for the run you most want to inspect</li>
+        <li><b>Set a retention policy</b> on the bucket — logs accumulate indefinitely otherwise</li>
+        <li><b>The metadata database stores log <i>references</i></b>, not log content — but the task instance rows themselves still grow</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. CONFIG ============ -->
+<div class="panel c4">
+  <div class="phead">8 &nbsp;· &nbsp;CONFIGURATION <span class="sub">the settings that change behaviour</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:170px">Setting</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">core.parallelism</td><td><b>Cluster-wide cap</b> on running task instances. The outermost limit</td></tr>
+        <tr><td class="mono">core.max_active_tasks<br>_per_dag</td><td>Per-DAG cap. Stops one DAG monopolising the cluster</td></tr>
+        <tr><td class="mono">core.max_active_runs<br>_per_dag</td><td>How many DAG runs may be active at once. <b>Critical when catchup or a backfill is involved</b></td></tr>
+        <tr><td class="mono">celery.worker_concurrency</td><td>Tasks per Celery worker process. Size against what tasks actually consume</td></tr>
+        <tr><td class="mono">scheduler.min_file<br>_process_interval</td><td>How often a DAG file is re-parsed. <b>Raise it if parsing is your bottleneck</b> — at the cost of slower pickup of edits</td></tr>
+        <tr><td class="mono">scheduler.dag_dir<br>_list_interval</td><td>How often the folder is scanned for new files</td></tr>
+        <tr><td class="mono">scheduler.parsing_processes</td><td>Parallel parsing workers. Raise for many DAG files</td></tr>
+        <tr><td class="mono">core.dagbag_import_timeout</td><td>A file exceeding this is skipped. Silent, and worth alerting on</td></tr>
+        <tr><td class="mono">core.load_examples</td><td><b>Set to False in production.</b> Example DAGs add parsing cost and clutter</td></tr>
+        <tr><td class="mono">core.fernet_key</td><td>Encrypts connection passwords at rest. <b>Set it, and manage it as a secret</b> — losing it makes stored connections unreadable</td></tr>
+        <tr><td class="mono">logging.remote_logging</td><td>Ship logs to object storage. Essential on Kubernetes</td></tr>
+        <tr><td class="mono">secrets.backend</td><td>Fetch connections and variables from a real secrets manager</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Configuration precedence, which trips people up:</b> environment variables of the
+      form <span class="mono">AIRFLOW__SECTION__KEY</span> override <span class="mono">airflow.cfg</span>, which overrides
+      the defaults. <b>Environment variables are the right mechanism</b> in containers, and they keep secrets out of a
+      config file.</div>
+    <div class="callout"><b>Tune parsing before adding hardware.</b> If the scheduler is struggling, measure DAG
+      parse time first — the fix is usually removing top-level code or raising the parse interval, not a bigger machine.</div>
+  </div>
+</div>
+
+<!-- ============ 9. CONCURRENCY ============ -->
+<div class="panel c5">
+  <div class="phead">9 &nbsp;· &nbsp;CONCURRENCY &amp; POOLS <span class="sub">four limits, all applying at once</span></div>
+  <div class="pbody">
+    <div class="callout b" style="margin-top:0"><b>Tasks stuck in <span class="mono">queued</span> are almost
+      always hitting one of these, and the confusion comes from there being four independent ceilings.</b> <b>The most
+      restrictive one wins</b>, and the UI does not tell you which.</div>
+    <div class="code"><span class="k">1. parallelism</span>              whole cluster
+        &darr;
+<span class="k">2. max_active_tasks_per_dag</span>  one DAG
+        &darr;
+<span class="k">3. pool slots</span>              a named group
+        &darr;
+<span class="k">4. worker_concurrency</span>      one worker process
+
+<span class="c"># plus max_active_runs_per_dag, which limits</span>
+<span class="c"># how many DAG RUNS may be active at once</span></div>
+    <div class="h3">Pools — the tool for protecting other systems</div>
+    <ul>
+      <li><b>A named set of slots</b> that tasks must acquire before running</li>
+      <li><b>The correct way to protect a fragile downstream</b> — a legacy database that tolerates five concurrent connections gets a pool of five, and Airflow will never exceed it however many DAGs want to run</li>
+      <li><b>Tasks can request more than one slot</b>, so a heavy task can consume proportionally more</li>
+      <li><b><span class="mono">priority_weight</span></b> decides which queued task takes a freed slot first</li>
+    </ul>
+    <div class="callout g"><b>Pools are the most under-used feature in Airflow.</b> They convert &ldquo;we
+      overwhelmed the source system again&rdquo; from a recurring incident into a configuration value — and unlike
+      staggering schedules by hand, they keep working when the DAG count grows.</div>
+    <div class="h3">Queues, with Celery</div>
+    <ul>
+      <li><b>Route tasks to specific worker groups</b> — a memory-heavy task to large workers, everything else to standard ones</li>
+      <li>Set <span class="mono">queue</span> on the task, and start workers listening to matching queues</li>
+      <li><b>A queue with no listening worker means tasks queue forever</b>, silently. Check this first when tasks never start</li>
+    </ul>
+    <div class="callout r"><b>The diagnostic order for a stuck task:</b> is the pool full, is the DAG at its task
+      limit, is the cluster at <span class="mono">parallelism</span>, are workers alive and listening to the right queue?
+      <b>In that order</b> — it resolves nearly every case quickly.</div>
+  </div>
+</div>
+
+<!-- ============ 10. XCOM ============ -->
+<div class="panel c8">
+  <div class="phead">10 &nbsp;· &nbsp;XCOM, VARIABLES &amp; CONNECTIONS <span class="sub">and their limits</span></div>
+  <div class="pbody">
+    <div class="h3">XCom — small messages only</div>
+    <div class="callout r" style="margin-top:0"><b>XComs are stored in the metadata database</b>, which sets the
+      rule: <b>pass references, never payloads</b>. A path, an identifier, a row count or a status is correct. A
+      dataframe, a file's contents or a large JSON document is not — it bloats the database, slows every scheduler query,
+      and can exceed the column limit outright.</div>
+    <div class="code"><span class="r"># WRONG</span>
+<span class="k">return</span> df                   <span class="c"># megabytes into the DB</span>
+
+<span class="v"># RIGHT</span>
+df.to_parquet(path)
+<span class="k">return</span> path                 <span class="c"># a reference</span></div>
+    <ul>
+      <li><b>A custom XCom backend</b> can transparently store values in object storage and pass a pointer — the right answer when passing larger objects is genuinely needed</li>
+      <li><b>TaskFlow uses XComs automatically</b> for return values, so the same size discipline applies to what your functions return</li>
+      <li><b>XCom pickling was removed</b> in Airflow 3 — values must be JSON-serialisable, or handled by a custom backend</li>
+    </ul>
+    <div class="h3">Variables</div>
+    <ul>
+      <li>Key-value configuration stored in the database or a secrets backend</li>
+      <li><b>Never call <span class="mono">Variable.get()</span> at module level</b> — it runs on every parse of every file, hammering the database. Inside a task, or via a Jinja template, is correct</li>
+      <li><b>Use a single JSON variable</b> for related settings rather than many separate ones, to reduce lookups</li>
+    </ul>
+    <div class="h3">Connections</div>
+    <ul>
+      <li>Credentials and endpoints for external systems, referenced by <span class="mono">conn_id</span></li>
+      <li><b>Encrypted at rest with the Fernet key</b> — which must be set and safely stored, or existing connections become unreadable</li>
+      <li><b>Prefer a secrets backend</b> — AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager. Connections then live where the rest of your secrets live, with rotation and audit</li>
+      <li><b>Never put credentials in DAG code.</b> It is version controlled, and it is parsed and logged</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 11. SENSORS ============ -->
+<div class="panel c7">
+  <div class="phead">11 &nbsp;· &nbsp;SENSORS &amp; DEFERRABLE OPERATORS <span class="sub">the classic resource trap</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The classic Airflow outage: sensor deadlock.</b> A sensor in
+      its default mode <b>occupies a worker slot for its entire wait</b>. Schedule twenty sensors waiting on files that
+      arrive at midday, with sixteen worker slots, and <b>every slot is consumed by tasks doing nothing</b> — including
+      the tasks that would satisfy them. The cluster is fully utilised and completely stuck.</div>
+    <div class="h3">The three approaches, in increasing order of correctness</div>
+    <table>
+      <thead><tr><th style="width:126px">Mode</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b><span class="mono">poke</span></b><br><span style="color:#6b7391">the default</span></td><td>Holds the worker slot and checks on an interval. <b>Fine only for short waits</b> measured in seconds or a few minutes</td></tr>
+        <tr><td><b><span class="mono">reschedule</span></b></td><td><b>Releases the slot between checks</b> and returns to the queue. Far better for long waits; each check still costs a task startup, so a short poke interval is wasteful</td></tr>
+        <tr><td><b>Deferrable</b></td><td><b>The right answer.</b> The task suspends entirely and its wait is handled by the <b>triggerer</b> as an async coroutine. Occupies <b>no worker slot at all</b>, and one triggerer handles thousands of concurrent waits</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Prefer deferrable operators for anything that waits</b> — a sensor, a long-running
+      external job, an API poll. Most major providers ship deferrable variants. This is the single highest-value change
+      available to a cluster whose workers are always busy but whose throughput is low.</div>
+    <div class="callout"><b>The triggerer must actually be deployed.</b> If it is not running, deferrable
+      operators defer and never resume — tasks sit indefinitely with no error. Check for a triggerer before debugging
+      anything else when a deferred task appears stuck.</div>
+    <div class="h3">Better still: do not wait at all</div>
+    <ul>
+      <li><b>Asset-based scheduling</b> — trigger on data being produced rather than polling for it</li>
+      <li><b>Event-driven triggers</b> — Airflow 3 can watch external assets, such as a message queue, and start a DAG on the event</li>
+      <li><b>Always set a timeout</b> on any sensor. A sensor with no timeout waits forever, and will still be waiting weeks later</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 12. OPERATIONS ============ -->
+<div class="panel c6 span2">
+  <div class="phead">12 &nbsp;· &nbsp;OPERATIONS — KEEPING IT HEALTHY OVER YEARS
+    <span class="sub"><span class="lvl sr">STAFF</span> metadata database maintenance, parse-time budgets, and the 2 to 3 upgrade</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The metadata database grows forever, and nobody notices until
+        it is a problem.</b> Task instance rows, log references, XComs, DAG run records and serialised DAG versions
+        accumulate with every run. After a year of a few hundred daily tasks the tables are large enough that <b>every
+        scheduler query and every UI page slows down</b>. It presents as &ldquo;Airflow got slow&rdquo;.</div>
+      <div class="code"><span class="c"># run this on a schedule, from the start</span>
+airflow db clean --clean-before-timestamp &lt;date&gt;
+
+<span class="c"># preview first</span>
+airflow db clean --dry-run --clean-before-timestamp &lt;date&gt;</div>
+      <div class="callout g"><b>Schedule it, keep a retention window you actually need, and take a backup
+        first.</b> Ninety days is a common choice. Pair it with a vacuum or equivalent so the space is genuinely reclaimed
+        — deleting rows in Postgres does not shrink the table on its own.</div>
+      <div class="h3">DAG parse time is a budget</div>
+      <ul>
+        <li><b>Measure it</b> — <span class="mono">airflow dags report</span> shows per-file parse duration</li>
+        <li><b>The usual cause of slowness is top-level code</b>, not DAG count</li>
+        <li><b>Raise <span class="mono">min_file_process_interval</span></b> if parsing is the bottleneck and you can accept slower pickup of edits</li>
+        <li><b>Raise <span class="mono">parsing_processes</span></b> for many files</li>
+        <li><b>Keep non-DAG Python out of the DAGs folder</b>, or use <span class="mono">.airflowignore</span></li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Upgrading from Airflow 2 to 3</div>
+      <ul>
+        <li><b>It is a genuine migration, not a version bump.</b> Budget for it properly</li>
+        <li><b>Audit for removed features first</b> — SubDAGs, SequentialExecutor, SLAs, <span class="mono">execution_date</span>, <span class="mono">schedule_interval</span>, pickling</li>
+        <li><b>Move imports to <span class="mono">airflow.sdk</span></b> for DAG constructs</li>
+        <li><b>Upgrade to the latest 2.x first</b>, resolve every deprecation warning, then move</li>
+        <li><b>Test on a copy of the metadata database</b>, and time the migration — on a large, uncleaned database it can be long</li>
+        <li><b>Clean the database before migrating.</b> Less data means a faster and safer migration</li>
+        <li><b>Check provider compatibility</b> for every provider you depend on</li>
+      </ul>
+      <div class="h3">Routine practices</div>
+      <ul>
+        <li><b>Rolling restarts</b> — schedulers are active-active, so restart one at a time</li>
+        <li><b>Watch scheduler heartbeat</b>. A scheduler that has stopped heartbeating is the most urgent alert here</li>
+        <li><b>Set log retention</b> on the remote store</li>
+        <li><b>Pin provider versions</b> and upgrade deliberately — providers release independently of core</li>
+        <li><b>Keep a staging environment</b> that matches production, including the worker image</li>
+      </ul>
+      <div class="callout"><b>Zombie tasks</b> — a task whose worker died without reporting state. The scheduler
+        detects and fails them after a threshold. <b>Frequent zombies mean workers are being killed</b>, usually by memory
+        limits, and the real fix is task memory or worker sizing rather than the detection setting.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">13 &nbsp;· &nbsp;SECURITY <span class="sub">it runs arbitrary code</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Start from what Airflow actually is: a system that executes
+      arbitrary Python with access to every credential your pipelines use.</b> Write access to the DAGs folder is
+      equivalent to code execution with those credentials. Treat it with the seriousness that implies.</div>
+    <div class="h3">The controls</div>
+    <ul>
+      <li><b>Role-based access control</b> — built in, with roles down to per-DAG permissions. <b>Never leave authentication disabled</b>, and never expose the UI publicly</li>
+      <li><b>Integrate with your identity provider</b> — LDAP, OAuth, SAML or OIDC — rather than managing local users</li>
+      <li><b>A secrets backend</b> so credentials live in Vault or a cloud secrets manager, not in the metadata database</li>
+      <li><b>Set the Fernet key</b> and manage it as a secret. It encrypts connection passwords at rest</li>
+      <li><b>Never put secrets in DAG code.</b> It is in version control, parsed repeatedly, and may appear in logs</li>
+      <li><b>Least privilege for the credentials Airflow holds</b> — a task that reads one table needs read on one table</li>
+      <li><b>Review DAG folder write access as production code access</b>, because that is what it is</li>
+      <li><b>Enable audit logging</b> and retain it</li>
+    </ul>
+    <div class="callout g"><b><span class="lvl sr">STAFF</span> Airflow 3 improved this structurally.</b> The
+      Task Execution API means <b>tasks no longer connect directly to the metadata database</b>. Previously any task could
+      in principle read every connection and variable in the system; now task execution is isolated behind an API, which
+      is a real reduction in blast radius and the main security argument for upgrading.</div>
+    <div class="callout"><b>Multi-tenancy remains limited.</b> RBAC restricts what users see and trigger in the
+      UI, but tasks from different teams share workers and their credentials. <b>For genuine isolation between untrusted
+      teams, run separate deployments</b> — this is what managed platforms do, and it is the honest answer.</div>
+  </div>
+</div>
+
+<!-- ============ 14. MONITORING ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;MONITORING, TESTING AND CI/CD
+    <span class="sub">what to watch, how to test a DAG before it reaches production, and what a pipeline for pipelines looks like</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">What to monitor</div>
+      <table>
+        <thead><tr><th style="width:160px">Signal</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Scheduler heartbeat</b></td><td><b>The most urgent alert.</b> A scheduler that stops heartbeating means nothing new is being scheduled — and DAGs simply stop, quietly</td></tr>
+          <tr><td><b>DAG parse duration</b></td><td>Rising parse time delays every schedule. The leading indicator of scheduler trouble</td></tr>
+          <tr><td><b>Task queue depth<br>and time in queued</b></td><td>Tasks waiting means insufficient capacity or a limit being hit. <b>Distinguishes a capacity problem from a slow-task problem</b></td></tr>
+          <tr><td><b>Task duration trends</b></td><td>A task that has grown from four minutes to fifty is a warning before it is an incident</td></tr>
+          <tr><td><b>Failure and retry rates</b></td><td>Per DAG. Rising retries indicate an unstable dependency</td></tr>
+          <tr><td><b>DAG run completion time</b></td><td>Against the freshness the business expects</td></tr>
+          <tr><td><b>Pool utilisation</b></td><td>A permanently full pool is a bottleneck by design — verify it is the intended one</td></tr>
+          <tr><td><b>Worker health and memory</b></td><td>Killed workers produce zombie tasks</td></tr>
+          <tr><td><b>Metadata DB size and query time</b></td><td>Growth predicts the slow-Airflow problem months ahead</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Airflow emits metrics via StatsD</b>, and increasingly via OpenTelemetry — feed
+        them to Prometheus, Datadog or equivalent. <b>The built-in UI is for inspection, not alerting</b>; a dashboard
+        nobody is watching at 03:00 is not monitoring.</div>
+    </div>
+    <div>
+      <div class="h3">Alerting on the right thing</div>
+      <ul>
+        <li><b>Alert on a dataset being late, not only on a task failing.</b> A DAG that never started produces no failure and no alert — which is the more dangerous case</li>
+        <li><b>Use callbacks</b> — <span class="mono">on_failure_callback</span> and <span class="mono">on_success_callback</span> — to route to your paging system rather than email alone</li>
+        <li><b>Route per DAG to the owning team</b>, not to a shared inbox nobody reads</li>
+        <li><b>Note that SLAs were removed in Airflow 3</b> — implement freshness expectations with external monitoring or callbacks instead</li>
+        <li><b>Suppress alert storms.</b> One upstream failure can fail fifty downstream tasks; alert on the root, not on every consequence</li>
+      </ul>
+      <div class="h3">Testing DAGs</div>
+      <ul>
+        <li><b>Import test in CI</b> — parse every DAG and assert there are no import errors and no cycles. <b>This alone catches most broken deploys</b> and takes minutes to set up</li>
+        <li><b>Assert structure</b> — expected task count and dependency relationships</li>
+        <li><b>Unit test the logic</b>, which should live in importable functions rather than inside operators</li>
+        <li><b><span class="mono">airflow dags test</span></b> runs a DAG for a logical date locally, end to end</li>
+        <li><b><span class="mono">airflow tasks test</span></b> runs a single task without recording state — the fastest inner loop</li>
+        <li><b>Check parse time in CI</b> and fail the build if a DAG exceeds a threshold</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">CI/CD for pipelines</div>
+      <ol>
+        <li><b>DAGs in version control</b>, reviewed like any other code</li>
+        <li><b>Lint and import-test</b> on every pull request</li>
+        <li><b>Build the worker image</b> with pinned dependencies, and test against it</li>
+        <li><b>Deploy to staging</b> that matches production, including the image</li>
+        <li><b>Promote deliberately</b> — image roll or git-sync from a release branch</li>
+        <li><b>Keep DAG and dependency versions together</b>, so a DAG never lands ahead of the library it needs</li>
+      </ol>
+      <div class="callout g"><b>The import test is the highest return on effort available.</b> A DAG with a
+        syntax or import error does not merely fail — it may not appear at all, and the scheduler carries on quietly
+        without it. Catching that in CI prevents the failure mode where a pipeline has silently not run for a week.</div>
+      <div class="h3">Useful CLI</div>
+      <div class="code">airflow dags list
+airflow dags report          <span class="c"># parse times</span>
+airflow dags test &lt;id&gt; &lt;date&gt;
+airflow tasks test &lt;dag&gt; &lt;task&gt; &lt;date&gt;
+airflow dags backfill ...
+airflow db clean --clean-before-timestamp ...
+airflow config list          <span class="c"># effective config</span>
+airflow providers list</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;PRODUCTION FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Tasks stuck in <span class="mono">queued</span>, never start</b></td><td>A concurrency limit, a full pool, no worker on that queue, or workers down</td><td>Check in order: pool, per-DAG limit, <span class="mono">parallelism</span>, worker queue subscription</td></tr>
+          <tr><td><b>Everything scheduled late</b></td><td>DAG parsing is slow — usually top-level code</td><td><span class="mono">airflow dags report</span>; move work into tasks; raise the parse interval</td></tr>
+          <tr><td><b>Hundreds of runs launched on deploy</b></td><td><span class="mono">catchup</span> defaults to true with an old <span class="mono">start_date</span></td><td><span class="mono">catchup=False</span> and <span class="mono">max_active_runs</span></td></tr>
+          <tr><td><b>Workers busy, throughput near zero</b></td><td>Sensors in poke mode holding every slot</td><td>Deferrable operators, or <span class="mono">reschedule</span> mode. Deploy the triggerer</td></tr>
+          <tr><td><b>Airflow slower every month</b></td><td>Metadata database growing without cleanup</td><td>Schedule <span class="mono">airflow db clean</span>; vacuum; set a retention window</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>DAG visible in UI, task fails on worker</b></td><td>The worker image lacks a dependency the DAG imports</td><td>Version DAGs and dependencies together; test against the worker image</td></tr>
+          <tr><td><b>Duplicate rows after a retry</b></td><td>A non-idempotent task that appends</td><td>Derive the window from the data interval; overwrite or merge</td></tr>
+          <tr><td><b>DAG silently missing from the UI</b></td><td>Import error, or parse timeout — the scheduler skips it</td><td><b>Import-test in CI.</b> Alert on import errors and on parse timeouts</td></tr>
+          <tr><td><b>Deferred task never resumes</b></td><td>No triggerer running</td><td>Deploy a triggerer. Check this before anything else</td></tr>
+          <tr><td><b>Scheduler OOM or metadata DB overloaded</b></td><td>Large XComs, or <span class="mono">Variable.get()</span> at module level</td><td>Pass references not payloads; move variable lookups into tasks</td></tr>
+          <tr><td><b>Zombie tasks</b></td><td>Workers killed, usually by memory limits</td><td>Right-size workers; reduce per-task memory; do the heavy work elsewhere</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>DAG parsing time</b>, from top-level code. The most common cause of a slow Airflow, and rarely the first thing suspected</td></tr>
+          <tr><td><b>2</b></td><td><b>Concurrency limits</b> — four ceilings, and the UI does not say which one you hit</td></tr>
+          <tr><td><b>3</b></td><td><b>Sensors consuming worker slots</b>, producing full utilisation with no throughput</td></tr>
+          <tr><td><b>4</b></td><td><b>Metadata database growth</b> — gradual, then everything is slow</td></tr>
+          <tr><td><b>5</b></td><td><b>Raw task throughput</b> — the thing people size for, and the last to bind</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> None of the top four are solved by adding workers. They are
+        parse hygiene, configuration, task design and maintenance — all visible in advance if anyone is measuring them.</div>
+      <div class="h3">Degradation</div>
+      <ul>
+        <li><b>Webserver down</b> — you lose visibility and manual control. <b>Scheduling and execution continue.</b> Not an emergency</li>
+        <li><b>One scheduler down</b> — no impact if you run two. This is the argument for running two</li>
+        <li><b>All schedulers down</b> — nothing new is scheduled; running tasks finish. <b>Silent, so alert on the heartbeat</b></li>
+        <li><b>Workers down</b> — tasks queue and resume when capacity returns, provided the queue and broker survive</li>
+        <li><b>Metadata database down</b> — <b>total outage.</b> Every component depends on it, which is why it must be highly available</li>
+      </ul>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before pipelines depend on it</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Airflow orchestrates, does not process data</b></div>
+      <div>&#9744; <b>No expensive code at module level</b> — no API calls, no <span class="mono">Variable.get()</span></div>
+      <div>&#9744; <b>DAG parse time measured</b> and checked in CI</div>
+      <div>&#9744; <b><span class="mono">start_date</span> is static</b> — never <span class="mono">days_ago</span> or a relative value</div>
+      <div>&#9744; <b><span class="mono">catchup=False</span> unless history is wanted</b></div>
+      <div>&#9744; <b><span class="mono">max_active_runs</span> set</b> on every DAG</div>
+      <div>&#9744; <b>Tasks use the data interval</b>, never <span class="mono">datetime.now()</span></div>
+      <div>&#9744; <b>Every task idempotent</b> — overwrite or merge, never append</div>
+      <div>&#9744; <b>Retries and <span class="mono">retry_delay</span> set</b> in <span class="mono">default_args</span></div>
+      <div>&#9744; <b>Correct trigger rule on branch joins</b></div>
+      <div>&#9744; <b>No deprecated constructs</b> — <span class="mono">schedule_interval</span>, SubDAGs, <span class="mono">execution_date</span></div>
+      <div>&#9744; <b>Imports from <span class="mono">airflow.sdk</span></b> on Airflow 3</div>
+      <div>&#9744; <b>TaskGroups instead of SubDAGs</b></div>
+      <div>&#9744; <b>Dynamic task mapping</b> instead of parse-time loops</div>
+      <div>&#9744; <b>XComs carry references, not payloads</b></div>
+      <div>&#9744; <b>Custom XCom backend</b> if larger objects must be passed</div>
+      <div>&#9744; <b>Sensors are deferrable</b> or use <span class="mono">reschedule</span> mode</div>
+      <div>&#9744; <b>Every sensor has a timeout</b></div>
+      <div>&#9744; <b>Triggerer deployed</b> and monitored</div>
+      <div>&#9744; <b>Asset-based scheduling used</b> where it replaces polling</div>
+      <div>&#9744; <b>Two or more schedulers running</b></div>
+      <div>&#9744; <b>Executor chosen deliberately</b> for the workload shape</div>
+      <div>&#9744; <b>Metadata DB is managed and highly available</b></div>
+      <div>&#9744; <b><span class="mono">airflow db clean</span> scheduled</b> with a retention window</div>
+      <div>&#9744; <b>Remote logging configured</b> with bucket retention</div>
+      <div>&#9744; <b>DAG delivery method chosen</b>; dependencies versioned with DAGs</div>
+      <div>&#9744; <b>Worker image tested</b> with the DAGs it will run</div>
+      <div>&#9744; <b>All four concurrency limits set deliberately</b></div>
+      <div>&#9744; <b>Pools protecting fragile downstream systems</b></div>
+      <div>&#9744; <b>Queues have listening workers</b></div>
+      <div>&#9744; <b><span class="mono">load_examples</span> disabled</b> in production</div>
+      <div>&#9744; <b>Fernet key set</b> and stored as a secret</div>
+      <div>&#9744; <b>Secrets backend configured</b>; no credentials in DAG code</div>
+      <div>&#9744; <b>Authentication enabled</b>; UI not publicly exposed</div>
+      <div>&#9744; <b>RBAC roles per team</b>; DAG folder write access treated as code access</div>
+      <div>&#9744; <b>Scheduler heartbeat alerted on</b> — the most urgent signal</div>
+      <div>&#9744; <b>Alerting on data being late</b>, not only on task failure</div>
+      <div>&#9744; <b>Alerts route to owning teams</b>; storms suppressed</div>
+      <div>&#9744; <b>Import test in CI</b> for every DAG</div>
+      <div>&#9744; <b>Staging environment matches production</b>, including the image</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>state how long DAG parsing takes, whether the metadata
+      database is cleaned on a schedule, what the four concurrency limits are set to, whether a triggerer is running, and
+      how DAG files and their dependencies reach the workers.</b> Those five answers cover the failures that actually take
+      Airflow down — and not one of them is about how many tasks per second it can run.</div>
+  </div>
+</div>
+
+</div>
