@@ -1,0 +1,931 @@
+<meta charset="utf-8">
+<title>Docker &amp; Containers — Architecture, Operations &amp; Reference</title>
+<style>
+  @page { size: 3400px 5934px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5934px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5904px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 423px 540px 709px 547px 498px 715px 743px 431px 480px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>DOCKER &amp; CONTAINERS — ARCHITECTURE, OPERATIONS &amp; REFERENCE<span class="v">V1</span></h1>
+  <div class="tag">Layers, the build cache, and the details that decide whether your container stops cleanly<br>
+    <span style="font-size:13.4px;color:#6d80b6">images &amp; layers · Dockerfile · building · networking · volumes · Compose · security · supply chain
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">depth marked</b> junior → staff</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT A CONTAINER ACTUALLY IS — AND WHAT DOCKER IS WITHIN THAT
+    <span class="sub">start here — containers are not lightweight virtual machines, and the licensing question has a precise answer</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The definition</div>
+      <div style="font-size:13px;line-height:1.46">A container is <b>a normal Linux process</b> with a restricted
+        view of the system. There is no virtualisation and no guest operating system — the kernel is shared with the host.
+        Two kernel features do all the work.</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Namespaces</b></td><td><b>Isolation — what the process can see.</b> Separate views of processes, network interfaces, mounts, hostname, users and inter-process communication. The process genuinely believes it is alone</td></tr>
+          <tr><td><b>cgroups</b></td><td><b>Limits — what the process can use.</b> CPU, memory, block I/O and process count, enforced by the kernel</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>So &ldquo;a container is a lightweight VM&rdquo; is wrong in the way that
+        matters.</b> A VM has its own kernel and a hypervisor boundary. A container is <b>a process sharing your
+        kernel</b> — which is why it starts in milliseconds, why the isolation is weaker, and why <b>a kernel exploit from
+        inside a container reaches the host</b>. This distinction drives every security decision on this sheet.</div>
+      <div class="callout b"><b>What Docker adds on top:</b> an <b>image format</b> and a build system, a
+        <b>daemon</b> that manages lifecycle, a <b>registry protocol</b> for distribution, and a command line that makes
+        all three approachable. <b>The image format is the durable contribution</b> — it is now the OCI standard, and it is
+        why an image built with Docker runs on containerd, CRI-O, Podman or Kubernetes without change.</div>
+    </div>
+    <div>
+      <div class="callout g" style="margin-top:0"><b><span class="lvl sr">STAFF</span> The licensing question,
+        answered precisely — because it is very often stated wrongly.</b> <b>Docker Desktop</b> requires a paid
+        subscription for organisations with <b>250 or more employees or 10 million dollars or more in annual revenue</b>.
+        It remains free for personal use, education, non-commercial open source and smaller companies.<br>
+        <b>Docker Engine and the Moby project are Apache 2.0 with no such restriction.</b> The fee attaches to the desktop
+        application — the graphical interface and its helper virtual machine — not to the container runtime. <b>&ldquo;Docker
+        is no longer free&rdquo; conflates two different products</b>, and on Linux servers the engine has never been
+        affected.</div>
+      <div class="h3">The vocabulary, disentangled</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>OCI</b></td><td>The open standards for image format and runtime. <b>The thing everything actually agrees on</b></td></tr>
+          <tr><td><b>containerd</b></td><td>The runtime Docker uses underneath, and which Kubernetes uses directly</td></tr>
+          <tr><td><b>runc</b></td><td>The low-level tool that actually creates the namespaces and cgroups</td></tr>
+          <tr><td><b>Podman</b></td><td>A daemonless, rootless-by-default alternative with a near-identical command line. Runs the same images</td></tr>
+          <tr><td><b>BuildKit</b></td><td>The modern build engine — parallel stages, better caching, build secrets. <b>The default builder</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout" style="margin-top:0"><b>On Kubernetes removing Docker.</b> Kubernetes dropped
+        <i>dockershim</i> in version 1.24, so Docker is no longer a container runtime for Kubernetes. <b>This does not
+        affect your images at all</b> — they are OCI images and run unchanged on containerd. The headline caused
+        considerable alarm and required no action from anyone building images.</div>
+      <div class="h3">What Docker is good at</div>
+      <ul>
+        <li><b>Reproducible builds and environments</b> — the same image everywhere, from a laptop to production</li>
+        <li><b>Local development</b> — running dependencies without installing them on your machine</li>
+        <li><b>Packaging</b> — a single artefact carrying the application and its runtime dependencies</li>
+        <li><b>CI</b> — clean, isolated, disposable build environments</li>
+      </ul>
+      <div class="h3">What it is not</div>
+      <ul>
+        <li><b>Not an orchestrator.</b> Compose is for a single host. Multi-host scheduling, self-healing and rolling updates are Kubernetes or an equivalent</li>
+        <li><b>Not a security boundary</b> for untrusted code. Shared kernel — use a virtual machine or a sandboxed runtime</li>
+        <li><b>Not a substitute for configuration management</b> of the host itself</li>
+        <li><b>Not automatically small or fast.</b> A carelessly built image is enormous and slow to pull — see panels 5 and 6</li>
+      </ul>
+      <div class="callout p"><b>The useful framing for production: Docker is your build and packaging tool; something
+        else is your runtime.</b> Most organisations build with Docker or BuildKit in CI, push to a registry, and run on
+        Kubernetes or a managed container service. That division is worth being explicit about, because it decides which
+        parts of this sheet you operate daily.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. IMAGES ============ -->
+<div class="panel c5 span2">
+  <div class="phead">2 &nbsp;· &nbsp;IMAGES AND LAYERS — THE MODEL THAT EXPLAINS BUILD SPEED AND IMAGE SIZE
+    <span class="sub"><span class="lvl jr">JUNIOR</span> what a layer is · <span class="lvl sr">STAFF</span> why deleting a file does not shrink the image</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>An image is a stack of read-only layers plus metadata.</b>
+        Each layer records a <b>set of filesystem changes</b>. They are combined by a union filesystem into what looks
+        like one coherent tree — and because layers are content-addressed and immutable, <b>they are shared between images
+        and cached between builds</b>. Almost everything useful about Docker follows from this.</div>
+      <div class="code"><span class="c">┌─────────────────────────────┐</span>
+<span class="c">│</span> writable container layer    <span class="c">│</span> ← per container
+<span class="c">├─────────────────────────────┤</span>
+<span class="c">│</span> COPY . /app                 <span class="c">│</span> ┐
+<span class="c">│</span> RUN npm ci                  <span class="c">│</span> │ read-only
+<span class="c">│</span> COPY package.json .         <span class="c">│</span> │ shared across
+<span class="c">│</span> FROM node:22-slim           <span class="c">│</span> ┘ containers
+<span class="c">└─────────────────────────────┘</span></div>
+      <div class="h3">Consequences worth knowing</div>
+      <ul>
+        <li><b>Every container starts as an image plus one thin writable layer.</b> Ten containers from one image share the read-only layers entirely — which is why containers are cheap</li>
+        <li><b>Writes are copy-on-write.</b> Modifying a file copies it up into the writable layer first, so write-heavy work on the container filesystem is slow. <b>Use a volume</b></li>
+        <li><b>The writable layer dies with the container.</b> Anything not in a volume is gone</li>
+        <li><b>Layers are shared on pull too</b> — a layer already present is not downloaded again, which is why a common base image makes deployments much faster</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>The consequence that catches everyone: deleting a file in a
+        later layer does not remove it from the image.</b> A layer can only <i>add</i> a deletion marker — the original
+        bytes remain in the earlier layer and are still in the image you push. So the image does not shrink, and
+        <b>anything sensitive written in an earlier layer stays retrievable</b> by anyone who pulls it, however thoroughly
+        a later step deletes it.</div>
+      <div class="code"><span class="r"># WRONG — the credential is permanently in the image</span>
+RUN wget --user=x --password=<span class="v">secret</span> https://...
+RUN rm -rf /root/.netrc     <span class="c"># does nothing useful</span>
+
+<span class="v"># RIGHT — a BuildKit secret mount, never written to a layer</span>
+RUN --mount=type=secret,id=npmrc \
+    npm ci --userconfig /run/secrets/npmrc</div>
+      <div class="h3">The build cache, and how it is invalidated</div>
+      <ul>
+        <li><b>Each instruction produces a layer.</b> Docker reuses a cached layer if the instruction and its inputs are unchanged</li>
+        <li><b>Once one layer misses, every layer after it rebuilds.</b> This single rule dictates Dockerfile ordering</li>
+        <li><b>For <span class="mono">COPY</span> and <span class="mono">ADD</span>, the cache key includes file contents</b> — so changing one source file invalidates everything downstream</li>
+        <li><b>For <span class="mono">RUN</span>, only the command string is compared</b> — so <span class="mono">apt-get update</span> can serve a months-old cached layer. Combine it with the install in one instruction</li>
+      </ul>
+      <div class="callout g"><b>Which gives the ordering rule: least-changing first.</b> Base image, then system
+        packages, then dependency manifests, then <span class="mono">install</span>, and <b>your source code last</b>. A
+        code change then rebuilds one layer instead of reinstalling every dependency — routinely the difference between a
+        five-second and a five-minute build.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. DOCKERFILE ============ -->
+<div class="panel c4">
+  <div class="phead">3 &nbsp;· &nbsp;DOCKERFILE INSTRUCTIONS <span class="sub">and the pairs people confuse</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Instruction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">FROM</td><td>The base. <b>Pin by digest</b> for reproducibility; a tag can move underneath you</td></tr>
+        <tr><td class="mono">RUN</td><td>Executes at <b>build</b> time, creating a layer</td></tr>
+        <tr><td class="mono">COPY</td><td>Copies files in. <b>Prefer it to <span class="mono">ADD</span></b></td></tr>
+        <tr><td class="mono">ADD</td><td>Also fetches URLs and auto-extracts archives — <b>surprising behaviour, so use only when you want exactly that</b></td></tr>
+        <tr><td class="mono">WORKDIR</td><td>Sets the directory, creating it. <b>Never use <span class="mono">RUN cd</span></b> — it does not persist</td></tr>
+        <tr><td class="mono">ENV</td><td>Set at build and <b>present at run time</b>, visible in <span class="mono">inspect</span></td></tr>
+        <tr><td class="mono">ARG</td><td>Build time only, <b>not in the final image</b> — but still visible in build history, so not a secret</td></tr>
+        <tr><td class="mono">USER</td><td><b>Set a non-root user.</b> Otherwise the process runs as root</td></tr>
+        <tr><td class="mono">EXPOSE</td><td><b>Documentation only.</b> It publishes nothing — <span class="mono">-p</span> at run time does that</td></tr>
+        <tr><td class="mono">HEALTHCHECK</td><td>Lets the runtime know whether the app is actually working</td></tr>
+      </tbody>
+    </table>
+    <div class="h3"><span class="mono">CMD</span> versus <span class="mono">ENTRYPOINT</span></div>
+    <table>
+      <tbody>
+        <tr><td style="width:104px"><b>ENTRYPOINT</b></td><td><b>What always runs.</b> Arguments are appended to it</td></tr>
+        <tr><td><b>CMD</b></td><td><b>Default arguments</b>, replaced entirely by anything given on the command line</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The idiomatic pairing:</b> <span class="mono">ENTRYPOINT ["app"]</span> with
+      <span class="mono">CMD ["--help"]</span>. Running the image with no arguments prints help; running it with arguments
+      passes them to the application.</div>
+    <div class="callout r"><b>The one that causes real production bugs: shell form does not forward
+      signals.</b> Written as <span class="mono">CMD npm start</span>, the shell becomes PID 1 and your application is a
+      child — so <span class="mono">SIGTERM</span> reaches the shell, not your app. <b>It never shuts down gracefully and
+      is killed after the timeout on every single deploy.</b> Use exec form —
+      <span class="mono">CMD ["npm", "start"]</span> — so your process is PID 1 and receives the signal.</div>
+  </div>
+</div>
+
+<!-- ============ 4. ARCHITECTURE ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;ARCHITECTURE — CLIENT, DAEMON, AND THE LIFECYCLE FROM DOCKERFILE TO RUNNING PROCESS
+    <span class="sub">what each component does, and the two lifecycles it is worth being able to draw from memory</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- COMPONENTS -->
+    <rect x="8" y="6" width="1740" height="286" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE COMPONENTS — a client talking to a daemon, over layers of increasingly standard tooling</text>
+
+    <g font-size="10.5" text-anchor="middle">
+      <rect x="26" y="44" width="180" height="58" rx="7" fill="#fff" stroke="#334155" stroke-width="2"/>
+      <text x="116" y="66" font-size="11.6" font-weight="700" fill="#334155">CLI / API client</text>
+      <text x="116" y="84" fill="#42507a">docker build, run, push</text>
+      <rect x="236" y="44" width="220" height="58" rx="7" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+      <text x="346" y="64" font-size="11.6" font-weight="700" fill="#be123c">DOCKER DAEMON</text>
+      <text x="346" y="80" fill="#7f2b2b">images, containers, networks,</text>
+      <text x="346" y="94" fill="#7f2b2b">volumes — runs as root</text>
+      <rect x="486" y="44" width="200" height="58" rx="7" fill="#f0fbf8" stroke="#0f766e" stroke-width="2"/>
+      <text x="586" y="64" font-size="11.6" font-weight="700" fill="#0f766e">containerd</text>
+      <text x="586" y="80" fill="#2f4f47">image and container</text>
+      <text x="586" y="94" fill="#2f4f47">lifecycle management</text>
+      <rect x="716" y="44" width="200" height="58" rx="7" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="816" y="64" font-size="11.6" font-weight="700" fill="#7c2d92">runc</text>
+      <text x="816" y="80" fill="#4b3a5e">creates namespaces</text>
+      <text x="816" y="94" fill="#4b3a5e">and cgroups</text>
+      <rect x="946" y="44" width="200" height="58" rx="7" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+      <text x="1046" y="64" font-size="11.6" font-weight="700" fill="#047857">LINUX KERNEL</text>
+      <text x="1046" y="82" fill="#2f4f47">shared with the host</text>
+    </g>
+    <g stroke="#1e3a8a" stroke-width="2.2" fill="none" marker-end="url(#b)">
+      <path d="M206,73 L230,73"/><path d="M456,73 L480,73"/><path d="M686,73 L710,73"/><path d="M916,73 L940,73"/>
+    </g>
+    <g font-size="10.6" fill="#42507a">
+      <text x="1176" y="60">The client is thin — it sends REST calls</text>
+      <text x="1176" y="76">to the daemon, locally over a Unix socket</text>
+      <text x="1176" y="92">or remotely over TCP.</text>
+      <text x="1176" y="116" font-weight="700" fill="#be123c">Everything below the daemon is now</text>
+      <text x="1176" y="132" font-weight="700" fill="#be123c">standard and shared — which is why</text>
+      <text x="1176" y="148" font-weight="700" fill="#be123c">images are portable across runtimes.</text>
+    </g>
+
+    <rect x="26" y="116" width="1104" height="72" rx="8" fill="#fef2f2" stroke="#e8a3a3" stroke-width="2.5"/>
+    <text x="42" y="136" font-size="12.4" font-weight="700" fill="#b91c1c">THE DAEMON RUNS AS ROOT — and that has one very important consequence</text>
+    <text x="42" y="156" font-size="11" fill="#7f2b2b">Anyone who can reach the Docker socket can start a container that mounts the host filesystem. <tspan font-weight="700">Access to the socket is equivalent to root on the host</tspan> — there is no</text>
+    <text x="42" y="176" font-size="11" fill="#7f2b2b">meaningful gap between the two. Membership of the <tspan font-family="Menlo,monospace" font-size="10.6">docker</tspan> group is administrator access, and mounting the socket into a container hands that container the same power.</text>
+
+    <rect x="26" y="202" width="1704" height="78" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2.5"/>
+    <text x="42" y="222" font-size="12.4" font-weight="700" fill="#047857">ROOTLESS MODE — the answer where that is unacceptable</text>
+    <text x="42" y="242" font-size="11" fill="#2f4f47">The daemon can run as an unprivileged user, using user namespaces so that root inside the container maps to an ordinary user on the host. A container escape then yields a normal user account</text>
+    <text x="42" y="262" font-size="11" fill="#2f4f47">rather than root. <tspan font-weight="700">There are trade-offs</tspan> — binding to low ports, some networking and some storage drivers need extra work — but on shared build hosts and multi-tenant CI it is worth the effort. Podman is rootless by default.</text>
+
+    <!-- LIFECYCLES -->
+    <rect x="1766" y="6" width="1546" height="286" rx="10" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+    <text x="1784" y="30" font-size="16" font-weight="700" fill="#7c2d92">TWO LIFECYCLES — build time and run time are entirely separate</text>
+
+    <text x="1784" y="56" font-size="12.4" font-weight="700" fill="#7c2d92">IMAGE LIFECYCLE — build once, promote the same artefact</text>
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="1784" y="66" width="140" height="46" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="1854" y="84" font-size="11" font-weight="700" fill="#7c2d92">Dockerfile</text>
+      <text x="1854" y="100" fill="#4b3a5e">+ build context</text>
+      <rect x="1954" y="66" width="140" height="46" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2024" y="84" font-size="11" font-weight="700" fill="#7c2d92">docker build</text>
+      <text x="2024" y="100" fill="#4b3a5e">BuildKit</text>
+      <rect x="2124" y="66" width="140" height="46" rx="6" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2"/>
+      <text x="2194" y="84" font-size="11" font-weight="700" fill="#7c2d92">IMAGE</text>
+      <text x="2194" y="100" fill="#4b3a5e">layers + manifest</text>
+      <rect x="2294" y="66" width="140" height="46" rx="6" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2364" y="84" font-size="11" font-weight="700" fill="#7c2d92">docker push</text>
+      <text x="2364" y="100" fill="#4b3a5e">to a registry</text>
+      <rect x="2464" y="66" width="140" height="46" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="1.8"/>
+      <text x="2534" y="84" font-size="11" font-weight="700" fill="#047857">pull &amp; run</text>
+      <text x="2534" y="100" fill="#2f4f47">anywhere</text>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2" fill="none" marker-end="url(#b)">
+      <path d="M1924,89 L1948,89"/><path d="M2094,89 L2118,89"/><path d="M2264,89 L2288,89"/><path d="M2434,89 L2458,89"/>
+    </g>
+    <text x="2624" y="82" font-size="10.6" font-weight="700" fill="#be123c">Build once. Promote the same</text>
+    <text x="2624" y="98" font-size="10.6" font-weight="700" fill="#be123c">digest through environments.</text>
+
+    <text x="1784" y="140" font-size="12.4" font-weight="700" fill="#7c2d92">CONTAINER LIFECYCLE — and where each command sits</text>
+    <g font-size="10.4" text-anchor="middle">
+      <rect x="1784" y="150" width="130" height="42" rx="6" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+      <text x="1849" y="168" font-size="11" font-weight="700" fill="#334155">created</text>
+      <text x="1849" y="184" fill="#42507a">docker create</text>
+      <rect x="1944" y="150" width="130" height="42" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+      <text x="2009" y="168" font-size="11" font-weight="700" fill="#047857">running</text>
+      <text x="2009" y="184" fill="#2f4f47">docker start / run</text>
+      <rect x="2104" y="150" width="130" height="42" rx="6" fill="#fff7ea" stroke="#b45309" stroke-width="1.8"/>
+      <text x="2169" y="168" font-size="11" font-weight="700" fill="#b45309">paused</text>
+      <text x="2169" y="184" fill="#7a3d06">docker pause</text>
+      <rect x="2264" y="150" width="130" height="42" rx="6" fill="#fef2f2" stroke="#be123c" stroke-width="1.8"/>
+      <text x="2329" y="168" font-size="11" font-weight="700" fill="#be123c">stopped</text>
+      <text x="2329" y="184" fill="#7f2b2b">docker stop</text>
+      <rect x="2424" y="150" width="130" height="42" rx="6" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+      <text x="2489" y="168" font-size="11" font-weight="700" fill="#334155">removed</text>
+      <text x="2489" y="184" fill="#42507a">docker rm</text>
+    </g>
+    <g stroke="#7c2d92" stroke-width="2" fill="none" marker-end="url(#b)">
+      <path d="M1914,171 L1938,171"/><path d="M2074,171 L2098,171"/><path d="M2234,171 L2258,171"/><path d="M2394,171 L2418,171"/>
+    </g>
+
+    <rect x="1784" y="204" width="1510" height="76" rx="8" fill="#fff7ea" stroke="#e9b669" stroke-width="2.5"/>
+    <text x="1800" y="224" font-size="12.4" font-weight="700" fill="#a35c00">HOW A CONTAINER STOPS — the sequence that decides whether you drop requests</text>
+    <text x="1800" y="244" font-size="11" fill="#7a3d06"><tspan font-family="Menlo,monospace" font-size="10.6">docker stop</tspan> sends <tspan font-weight="700">SIGTERM</tspan> to PID 1 inside the container, waits a grace period — ten seconds by default — and then sends <tspan font-weight="700">SIGKILL</tspan>. <tspan font-family="Menlo,monospace" font-size="10.6">docker kill</tspan> skips straight to SIGKILL.</text>
+    <text x="1800" y="266" font-size="11" font-weight="700" fill="#be123c">So two things must be true for a clean shutdown: your process must actually be PID 1 (use exec form, not shell form), and it must handle SIGTERM by draining rather than exiting immediately.</text>
+
+    <!-- READING -->
+    <rect x="8" y="304" width="3304" height="324" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="328" font-size="15" font-weight="700" fill="#1e3a8a">READING THE DIAGRAM — six properties that explain the rest of this sheet</text>
+    <text x="26" y="354" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · Layers are immutable and additive.</tspan> Build speed comes from caching them and image size comes from what is in them — and a file added in one layer stays in the image even if a later layer deletes it. Secrets written during a build are permanent.</text>
+    <text x="26" y="382" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · One cache miss invalidates everything after it.</tspan> This single rule dictates Dockerfile ordering: least-changing instructions first, source code last. Getting it right is usually the largest available build-time improvement.</text>
+    <text x="26" y="410" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · The kernel is shared.</tspan> Isolation is namespaces and cgroups, not virtualisation. Containers are excellent at separating <tspan font-style="italic">your own</tspan> workloads and are not a boundary you should place untrusted code behind.</text>
+    <text x="26" y="438" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · The daemon is root, so socket access is root.</tspan> This is the most commonly underestimated risk in the whole ecosystem — mounting the Docker socket into a container, or into a CI job, grants that workload full control of the host.</text>
+    <text x="26" y="466" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · PID 1 semantics decide whether shutdown is graceful.</tspan> Exec form so your process receives SIGTERM; a signal handler so it drains. Shell form quietly breaks this, and the symptom — requests dropped on every deploy — rarely points back to the Dockerfile.</text>
+    <text x="26" y="494" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">6 · The container filesystem is ephemeral.</tspan> Anything that must survive belongs in a volume or an external service. This is not a limitation to work around; it is the property that makes containers disposable and therefore useful.</text>
+    <text x="26" y="528" font-size="11.8" fill="#6b7391">Useful interrogation of any image: how long does a rebuild take after a one-line code change, what is the image size and what is in it, does the process run as root, does it stop cleanly on SIGTERM, and is the tag pinned by digest?</text>
+    <text x="26" y="556" font-size="11.8" font-weight="700" fill="#1e3a8a">Those five questions surface almost every problem covered on this sheet — and the first two are answerable in under a minute with docker history and a rebuild.</text>
+    <text x="26" y="590" font-size="11.8" fill="#42507a"><tspan font-weight="700">On where this fits in production:</tspan> most organisations use Docker or BuildKit as a build tool in CI, push to a registry, and run the resulting images on Kubernetes or a managed container service. Panels 2, 5, 6 and 12 are therefore the ones</text>
+    <text x="26" y="610" font-size="11.8" fill="#42507a">most teams touch daily, and panels 7 to 10 matter most for local development and single-host deployments.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. BUILDING ============ -->
+<div class="panel c2 span2">
+  <div class="phead">5 &nbsp;· &nbsp;BUILDING WELL — MULTI-STAGE, CACHE MOUNTS AND MULTI-ARCHITECTURE
+    <span class="sub"><span class="lvl mid">MID</span> multi-stage builds · <span class="lvl sr">STAFF</span> BuildKit features worth adopting</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout b" style="margin-top:0"><b>Multi-stage builds are the single most valuable technique
+        here.</b> Build in a stage containing compilers, source and development dependencies; <b>copy only the finished
+        artefact into a minimal final stage</b>. The toolchain never reaches the shipped image, which cuts size
+        dramatically and removes a large share of the vulnerability surface at the same time.</div>
+      <div class="code"><span class="c"># ---- build stage ----</span>
+<span class="k">FROM</span> golang:1.24 <span class="k">AS</span> build
+WORKDIR /src
+COPY go.mod go.sum ./       <span class="c"># deps first —</span>
+RUN go mod download          <span class="c"># cached across code edits</span>
+COPY . .
+RUN CGO_ENABLED=0 go build -o /app ./cmd/server
+
+<span class="c"># ---- final stage ----</span>
+<span class="k">FROM</span> gcr.io/distroless/static:nonroot
+COPY --from=build /app /app
+USER nonroot:nonroot
+ENTRYPOINT [<span class="v">"/app"</span>]     <span class="c"># exec form — signals work</span>
+
+<span class="c"># result: a few MB, no shell, no package manager,</span>
+<span class="c"># non-root, and nothing from the build toolchain</span></div>
+      <div class="callout g"><b>Note the dependency ordering.</b> Copying the manifest and downloading dependencies
+        <i>before</i> copying source means a code change reuses the cached dependency layer. On a large project this is the
+        difference between seconds and minutes on every build.</div>
+    </div>
+    <div>
+      <div class="h3">BuildKit features worth using</div>
+      <table>
+        <tbody>
+          <tr><td style="width:118px"><b>Cache mounts</b></td><td><span class="mono">RUN --mount=type=cache,target=/root/.npm</span> persists a package cache <b>across builds without putting it in a layer</b>. Large speed-up, no size cost</td></tr>
+          <tr><td><b>Secret mounts</b></td><td><span class="mono">--mount=type=secret</span> makes a credential available during one instruction and <b>never writes it to a layer</b>. The correct answer to private registries and build tokens</td></tr>
+          <tr><td><b>Bind mounts</b></td><td><span class="mono">--mount=type=bind</span> reads from the context without copying</td></tr>
+          <tr><td><b>Parallel stages</b></td><td>Independent stages build concurrently, automatically</td></tr>
+          <tr><td><b>Cache export</b></td><td>Push and pull the build cache to a registry — <b>this is how you get warm caches on ephemeral CI runners</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Never pass secrets as build arguments.</b> <span class="mono">ARG</span> values are
+        recorded in the image history and are readable by anyone who pulls the image. The same applies to
+        <span class="mono">ENV</span>. <b>Use a secret mount</b> — it is the only mechanism that keeps the value out of the
+        image entirely.</div>
+      <div class="h3">Multi-architecture images</div>
+      <ul>
+        <li><b>Increasingly necessary</b> — developer machines on ARM, servers on x86, or both in a cloud fleet</li>
+        <li><b><span class="mono">docker buildx build --platform linux/amd64,linux/arm64 --push</span></b> produces a manifest list, and clients pull the matching variant automatically</li>
+        <li><b>Native builders are far faster than emulation.</b> Cross-building under QEMU works and is slow — use native runners per architecture where build time matters</li>
+      </ul>
+      <div class="callout"><b>A <span class="mono">.dockerignore</span> is not optional.</b> The whole build context
+        is sent to the daemon, so without one you ship <span class="mono">.git</span>, <span class="mono">node_modules</span>
+        and local artefacts on every build — slowing it, and risking them landing in the image via a broad
+        <span class="mono">COPY .</span>.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. BASE IMAGES ============ -->
+<div class="panel c4">
+  <div class="phead">6 &nbsp;· &nbsp;BASE IMAGES &amp; SIZE <span class="sub">the trade you are actually making</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:104px">Base</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><b>Full</b><br><span style="color:#6b7391">debian, ubuntu</span></td><td>Everything present, easy to debug, <b>large and a wide vulnerability surface</b></td></tr>
+        <tr><td><b>Slim</b></td><td>The same distribution with much removed. <b>A good default</b> — familiar tooling, far smaller</td></tr>
+        <tr><td><b>Alpine</b></td><td>Very small. <b>Uses musl rather than glibc</b>, which occasionally causes subtle incompatibilities and performance differences in some runtimes. Verify rather than assume</td></tr>
+        <tr><td><b>Distroless</b></td><td>Just your application and its runtime — <b>no shell, no package manager</b>. Smallest attack surface, and you cannot exec into it to debug</td></tr>
+        <tr><td><b>Scratch</b></td><td>Genuinely empty. Only for fully static binaries — no certificates, no timezone data unless you add them</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The pragmatic default: slim for most languages, distroless for compiled binaries.</b>
+      Distroless gives an excellent security posture at essentially no cost when your artefact is a single static binary,
+      and it is more disruptive for interpreted languages where you may need a shell.</div>
+    <div class="callout r"><b>Alpine is not automatically the right choice.</b> It is genuinely smaller, and the
+      musl difference has produced real, hard-to-diagnose issues — including DNS resolution behaviour and performance
+      regressions in certain language runtimes. <b>If you use it, test properly under load</b> rather than assuming
+      equivalence with a glibc image.</div>
+    <div class="h3">Why size actually matters</div>
+    <ul>
+      <li><b>Pull time on every new node</b> — significant when autoscaling, and directly visible as slow scale-up</li>
+      <li><b>Storage across registry, nodes and caches</b>, multiplied by every tag retained</li>
+      <li><b>Attack surface</b> — every package present is something to patch and something an attacker can use</li>
+      <li><b>Scan noise</b> — a full base image generates hundreds of findings in components you never invoke</li>
+    </ul>
+    <div class="callout"><b>Debugging a distroless image</b> is done by attaching a separate debug container that
+      shares the process namespace, rather than by adding a shell to production. That is the correct shape — <b>the
+      production image stays minimal and the tools arrive only when needed</b>.</div>
+  </div>
+</div>
+
+<!-- ============ 7. NETWORKING ============ -->
+<div class="panel c1 span2">
+  <div class="phead">7 &nbsp;· &nbsp;NETWORKING — DRIVERS, DNS AND THE MISTAKES EVERYONE MAKES ONCE
+    <span class="sub"><span class="lvl jr">JUNIOR</span> port publishing · <span class="lvl mid">MID</span> why the default bridge is the wrong one</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:112px">Driver</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><b>bridge</b><br><span style="color:#6b7391">the default</span></td><td>A private network on the host, with NAT out. Containers get internal addresses and reach the outside; inbound needs published ports</td></tr>
+          <tr><td><b>User-defined bridge</b></td><td><b>What you should actually use.</b> Same idea, plus <b>automatic DNS resolution by container name</b> — and better isolation between groups of containers</td></tr>
+          <tr><td><b>host</b></td><td>No network namespace — the container shares the host stack directly. Fastest, no isolation, port conflicts are real. <b>Linux only</b></td></tr>
+          <tr><td><b>none</b></td><td>No networking at all. Useful for genuinely isolated batch work</td></tr>
+          <tr><td><b>macvlan</b></td><td>The container gets an address on the physical network, appearing as its own host. For legacy integrations</td></tr>
+          <tr><td><b>overlay</b></td><td>Multi-host networking for Swarm. <b>On Kubernetes this is the CNI's job instead</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>Always create a user-defined network for related containers.</b> On the default
+        bridge, containers <b>cannot resolve each other by name</b> — the old <span class="mono">--link</span> flag existed
+        for this and is deprecated. On a user-defined network, <span class="mono">http://api:8080</span> simply works, which
+        is also exactly what Compose sets up for you.</div>
+    </div>
+    <div>
+      <div class="h3">Port publishing</div>
+      <div class="code">docker run -p 8080:80 nginx
+             <span class="c">│    └── container port</span>
+             <span class="c">└─────── host port</span>
+
+-p 127.0.0.1:8080:80   <span class="c"># bind to loopback only</span>
+-p 80                  <span class="c"># random host port</span></div>
+      <div class="callout r"><b>Publishing binds to all interfaces by default.</b> On a server with a public
+        address, <span class="mono">-p 5432:5432</span> exposes your database to the internet — and it typically bypasses
+        the host firewall, because Docker writes its own iptables rules. <b>Bind explicitly to
+        <span class="mono">127.0.0.1</span></b> for anything that should not be publicly reachable.</div>
+      <div class="h3">Three mistakes everyone makes once</div>
+      <ul>
+        <li><b><span class="mono">localhost</span> inside a container is the container.</b> Your application cannot reach a database on the host that way. Use the service name on a shared network, or <span class="mono">host.docker.internal</span> on Docker Desktop</li>
+        <li><b>An application bound to <span class="mono">127.0.0.1</span> inside the container is unreachable</b> however you publish it. <b>Bind to <span class="mono">0.0.0.0</span></b> — this is one of the most common &ldquo;the port is published but nothing responds&rdquo; causes</li>
+        <li><b><span class="mono">EXPOSE</span> publishes nothing.</b> It is metadata. Only <span class="mono">-p</span> at run time opens a host port</li>
+      </ul>
+      <div class="callout"><b>On Docker Desktop, containers run inside a virtual machine</b>, so networking and
+        bind-mount performance behave differently from Linux. Behaviour that works on a developer laptop and fails on a
+        Linux server usually traces back to this.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 8. VOLUMES ============ -->
+<div class="panel c8">
+  <div class="phead">8 &nbsp;· &nbsp;VOLUMES &amp; STORAGE <span class="sub">where data actually survives</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The container filesystem is ephemeral.</b> Everything written
+      outside a mount lives in the writable layer and <b>is destroyed when the container is removed</b>. Anything that must
+      survive belongs in a volume, a bind mount, or an external service.</div>
+    <table>
+      <thead><tr><th style="width:112px">Type</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td><b>Named volume</b></td><td><b>Managed by Docker</b> in its own storage area. <b>The right choice for production data</b> — portable, backed up as a unit, and it avoids host path and permission problems</td></tr>
+        <tr><td><b>Bind mount</b></td><td>A host path mounted in. <b>Ideal for development</b> — live code reload — and fragile in production, since it depends on host layout and permissions</td></tr>
+        <tr><td><b>tmpfs</b></td><td>In memory, never on disk. For secrets or scratch data that must not be written down</td></tr>
+      </tbody>
+    </table>
+    <div class="h3">Things worth knowing</div>
+    <ul>
+      <li><b>Volumes are not removed with the container</b> unless you ask. Anonymous volumes accumulate silently — <span class="mono">docker volume prune</span> and <span class="mono">docker run --rm -v</span> help</li>
+      <li><b>Bind-mount permissions are a common trap.</b> The container's user id must match the host file ownership, or writes fail with confusing errors. Named volumes avoid this</li>
+      <li><b>Bind mounts on Docker Desktop are slow</b>, because they cross a virtual machine boundary. Large dependency directories are noticeably affected</li>
+      <li><b>A mount hides whatever was underneath</b> at that path in the image</li>
+      <li><b><span class="mono">:ro</span></b> mounts read-only — use it for configuration you do not want a container to modify</li>
+    </ul>
+    <div class="callout g"><b>Back up the volume, not the container.</b> Containers are disposable by design; the
+      volume holds everything of value. And <b>test the restore</b> — a volume backup nobody has restored is an
+      assumption.</div>
+    <div class="callout"><b>Run with a read-only root filesystem</b> where you can —
+      <span class="mono">--read-only</span> plus a <span class="mono">tmpfs</span> for genuinely temporary paths. It
+      prevents a compromised process from modifying the application, and it surfaces unexpected writes during testing
+      rather than in production.</div>
+  </div>
+</div>
+
+<!-- ============ 9. COMPOSE ============ -->
+<div class="panel c3">
+  <div class="phead">9 &nbsp;· &nbsp;DOCKER COMPOSE <span class="sub">single-host, and V1 is gone</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Two corrections that still appear in current material.</b>
+      <b>Compose V1 reached end of life and is no longer shipped or supported</b> — the Python
+      <span class="mono">docker-compose</span> binary has been removed from official images and CI runners. Use
+      <b><span class="mono">docker compose</span></b>, with a space: it is a CLI plugin. And the
+      <b><span class="mono">version:</span> key at the top of the file is obsolete</b> — it is ignored and produces a
+      warning.</div>
+    <div class="code"><span class="c"># no version: key needed</span>
+services:
+  api:
+    build: .
+    ports: [<span class="v">"8080:8080"</span>]
+    environment:
+      DB_HOST: db          <span class="c"># resolves by service name</span>
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [<span class="v">"CMD-SHELL"</span>, <span class="v">"pg_isready -U postgres"</span>]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata:</div>
+    <div class="callout"><b>The classic Compose bug: plain <span class="mono">depends_on</span> waits for the
+      container to <i>start</i>, not for the service to be <i>ready</i>.</b> Your application starts before the database
+      accepts connections and crashes. <b>Use <span class="mono">condition: service_healthy</span> with a healthcheck</b>,
+      as above — and make the application retry its connection regardless, because it will meet this in production too.</div>
+    <div class="h3">Useful features</div>
+    <ul>
+      <li><b>Automatic networking</b> — every service is resolvable by name on a shared user-defined network</li>
+      <li><b>Profiles</b> — mark optional services so <span class="mono">--profile</span> starts them only when wanted</li>
+      <li><b>Override files</b> — a base file plus <span class="mono">docker-compose.override.yml</span> for local differences</li>
+      <li><b><span class="mono">watch</span></b> — sync files or rebuild automatically on change, for a fast development loop</li>
+    </ul>
+    <div class="callout r"><b>Compose is not a production orchestrator.</b> One host, no rescheduling, no rolling
+      updates, no self-healing beyond restart policies. <b>It is excellent for development, CI and genuinely simple
+      single-host deployments</b> — and reaching for it as a Kubernetes substitute at scale ends badly.</div>
+  </div>
+</div>
+
+<!-- ============ 10. RUNTIME ============ -->
+<div class="panel c7">
+  <div class="phead">10 &nbsp;· &nbsp;RUNTIME &amp; RESOURCES <span class="sub">limits, restarts and PID 1</span></div>
+  <div class="pbody">
+    <div class="h3">Resource limits</div>
+    <div class="code">docker run \
+  --memory=512m \        <span class="c"># hard limit — OOM kill above</span>
+  --memory-reservation=256m \
+  --cpus=1.5 \           <span class="c"># 1.5 cores' worth</span>
+  --pids-limit=200 \     <span class="c"># fork-bomb protection</span>
+  --restart=unless-stopped \
+  myapp:1.4.2</div>
+    <div class="callout r"><b>Without limits a container can consume the whole host.</b> Memory especially — one
+      leaking container can trigger the host out-of-memory killer, which may then kill something else entirely. <b>Set
+      memory limits on anything sharing a host.</b></div>
+    <div class="callout"><b>Many runtimes do not see the cgroup limit by default</b> and size their heap or thread
+      pools from the <i>host's</i> CPU and memory. The result is a process that immediately allocates more than its limit
+      and is killed. <b>Modern JVMs and Node versions handle this correctly</b> — older ones need explicit flags, and it is
+      worth verifying rather than assuming.</div>
+    <div class="h3">Restart policies</div>
+    <table>
+      <tbody>
+        <tr><td style="width:126px" class="mono">no</td><td>The default. No automatic restart</td></tr>
+        <tr><td class="mono">on-failure[:n]</td><td>Restart on a non-zero exit, optionally capped</td></tr>
+        <tr><td class="mono">always</td><td>Always restart, including after daemon restart</td></tr>
+        <tr><td class="mono">unless-stopped</td><td>Like <span class="mono">always</span>, but respects a manual stop. <b>Usually what you want</b></td></tr>
+      </tbody>
+    </table>
+    <div class="h3">PID 1 and zombie processes</div>
+    <ul>
+      <li><b>PID 1 has special duties</b> — it must reap orphaned child processes. Most applications do not, so if yours spawns children, <b>zombies accumulate</b></li>
+      <li><b><span class="mono">--init</span></b> inserts a minimal init process that reaps correctly and forwards signals. <b>Cheap insurance</b> for anything that forks</li>
+      <li><b>Exec form still matters</b> — with shell form your process is not PID 1 and never receives <span class="mono">SIGTERM</span></li>
+    </ul>
+    <div class="callout g"><b>Configure log rotation.</b> The default JSON file driver grows without limit, and a
+      chatty container will fill the host disk. Set <span class="mono">max-size</span> and
+      <span class="mono">max-file</span>, or ship logs elsewhere.</div>
+  </div>
+</div>
+
+<!-- ============ 11. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">11 &nbsp;· &nbsp;SECURITY <span class="sub">defaults are convenient, not safe</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>The default is root.</b> Unless the image sets a
+      <span class="mono">USER</span>, your process runs as root inside the container — and with a shared kernel, that is a
+      materially worse position than running as an ordinary user. <b>This one line is the highest-value change in the
+      panel.</b></div>
+    <div class="h3">In the image</div>
+    <ul>
+      <li><b>Create and switch to a non-root user</b>, and make sure the application does not need to write where it cannot</li>
+      <li><b>Pin the base image by digest</b>, not by a mutable tag</li>
+      <li><b>Multi-stage builds</b> so compilers and build credentials never ship</li>
+      <li><b>No secrets in <span class="mono">ARG</span>, <span class="mono">ENV</span> or any layer</b> — use build secrets, and inject runtime secrets from the platform</li>
+      <li><b>Rebuild regularly</b> to pick up base-image patches. An image built a year ago carries a year of unpatched vulnerabilities</li>
+    </ul>
+    <div class="h3">At run time</div>
+    <ul>
+      <li><b>Never <span class="mono">--privileged</span></b> unless you genuinely need full host access — it disables essentially every protection</li>
+      <li><b>Drop all capabilities and add back only what is needed</b> — <span class="mono">--cap-drop=ALL</span></li>
+      <li><b><span class="mono">--security-opt=no-new-privileges</span></b> to block privilege escalation</li>
+      <li><b>Read-only root filesystem</b> plus tmpfs for writable paths</li>
+      <li><b>Keep seccomp and AppArmor profiles enabled</b> — the defaults are useful and disabling them is common and unwise</li>
+    </ul>
+    <div class="callout r"><b>Do not mount the Docker socket into a container.</b> It is the single most common
+      serious misconfiguration — CI runners, dashboards and agents all ask for it. <b>A container with the socket has root
+      on the host.</b> Where a build genuinely needs to build images, use a rootless builder or a dedicated build service
+      rather than handing over the daemon.</div>
+  </div>
+</div>
+
+<!-- ============ 12. SUPPLY CHAIN ============ -->
+<div class="panel c2 span2">
+  <div class="phead">12 &nbsp;· &nbsp;REGISTRIES AND THE SUPPLY CHAIN
+    <span class="sub"><span class="lvl mid">MID</span> tags versus digests · <span class="lvl sr">STAFF</span> signing, provenance and what to actually enforce</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Tags are mutable pointers; digests are immutable
+        content.</b> <span class="mono">myapp:1.4.2</span> can be repushed to mean something entirely different tomorrow.
+        <span class="mono">myapp@sha256:abc…</span> is that exact image, permanently. <b>&ldquo;It worked yesterday and the
+        tag has not changed&rdquo; is not evidence of anything</b> unless you pinned the digest.</div>
+      <div class="h3">Tagging that works</div>
+      <ul>
+        <li><b>Immutable, meaningful tags</b> — a version and the commit SHA. Never reuse one</li>
+        <li><b>Enable tag immutability</b> in the registry if it supports it, so a push cannot overwrite an existing tag</li>
+        <li><b><span class="mono">:latest</span> is a convention, not a feature</b> — it is simply the default tag, points wherever it was last pushed, and should not appear in any deployment</li>
+        <li><b>Deploy by digest</b> for anything you must be able to reproduce</li>
+        <li><b>Build once and promote the same digest</b> through environments. Rebuilding per environment means you tested a different artefact from the one you shipped</li>
+      </ul>
+      <div class="callout"><b>Docker Hub applies pull rate limits</b> to anonymous and free accounts, which
+        surfaces as sporadic CI failures under load. <b>Authenticate, or mirror through a pull-through cache</b> — this
+        catches teams out at exactly the wrong moment.</div>
+    </div>
+    <div>
+      <div class="h3">Supply-chain controls worth having</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Scanning</b></td><td>In CI and again in the registry, since <b>new vulnerabilities are found in images that have not changed</b>. Scanning only at build time means you stop learning about an image the moment you ship it</td></tr>
+          <tr><td><b>SBOM</b></td><td>A generated inventory of what is inside. <b>The thing that answers &ldquo;are we affected?&rdquo; in hours rather than weeks</b> when the next widespread vulnerability lands</td></tr>
+          <tr><td><b>Signing</b></td><td>Sign images and <b>verify signatures at deploy time</b>. A signature nobody checks provides no protection</td></tr>
+          <tr><td><b>Provenance</b></td><td>Attestations recording how and where an image was built — which source, which builder, which inputs</td></tr>
+          <tr><td><b>Base image policy</b></td><td>An approved, maintained set of bases. <b>Fixing a vulnerability in one place beats fixing it in two hundred Dockerfiles</b></td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The highest-return practices, in order:</b> pin base images by digest, rebuild on a
+        schedule so patches actually reach production, scan continuously rather than once, and <b>enforce at admission</b>
+        so an unsigned or unscanned image cannot run. The first two cost almost nothing and close most of the real gap.</div>
+      <div class="callout r"><b>The failure this prevents is mundane and common:</b> an image built eighteen months
+        ago, still running, carrying every base-image vulnerability disclosed since. <b>Nothing changed, which is exactly
+        the problem</b> — and no scan at build time would have told you.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 13. DEBUGGING ============ -->
+<div class="panel c5">
+  <div class="phead">13 &nbsp;· &nbsp;DEBUGGING <span class="sub">the commands that matter</span></div>
+  <div class="pbody">
+    <div class="code"><span class="c"># why did it stop?</span>
+docker ps -a               <span class="c"># exit code and status</span>
+docker logs --tail 100 -f &lt;id&gt;
+docker inspect &lt;id&gt;        <span class="c"># full config and state</span>
+
+<span class="c"># what is it doing now?</span>
+docker exec -it &lt;id&gt; sh    <span class="c"># if there is a shell</span>
+docker stats               <span class="c"># live CPU and memory</span>
+docker top &lt;id&gt;            <span class="c"># processes</span>
+
+<span class="c"># why is the image so big?</span>
+docker history --no-trunc &lt;image&gt;
+docker image inspect &lt;image&gt;
+
+<span class="c"># what changed in the writable layer?</span>
+docker diff &lt;id&gt;
+
+<span class="c"># reclaim space</span>
+docker system df           <span class="c"># what is using it</span>
+docker system prune -a --volumes   <span class="c"># careful</span></div>
+    <div class="h3">Exit codes worth recognising</div>
+    <table>
+      <tbody>
+        <tr><td style="width:66px" class="mono">0</td><td>Clean exit — <b>for a service, that usually means it finished when it should not have</b></td></tr>
+        <tr><td class="mono">1</td><td>Application error. Read the logs</td></tr>
+        <tr><td class="mono">125</td><td><b>The daemon rejected the run command</b> — a bad flag, not your app</td></tr>
+        <tr><td class="mono">126</td><td>The command was found but is not executable — often a missing execute bit or wrong architecture</td></tr>
+        <tr><td class="mono">127</td><td><b>Command not found</b> — usually a typo or a binary missing from a slim base</td></tr>
+        <tr><td class="mono">137</td><td><b>SIGKILL — nearly always an out-of-memory kill.</b> Check the memory limit</td></tr>
+        <tr><td class="mono">143</td><td>SIGTERM — a normal stop</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Exit 137 is the one to memorise.</b> It means the kernel killed the process for
+      exceeding its memory limit — not an application bug, and no amount of reading logs will show it, because the process
+      was killed without warning.</div>
+    <div class="callout"><b>To debug a distroless or scratch image</b>, attach a second container sharing its
+      process and network namespaces: <span class="mono">docker run --rm -it --pid=container:&lt;id&gt;
+      --network=container:&lt;id&gt; nicolaka/netshoot</span>. <b>You get a full toolkit without adding anything to the
+      production image.</b></div>
+  </div>
+</div>
+
+<!-- ============ 14. PRODUCTION ============ -->
+<div class="panel c1 span3">
+  <div class="phead">14 &nbsp;· &nbsp;PRODUCTION PRACTICE — CI/CD, HOST OPERATIONS AND WHERE DOCKER FITS
+    <span class="sub">how images should flow to production, what the host needs, and the boundary with orchestration</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The pipeline that works</div>
+      <ol>
+        <li><b>Build once</b>, from a commit, producing one digest</li>
+        <li><b>Tag with the version and commit SHA</b>, never reusing a tag</li>
+        <li><b>Scan, generate an SBOM, sign</b> and attach provenance</li>
+        <li><b>Push to a registry</b> with immutability enabled</li>
+        <li><b>Promote the same digest</b> through staging to production — never rebuild per environment</li>
+        <li><b>Verify the signature at deploy</b>, and reject anything unsigned</li>
+      </ol>
+      <div class="callout r"><b>Rebuilding per environment is the anti-pattern to name.</b> A rebuild picks up
+        different base-image content, different transitive dependencies and a different build clock — so <b>the artefact
+        you tested is not the one you shipped</b>. One build, many deployments.</div>
+      <div class="h3">Making CI builds fast</div>
+      <ul>
+        <li><b>Export the build cache to a registry</b> — ephemeral runners start cold otherwise, and this is the single biggest CI build improvement available</li>
+        <li><b>Order the Dockerfile for cache reuse</b>; a proper <span class="mono">.dockerignore</span> keeps the context small</li>
+        <li><b>Use cache mounts</b> for package managers</li>
+        <li><b>Build architectures on native runners</b> rather than under emulation</li>
+        <li><b>Do not mount the Docker socket into CI jobs</b> — use a rootless or remote builder</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h3">Running containers on a host directly</div>
+      <ul>
+        <li><b>Resource limits on everything</b> — memory especially, so one container cannot take the host down</li>
+        <li><b>Restart policy set</b>, usually <span class="mono">unless-stopped</span></li>
+        <li><b>Log rotation configured</b>, or the disk fills</li>
+        <li><b>Prune on a schedule.</b> Unused images, stopped containers, dangling volumes and the build cache accumulate steadily — <b>disk exhaustion from unpruned Docker data is a genuinely common outage</b></li>
+        <li><b>Healthchecks defined</b>, so the runtime knows the difference between running and working</li>
+        <li><b>Watch the storage driver's disk usage</b> separately from application data</li>
+        <li><b>Keep the daemon and the host kernel patched</b> — the kernel is shared, so a host vulnerability is a container vulnerability</li>
+      </ul>
+      <div class="callout"><b><span class="mono">docker system prune -a</span> is destructive.</b> It removes
+        images not currently used by a running container — including ones you were relying on being cached, and images for
+        containers that happen to be stopped. On a production host, prune deliberately rather than broadly.</div>
+    </div>
+    <div>
+      <div class="h3">Where Docker stops and orchestration begins</div>
+      <table>
+        <thead><tr><th style="width:140px">Need</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>Build and package</td><td><b>Docker or BuildKit.</b> Still the standard, whatever runs the result</td></tr>
+          <tr><td>Local development</td><td><b>Compose.</b> Excellent at this and worth keeping</td></tr>
+          <tr><td>One host, a few services</td><td>Compose with restart policies, or a systemd unit per container. <b>Genuinely fine</b></td></tr>
+          <tr><td>Multi-host, rolling updates, self-healing</td><td><b>Kubernetes</b>, or a managed container service</td></tr>
+          <tr><td>Scale to zero, request-driven</td><td>A serverless container platform</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The boundary worth being clear about:</b> Docker builds the artefact; the
+        orchestrator decides <b>where it runs, how many, what happens when one dies, and how traffic reaches it</b>. Those
+        are different problems, and Compose deliberately does not solve the second set.</div>
+      <div class="callout p"><b>A note on skipping the middle.</b> Many teams move from a single host straight to
+        Kubernetes and inherit a large operational burden they did not need. <b>A few containers on one well-configured
+        host, with limits, healthchecks and log rotation, is a legitimate production architecture</b> — and it is much
+        easier to operate well.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 15. FAILURES ============ -->
+<div class="panel c5 span3">
+  <div class="phead">15 &nbsp;· &nbsp;COMMON FAILURES — SYMPTOM, CAUSE AND FIX
+    <span class="sub">what actually goes wrong, and the order in which you will meet it</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Container exits immediately, code 0</b></td><td>The main process finished — a foreground service run in background mode, or a script that ended</td><td>Run the process in the foreground. A container lives exactly as long as PID 1</td></tr>
+          <tr><td><b>Exit code 137</b></td><td><b>Out-of-memory kill</b> — the limit was exceeded</td><td>Raise the limit or fix the leak. Check the runtime is reading the cgroup limit</td></tr>
+          <tr><td><b>Every build reinstalls all dependencies</b></td><td><span class="mono">COPY .</span> before the dependency install, so any code change invalidates it</td><td>Copy the manifest and install first, source last</td></tr>
+          <tr><td><b>Container takes 10 seconds to stop, every time</b></td><td>Shell form, so the shell is PID 1 and SIGTERM never reaches your process</td><td>Use exec form; handle SIGTERM; consider <span class="mono">--init</span></td></tr>
+          <tr><td><b>Port published, nothing responds</b></td><td>The app is bound to <span class="mono">127.0.0.1</span> inside the container</td><td>Bind to <span class="mono">0.0.0.0</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th style="width:126px">Symptom</th><th>Cause</th><th style="width:150px">Fix</th></tr></thead>
+        <tbody>
+          <tr><td><b>Containers cannot resolve each other</b></td><td>On the default bridge, which has no DNS between containers</td><td>Create a user-defined network — or use Compose, which does it for you</td></tr>
+          <tr><td><b>App starts before the database is ready</b></td><td><span class="mono">depends_on</span> waits for start, not readiness</td><td><span class="mono">condition: service_healthy</span>, and retry in the app anyway</td></tr>
+          <tr><td><b>Host disk full</b></td><td>Unpruned images, volumes and build cache; or unrotated logs</td><td><span class="mono">docker system df</span>; scheduled prune; configure log rotation</td></tr>
+          <tr><td><b>Data gone after a redeploy</b></td><td>Written to the container filesystem rather than a volume</td><td>Named volume. <b>The writable layer dies with the container</b></td></tr>
+          <tr><td><b>Secret found in a shipped image</b></td><td>Passed via <span class="mono">ARG</span> or <span class="mono">ENV</span>, or written then deleted in a later layer</td><td><b>Rotate the secret</b> — it is permanently in the history. Use build secret mounts</td></tr>
+          <tr><td><b>Works locally, fails on the server</b></td><td>Architecture mismatch, or Docker Desktop virtual-machine behaviour differing from Linux</td><td>Build multi-arch; test on the target platform</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">What breaks first</div>
+      <table>
+        <thead><tr><th style="width:28px">#</th><th>Limit</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>Build cache ordering.</b> Slow builds on every commit — the most frequent complaint, and a five-minute fix</td></tr>
+          <tr><td><b>2</b></td><td><b>Ephemeral data assumptions</b> — writing where nothing survives</td></tr>
+          <tr><td><b>3</b></td><td><b>Signal handling</b>, so nothing shuts down cleanly and deploys drop requests</td></tr>
+          <tr><td><b>4</b></td><td><b>Host disk exhaustion</b> from unpruned images, cache and logs</td></tr>
+          <tr><td><b>5</b></td><td><b>Container runtime performance</b> — very rarely the actual problem</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>Note the order.</b> None of the top four are about container performance. They are
+        Dockerfile ordering, storage choices, one line of process handling and routine housekeeping.</div>
+      <div class="h3">Triage order</div>
+      <ol>
+        <li><b><span class="mono">docker ps -a</span></b> — is it running, and what was the exit code?</li>
+        <li><b><span class="mono">docker logs</span></b> — what did it say before stopping?</li>
+        <li><b><span class="mono">docker inspect</span></b> — is the configuration what you believe it is?</li>
+        <li><b><span class="mono">docker stats</span></b> — is it near a resource limit?</li>
+        <li><b><span class="mono">docker exec</span></b>, or an attached debug container for a minimal image</li>
+      </ol>
+      <div class="callout g"><b>Steps 1 and 2 resolve the large majority.</b> The exit code alone usually names
+        the category — 137 is memory, 127 is a missing command, 125 is a bad run command rather than your application.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CHECKLIST ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;PRODUCTION CHECKLIST <span class="sub">before an image ships</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Multi-stage build</b> — no toolchain in the final image</div>
+      <div>&#9744; <b>Dockerfile ordered least-changing first</b>; source copied last</div>
+      <div>&#9744; <b><span class="mono">.dockerignore</span> present</b> and excluding <span class="mono">.git</span> and dependency directories</div>
+      <div>&#9744; <b>Base image pinned by digest</b>, not a mutable tag</div>
+      <div>&#9744; <b>Base image chosen deliberately</b>; Alpine's musl difference tested if used</div>
+      <div>&#9744; <b>Image size checked</b> with <span class="mono">docker history</span></div>
+      <div>&#9744; <b>Exec form for <span class="mono">CMD</span> and <span class="mono">ENTRYPOINT</span></b></div>
+      <div>&#9744; <b>Application handles <span class="mono">SIGTERM</span></b> and drains</div>
+      <div>&#9744; <b><span class="mono">--init</span> used</b> if the process spawns children</div>
+      <div>&#9744; <b>Runs as a non-root <span class="mono">USER</span></b></div>
+      <div>&#9744; <b>No secrets in <span class="mono">ARG</span>, <span class="mono">ENV</span> or any layer</b></div>
+      <div>&#9744; <b>Build secrets via mounts</b>, never build arguments</div>
+      <div>&#9744; <b>Read-only root filesystem</b> where feasible, with tmpfs for writes</div>
+      <div>&#9744; <b>All capabilities dropped</b>, added back only as needed</div>
+      <div>&#9744; <b>Never <span class="mono">--privileged</span></b>; seccomp and AppArmor left enabled</div>
+      <div>&#9744; <b>Docker socket never mounted</b> into containers or CI jobs</div>
+      <div>&#9744; <b>Rootless mode considered</b> for shared build hosts</div>
+      <div>&#9744; <b>Memory and CPU limits set</b> on every container</div>
+      <div>&#9744; <b>Runtime verified to respect cgroup limits</b></div>
+      <div>&#9744; <b>Restart policy set</b>, usually <span class="mono">unless-stopped</span></div>
+      <div>&#9744; <b><span class="mono">HEALTHCHECK</span> defined</b> and meaningful</div>
+      <div>&#9744; <b>Log rotation configured</b> or logs shipped off-host</div>
+      <div>&#9744; <b>Persistent data in named volumes</b>, never the writable layer</div>
+      <div>&#9744; <b>Volume backups taken and a restore tested</b></div>
+      <div>&#9744; <b>User-defined networks</b> so services resolve by name</div>
+      <div>&#9744; <b>Published ports bound explicitly</b>, not exposed to the internet by accident</div>
+      <div>&#9744; <b>App binds <span class="mono">0.0.0.0</span></b> inside the container</div>
+      <div>&#9744; <b>Compose V2 (<span class="mono">docker compose</span>)</b>; no obsolete <span class="mono">version:</span> key</div>
+      <div>&#9744; <b><span class="mono">depends_on</span> uses <span class="mono">service_healthy</span></b>; app retries anyway</div>
+      <div>&#9744; <b>Tags immutable and meaningful</b>; no <span class="mono">:latest</span> in deployments</div>
+      <div>&#9744; <b>Deploy by digest</b> where reproducibility matters</div>
+      <div>&#9744; <b>Build once, promote the same digest</b> across environments</div>
+      <div>&#9744; <b>Registry authenticated or mirrored</b> to avoid pull rate limits</div>
+      <div>&#9744; <b>Images scanned in CI and continuously in the registry</b></div>
+      <div>&#9744; <b>SBOM generated; images signed and verified at deploy</b></div>
+      <div>&#9744; <b>Scheduled rebuilds</b> so base-image patches actually reach production</div>
+      <div>&#9744; <b>Approved base image set</b> maintained centrally</div>
+      <div>&#9744; <b>Multi-architecture builds</b> where the fleet needs them</div>
+      <div>&#9744; <b>Build cache exported</b> for ephemeral CI runners</div>
+      <div>&#9744; <b>Hosts pruned on a schedule</b>; disk usage monitored</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>say how long a rebuild takes after a one-line code
+      change, what is actually inside the image and how large it is, whether the process runs as root, whether it stops
+      cleanly on <span class="mono">SIGTERM</span>, and where data lives when the container is removed.</b> Those five
+      answers cover nearly every problem containers will hand you — and every one of them is decided in the Dockerfile,
+      long before anything reaches production.</div>
+  </div>
+</div>
+
+</div>
