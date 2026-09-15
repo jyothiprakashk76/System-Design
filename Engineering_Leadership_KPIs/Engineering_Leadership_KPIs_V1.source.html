@@ -1,0 +1,685 @@
+<meta charset="utf-8">
+<title>Engineering Leadership KPIs — Director &amp; Head of Engineering</title>
+<style>
+  @page { size: 3400px 5125px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:3400px; height:5125px; background:#edeff6;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#0f1326;
+    -webkit-font-smoothing:antialiased; }
+  .sheet { width:3400px; height:5095px; padding:26px; display:grid;
+    grid-template-columns:1102px 1101px 1101px;
+    grid-template-rows:118px 384px 612px 709px 572px 576px 564px 492px 390px 428px;
+    gap:22px; }
+  .span2{grid-column:span 2} .span3{grid-column:1/-1}
+
+  .title{grid-column:1/span 3;background:#101a33;border-radius:12px;color:#fff;
+         display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+  .title h1{font-size:33px;letter-spacing:.8px;font-weight:700}
+  .title .tag{font-size:15.5px;color:#93a4d6;font-weight:500;text-align:right;line-height:1.4}
+  .title .v{display:inline-block;background:#0369a1;padding:3px 13px;border-radius:5px;
+            font-size:15.5px;font-weight:700;letter-spacing:1px;margin-left:14px;vertical-align:middle}
+
+  .panel{background:#fff;border:2px solid #c7cbdd;border-radius:12px;overflow:hidden;
+         display:flex;flex-direction:column}
+  .phead{color:#fff;padding:10px 17px;font-size:21px;font-weight:700;letter-spacing:.4px;
+         display:flex;justify-content:space-between;align-items:baseline;flex:none}
+  .phead .sub{font-size:13.4px;font-weight:500;letter-spacing:0;opacity:.82}
+  .pbody{padding:11px 14px;flex:1;min-height:0}
+  .c0 .phead{background:#1f2a63} .c1 .phead{background:#1e3a8a} .c2 .phead{background:#0f766e}
+  .c3 .phead{background:#7c2d92} .c4 .phead{background:#b45309} .c5 .phead{background:#be123c}
+  .c6 .phead{background:#334155} .c7 .phead{background:#0369a1} .c8 .phead{background:#155e75}
+
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{background:#e0e5f5;color:#1f2a63;text-align:left;padding:4px 7px;font-size:12.3px;border:1px solid #bfc7de}
+  td{padding:3.5px 7px;border:1px solid #d0d6e8;vertical-align:top}
+  tbody tr:nth-child(even){background:#f7f8fd}
+  .mono{font-family:Menlo,Consolas,monospace}
+  .h3{font-size:14px;font-weight:700;color:#1e3a8a;margin:9px 0 5px}
+  .h3:first-child{margin-top:0}
+  ul{margin-left:17px;font-size:12.9px;line-height:1.44} li{margin-bottom:2.5px}
+  ol{margin-left:19px;font-size:12.9px;line-height:1.44} ol li{margin-bottom:2.5px}
+  .code{background:#0f1326;border-radius:6px;padding:8px 10px;font-family:Menlo,Consolas,monospace;
+        font-size:11.3px;line-height:1.45;color:#cfd6f0;white-space:pre;margin-top:6px}
+  .code .c{color:#6f86a8} .code .k{color:#ffc857} .code .v{color:#8fe3c6} .code .r{color:#fca5a5}
+  .callout{background:#fff7ea;border:1.5px solid #e9b669;padding:7px 10px;font-size:12.5px;
+           line-height:1.42;border-radius:5px;margin-top:7px}
+  .callout b{color:#a35c00}
+  .callout.g{background:#ecfdf5;border-color:#6ee7b7} .callout.g b{color:#047857}
+  .callout.p{background:#f5f0fd;border-color:#b39ae8} .callout.p b{color:#6b21a8}
+  .callout.r{background:#fef2f2;border-color:#e8a3a3} .callout.r b{color:#b91c1c}
+  .callout.b{background:#eff6ff;border-color:#93c5fd} .callout.b b{color:#1d4ed8}
+  .chk{columns:3;column-gap:20px;font-size:12.7px;line-height:1.44}
+  .chk div{break-inside:avoid;margin-bottom:4px;padding-left:19px;text-indent:-19px}
+  .chk b{color:#1f2a63}
+  .lvl{display:inline-block;font-size:10.4px;font-weight:700;padding:1px 6px;border-radius:3px;
+       letter-spacing:.4px;vertical-align:1px;margin-left:5px}
+  .jr{background:#dcfce7;color:#166534} .mid{background:#dbeafe;color:#1e40af} .sr{background:#fce7f3;color:#9d174d}
+  .star{color:#be123c;font-weight:700}
+  svg{display:block}
+</style>
+
+<div class="sheet">
+
+<div class="title">
+  <h1>ENGINEERING LEADERSHIP KPIs — DIRECTOR &amp; HEAD OF ENGINEERING<span class="v">V1</span></h1>
+  <div class="tag">What to measure, what it is paired with, and what never to measure at all<br>
+    <span style="font-size:13.4px;color:#6d80b6">delivery · reliability · cost · people &nbsp;+&nbsp; e-commerce · streaming · social · chat · video calling · news feed
+    &nbsp;·&nbsp; <b style="color:#8fa8e8">★ marks the one</b> that matters most per domain</span></div>
+</div>
+
+<!-- ============ 1. INTRO ============ -->
+<div class="panel c0 span3">
+  <div class="phead">1 &nbsp;· &nbsp;WHAT YOU ARE ACTUALLY ACCOUNTABLE FOR — AND THE TRAP AT THIS LEVEL
+    <span class="sub">start here — engineering metrics alone do not earn credibility with the business, and business metrics alone are not actionable by engineers</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">The four things a Director owns</div>
+      <table>
+        <tbody>
+          <tr><td style="width:104px"><b>Delivery</b></td><td>Does work reach production predictably, in small safe increments?</td></tr>
+          <tr><td><b>Reliability</b></td><td>Do the journeys that make money keep working?</td></tr>
+          <tr><td><b>Cost</b></td><td>Does unit economics improve as you scale?</td></tr>
+          <tr><td><b>People</b></td><td>Can the organisation still do this in two years?</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The trap, and it catches most people at this level.</b> Report only DORA metrics and
+        your CEO hears nothing they care about — deployment frequency is not a business outcome. Report only revenue and
+        conversion and your engineers cannot act on it. <b>Your job is the translation layer</b>: connecting a latency
+        percentile to a conversion rate, and an error budget to a decision about whether to ship.</div>
+      <div class="callout b"><b>So the structure that works is layered.</b> A business outcome sits on top of a
+        journey-level service objective, which sits on an engineering KPI, which sits on a team-level signal. <b>Each layer
+        explains the one above and is actionable by the layer below</b> — panel 4 sets this out.</div>
+      <div class="h3">The one-line test for any proposed KPI</div>
+      <div style="font-size:12.9px;line-height:1.45"><b>&ldquo;If this number moves, what decision changes?&rdquo;</b>
+        If nobody can answer, it is a dashboard ornament. Delete it.</div>
+    </div>
+    <div>
+      <div class="h3">Choosing them</div>
+      <ul>
+        <li><b>Pick five to eight.</b> A director tracking forty KPIs is tracking none. Choose the ones tied to <i>this year's constraint</i></li>
+        <li><b>Retire them when the constraint moves.</b> KPIs are instruments, not monuments. A metric nobody has acted on in two quarters is noise</li>
+        <li><b>Every KPI gets a counter-metric</b> — see panel 14. A metric optimised alone always produces a pathology</li>
+        <li><b>Percentiles, not averages.</b> The average request is fine; the p99 is the one losing you customers</li>
+        <li><b>Trend over target</b> in the first year. Direction and consistency beat an invented threshold</li>
+        <li><b>Instrument the journey, not the service.</b> Every service at 99.9% can still mean a broken checkout</li>
+      </ul>
+      <div class="callout g"><b>Leading versus lagging, and why you need both.</b> Lagging metrics — incident count,
+        attrition, revenue impact — tell you what already happened and are what the business asks about. <b>Leading
+        metrics — error budget burn, PR review latency, on-call load, dependency age — tell you what is about to
+        happen</b>, and are the ones you can still act on. A dashboard of only lagging indicators is a rear-view mirror.</div>
+    </div>
+    <div>
+      <div class="h3">How this sheet is organised</div>
+      <table>
+        <tbody>
+          <tr><td style="width:112px"><b>Panels 2–7</b></td><td><b>Universal.</b> These apply whatever you build — delivery, reliability, cost, security, tech health and people</td></tr>
+          <tr><td><b>Panels 8–13</b></td><td><b>Domain-specific.</b> Six product types, each with the small number of KPIs that genuinely matter and <b>one marked ★ as the headline</b></td></tr>
+          <tr><td><b>Panels 14–16</b></td><td>Counter-metrics, what to report upward, the anti-patterns, and an operating cadence</td></tr>
+        </tbody>
+      </table>
+      <div class="callout p"><b>A note on benchmarks.</b> This sheet deliberately gives <b>no target numbers</b> —
+        no &ldquo;deploy N times a day&rdquo;, no &ldquo;p95 under N milliseconds&rdquo;. Those depend entirely on your
+        domain, scale, regulatory context and architecture, and a borrowed number is worse than none because it
+        manufactures false confidence. <b>Measure your own baseline first, then set a target against it.</b></div>
+      <div class="callout"><b>The honest framing for your first ninety days:</b> most organisations cannot measure
+        half of this. <b>Start by finding out which ones you genuinely cannot produce</b> — that list is itself the
+        finding, and it is usually a more useful first report than any of the numbers.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 2. DELIVERY ============ -->
+<div class="panel c2 span2">
+  <div class="phead">2 &nbsp;· &nbsp;DELIVERY — THROUGHPUT AND SAFETY, WHICH MUST BE READ TOGETHER
+    <span class="sub"><span class="lvl mid">UNIVERSAL</span> the four research-backed measures, plus the flow metrics that explain them</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">KPI</th><th>What it actually tells you</th></tr></thead>
+        <tbody>
+          <tr><td><b>Deployment frequency</b></td><td>A proxy for <b>batch size and confidence</b>. Falling frequency almost always means fear, not less work — investigate it as a signal about the team, not the pipeline</td></tr>
+          <tr><td><b>Lead time for change</b><br><span style="color:#6b7391">commit → production</span></td><td>Report <b>p50 and p90 together</b>. The p50 flatters you; the p90 is where the painful path lives, and it is the one engineers experience</td></tr>
+          <tr><td><b>Change failure rate</b></td><td>Share of deploys causing degradation or requiring remediation. <b>The safety half of the pair</b> — deployment frequency without it is meaningless</td></tr>
+          <tr><td><b>Failed-deployment recovery time</b></td><td>How quickly you undo a bad change. Often a better investment than preventing the change from failing</td></tr>
+        </tbody>
+      </table>
+      <div class="callout b"><b>Read the first and third together, always.</b> High deployment frequency with a high
+        change failure rate is recklessness. Low frequency with a low failure rate is usually not safety — it is large
+        batches that simply have not failed <i>yet</i>. <b>The healthy pattern is both improving at once</b>, which is the
+        finding that made these four measures interesting in the first place.</div>
+    </div>
+    <div>
+      <div class="h3">Flow metrics — where the lead time actually goes</div>
+      <table>
+        <tbody>
+          <tr><td style="width:150px"><b>PR review latency</b><br><span style="color:#6b7391">open → first review</span></td><td><b>Usually the single largest hidden component of lead time</b>, and the cheapest to fix. Measure it before buying any tooling</td></tr>
+          <tr><td><b>PR size distribution</b></td><td>Large PRs cause slow reviews, which cause larger PRs. Breaking that loop moves several other metrics at once</td></tr>
+          <tr><td><b>Work in progress per team</b></td><td>High WIP is context-switching made visible. Reducing it raises throughput without adding people</td></tr>
+          <tr><td><b>Flaky test rate</b></td><td>Erodes trust in the pipeline. Once engineers re-run failures by reflex, your safety net is gone</td></tr>
+          <tr><td><b>Build and test duration</b> p90</td><td>Directly sets how small a batch can reasonably be</td></tr>
+          <tr><td><b>% work unplanned</b></td><td>Interrupt load. Above roughly a third, planning is fiction and your estimates will keep being wrong</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The diagnostic sequence that works.</b> Lead time is high → break it into coding,
+        review wait, build, and release wait → <b>in most organisations review wait dominates</b> → fix that before
+        anything else. It is a working-agreement change, not a budget request.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 3. RELIABILITY ============ -->
+<div class="panel c5">
+  <div class="phead">3 &nbsp;· &nbsp;RELIABILITY <span class="sub">journeys, not servers</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Raw uptime is close to meaningless.</b> Every service can report
+      99.9% while checkout is broken. <b>Define service objectives on user journeys</b> — complete a purchase, send a
+      message, join a call — and measure those. This single change makes reliability legible to the business.</div>
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><b>SLO attainment</b> per critical journey</td><td>The headline. One number per journey that the business recognises</td></tr>
+        <tr><td><b>Error budget burn rate</b></td><td><b>The most useful mechanism at your level.</b> It converts reliability from an argument into a rule: budget spent means stabilise, budget healthy means ship faster</td></tr>
+        <tr><td><b>Incidents by severity</b>, trend</td><td>Raw count is noise. <b>The severity mix is the signal</b></td></tr>
+        <tr><td><b>MTTD</b> — time to detect</td><td>Usually the worst of the three and the cheapest to improve. Most &ldquo;slow recovery&rdquo; is slow detection</td></tr>
+        <tr><td><b>MTTA</b> — time to acknowledge</td><td>Tests your paging path, not your engineers</td></tr>
+        <tr><td><b>MTTR</b> — time to restore</td><td>Restore, not root-cause. Those are different activities</td></tr>
+        <tr><td><b>% incidents self-detected</b></td><td><b>Versus reported by a customer.</b> A blunt, honest measure of observability quality</td></tr>
+        <tr><td><b>Repeat-incident rate</b></td><td>Same cause recurring means postmortem actions are not landing</td></tr>
+        <tr><td><b>Postmortem action closure</b></td><td>Closure rate, not write-up rate. Unclosed actions are a promise nobody kept</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The two-metric version, if you can only have two:</b> <b>SLO attainment on the
+      revenue-critical journey</b>, and <b>percentage of incidents you detected before a customer told you</b>. Between
+      them they cover whether the product works and whether you would know if it did not.</div>
+    <div class="callout"><b>Track toil separately</b> — the share of time spent on manual, repetitive, automatable
+      work. Sustained above roughly thirty percent and your engineering team has become a support desk, which shows up as
+      attrition long before it shows up in delivery metrics.</div>
+  </div>
+</div>
+
+<!-- ============ 4. MODEL ============ -->
+<div class="panel c0 span3">
+  <div class="phead">4 &nbsp;· &nbsp;THE MEASUREMENT MODEL — FOUR LAYERS, AND WHAT EACH AUDIENCE SEES
+    <span class="sub">how a business outcome connects to something an engineer can act on, and which numbers travel upward</span></div>
+  <div class="pbody" style="padding:8px 12px">
+  <svg viewBox="0 0 3320 636" width="3320" height="636">
+    <defs>
+      <marker id="b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/></marker>
+      <marker id="u" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#047857"/></marker>
+    </defs>
+
+    <!-- LAYERS -->
+    <rect x="8" y="6" width="1900" height="290" rx="10" fill="#eef3fd" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="30" font-size="16" font-weight="700" fill="#1e3a8a">THE FOUR LAYERS — each explains the one above it and is actionable by the one below</text>
+
+    <g font-size="10.6">
+      <rect x="26" y="44" width="1866" height="52" rx="8" fill="#fef2f2" stroke="#be123c" stroke-width="2.5"/>
+      <text x="42" y="64" font-size="12.2" font-weight="700" fill="#be123c">1 · BUSINESS OUTCOME &nbsp;— what the CEO and the board care about</text>
+      <text x="42" y="84" fill="#7f2b2b">Revenue, conversion, retention, cost as a share of revenue, regulatory exposure. &nbsp;<tspan font-weight="700">You do not own these alone</tspan> — but you must be able to show how engineering moved them.</text>
+
+      <rect x="26" y="108" width="1866" height="52" rx="8" fill="#fff7ea" stroke="#b45309" stroke-width="2.5"/>
+      <text x="42" y="128" font-size="12.2" font-weight="700" fill="#b45309">2 · JOURNEY SLO &nbsp;— the translation layer, and the most valuable thing you will build</text>
+      <text x="42" y="148" fill="#7a3d06">Checkout completes · message delivers · call connects · feed loads. &nbsp;<tspan font-weight="700">Stated as an objective with an error budget</tspan>, so reliability becomes a decision rule rather than an opinion.</text>
+
+      <rect x="26" y="172" width="1866" height="52" rx="8" fill="#f0fbf8" stroke="#0f766e" stroke-width="2.5"/>
+      <text x="42" y="192" font-size="12.2" font-weight="700" fill="#0f766e">3 · ENGINEERING KPI &nbsp;— what you manage week to week</text>
+      <text x="42" y="212" fill="#2f4f47">Lead time, change failure rate, payment success rate, rebuffering ratio, unit cost, on-call load. &nbsp;<tspan font-weight="700">These are yours.</tspan> This is the layer this sheet is mostly about.</text>
+
+      <rect x="26" y="236" width="1866" height="52" rx="8" fill="#f6f0fd" stroke="#7c2d92" stroke-width="2.5"/>
+      <text x="42" y="256" font-size="12.2" font-weight="700" fill="#7c2d92">4 · TEAM SIGNAL &nbsp;— diagnostic only, never a performance measure</text>
+      <text x="42" y="276" fill="#4b3a5e">PR review latency, flaky test rate, build duration, WIP, dependency age. &nbsp;<tspan font-weight="700">Used by the team to improve itself.</tspan> The moment these are used to rank people they stop being true.</text>
+    </g>
+
+    <g stroke="#047857" stroke-width="2.4" fill="none" marker-end="url(#u)">
+      <path d="M1930,262 L1930,236"/><path d="M1930,198 L1930,172"/><path d="M1930,134 L1930,108"/>
+    </g>
+    <text x="1950" y="150" font-size="11" font-weight="700" fill="#047857">each layer</text>
+    <text x="1950" y="166" font-size="11" font-weight="700" fill="#047857">explains the</text>
+    <text x="1950" y="182" font-size="11" font-weight="700" fill="#047857">one above</text>
+
+    <!-- AUDIENCE -->
+    <rect x="2070" y="6" width="1242" height="290" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+    <text x="2088" y="30" font-size="16" font-weight="700" fill="#047857">WHICH NUMBERS TRAVEL UPWARD</text>
+    <g font-size="10.6">
+      <rect x="2088" y="44" width="1206" height="76" rx="8" fill="#fff" stroke="#047857" stroke-width="1.8"/>
+      <text x="2104" y="64" font-size="12" font-weight="700" fill="#047857">TO THE BOARD OR CEO — five, quarterly</text>
+      <text x="2104" y="84" fill="#2f4f47">· Unit cost trend &nbsp;· SLO attainment on the revenue-critical journey &nbsp;· Peak readiness before a known event</text>
+      <text x="2104" y="102" fill="#2f4f47">· Regretted attrition &nbsp;· Security SLA adherence. &nbsp;<tspan font-weight="700">Nothing else. Adding a sixth dilutes all five.</tspan></text>
+
+      <rect x="2088" y="132" width="1206" height="76" rx="8" fill="#fff" stroke="#0369a1" stroke-width="1.8"/>
+      <text x="2104" y="152" font-size="12" font-weight="700" fill="#0369a1">TO YOUR PEERS IN PRODUCT — monthly</text>
+      <text x="2104" y="172" fill="#42507a">· Error budget status, which sets what you can safely commit to &nbsp;· Lead time p90 &nbsp;· The domain KPI that maps</text>
+      <text x="2104" y="190" fill="#42507a">to their goal &nbsp;· Unplanned work share, which explains why the roadmap moved</text>
+
+      <rect x="2088" y="220" width="1206" height="68" rx="8" fill="#fff" stroke="#7c2d92" stroke-width="1.8"/>
+      <text x="2104" y="240" font-size="12" font-weight="700" fill="#7c2d92">TO YOUR OWN TEAMS — weekly, and visible to them without asking</text>
+      <text x="2104" y="260" fill="#4b3a5e">Everything. Teams see their own flow metrics, their own incidents, their own cost. &nbsp;<tspan font-weight="700">Transparency downward,</tspan></text>
+      <text x="2104" y="278" fill="#4b3a5e"><tspan font-weight="700">summary upward</tspan> — the reverse is how metrics become a surveillance exercise and stop reflecting reality.</text>
+    </g>
+
+    <!-- READING -->
+    <rect x="8" y="308" width="3304" height="320" rx="10" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="26" y="332" font-size="15" font-weight="700" fill="#1e3a8a">READING THE MODEL — six principles that decide whether a metrics programme works or quietly rots</text>
+    <text x="26" y="358" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">1 · Every KPI needs a counter-metric.</tspan> A number optimised alone always produces a pathology — deployment frequency without change failure rate produces recklessness, moderation speed without false-positive rate produces over-blocking. Panel 14 lists the pairs.</text>
+    <text x="26" y="386" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">2 · Team-level signals must never become performance measures.</tspan> The instant PR review latency appears in an appraisal, engineers optimise the metric rather than the work, and you lose both the metric and the trust that produced it. This is the fastest way to destroy a measurement programme.</text>
+    <text x="26" y="414" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">3 · Percentiles, not averages — and the tail is the product.</tspan> The mean request is always fine. The p99 is the customer who left. For anything user-facing, report p95 and p99 and treat the average as decoration.</text>
+    <text x="26" y="442" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">4 · Measure the journey, not the service.</tspan> Service-level availability multiplies: twenty services at 99.9% each do not give you a 99.9% checkout. Instrument the path the user actually takes, end to end, and let service metrics be diagnostic.</text>
+    <text x="26" y="470" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">5 · Baseline before target.</tspan> Borrowed benchmarks manufacture false confidence — another company's numbers encode their domain, scale and architecture, not yours. Measure for a quarter, then set a target against your own trend.</text>
+    <text x="26" y="498" font-size="11.8" fill="#42507a"><tspan font-weight="700" fill="#be123c">6 · A KPI nobody has acted on in two quarters should be deleted.</tspan> Dashboards accumulate metrics the way codebases accumulate dead code, and an unread dashboard is worse than none because it creates the impression of oversight.</text>
+    <text x="26" y="532" font-size="11.8" fill="#6b7391">Useful interrogation of any metrics programme: which number would change a decision this week, who is the audience for each dashboard, what is the counter-metric for your headline KPI, and which of these can you not currently produce at all?</text>
+    <text x="26" y="560" font-size="11.8" font-weight="700" fill="#1e3a8a">That last question is usually the most productive one in a new role — the metrics you cannot produce describe your observability and data gaps more precisely than any audit will.</text>
+    <text x="26" y="594" font-size="11.8" fill="#42507a"><tspan font-weight="700">On cadence:</tspan> weekly for flow and incidents with the teams, monthly for domain KPIs with product, quarterly for the five that go upward. <tspan font-weight="700">Reviewing everything at every cadence is how metrics become theatre</tspan> — and</text>
+    <text x="26" y="614" font-size="11.8" fill="#42507a">the meeting that reviews forty numbers and changes nothing is the clearest sign the programme has stopped working.</text>
+  </svg>
+  </div>
+</div>
+
+<!-- ============ 5. COST ============ -->
+<div class="panel c4 span2">
+  <div class="phead">5 &nbsp;· &nbsp;COST AND UNIT ECONOMICS — THE LANGUAGE THAT TRAVELS
+    <span class="sub"><span class="lvl sr">HIGH LEVERAGE</span> the fastest way to be taken seriously outside engineering</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">KPI</th><th>Why it earns attention</th></tr></thead>
+        <tbody>
+          <tr><td><b>Unit cost</b><br><span style="color:#6b7391">per order, viewing hour, message, participant-minute</span></td><td><b>The single most useful number you can produce.</b> It converts infrastructure into a figure finance already reasons about, and it makes an architecture improvement legible as a margin improvement</td></tr>
+          <tr><td><b>Infra cost as % of revenue</b>, trend</td><td><b>Should decline as you scale.</b> If it is flat, you have an architecture problem, not a procurement problem — and this is the chart that proves it either way</td></tr>
+          <tr><td><b>Cost per team and per service</b></td><td>Attribution must exist before optimisation is possible. <b>Showing teams their own number reduces spend before any technical change</b></td></tr>
+          <tr><td><b>Cost of a percentage point of reliability</b></td><td>Makes the &ldquo;why not five nines&rdquo; conversation quantitative rather than cultural</td></tr>
+          <tr><td><b>Idle and over-provisioned capacity</b></td><td>Usually the largest single line, and the least contentious to reclaim</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>The framing that works with engineers:</b> cost is a design constraint, not a
+        procurement problem. A partitioning choice, a cache hit rate, a retry policy and an instance type are all cost
+        decisions made by engineers — <b>and they move the number far more than renegotiating the contract does</b>.</div>
+    </div>
+    <div>
+      <div class="h3">Tech health — the debt that is not a metaphor</div>
+      <table>
+        <tbody>
+          <tr><td style="width:158px"><b>% services on supported versions</b></td><td>Runtimes, frameworks, databases, base images. <b>Your deferred-maintenance liability in one number</b>, and the one that eventually blocks a security fix</td></tr>
+          <tr><td><b>Dependency age</b> — median and worst</td><td>A leading indicator. The worst case is usually the thing that will make an upgrade urgent and expensive later</td></tr>
+          <tr><td><b>Migration completion %</b></td><td>For each in-flight migration, with a date. <b>Half-finished migrations are the most expensive state</b> — you pay for both systems and get the benefits of neither</td></tr>
+          <tr><td><b>Services without an owner</b></td><td>Should be zero. Anything above zero is an incident waiting for a weekend</td></tr>
+          <tr><td><b>Toil %</b></td><td>Manual repetitive work. Predicts attrition earlier than any engagement survey</td></tr>
+        </tbody>
+      </table>
+      <div class="callout r"><b>The number to watch for a stalled migration.</b> Track completion percentage
+        <i>with a date</i>, and escalate when it stops moving. <b>A migration that is eighty percent done for three
+        quarters is a strategic failure that will not surface in any other metric</b> — delivery and reliability can both
+        look healthy while it quietly doubles your operating surface.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 6. SECURITY ============ -->
+<div class="panel c6">
+  <div class="phead">6 &nbsp;· &nbsp;SECURITY &amp; COMPLIANCE <span class="sub">measurable, not aspirational</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:158px">KPI</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><b>Time to patch critical vulnerabilities</b></td><td><b>Against a stated SLA</b>, and report adherence rather than the raw count. This is the one that goes upward</td></tr>
+        <tr><td><b>Open critical and high findings, ageing</b></td><td>The ageing distribution matters more than the total — a small number of very old findings is worse than many new ones</td></tr>
+        <tr><td><b>% services with scanning and SBOM</b></td><td>Coverage of the programme itself. Uncovered services are where the surprise lives</td></tr>
+        <tr><td><b>Secret exposure incidents</b></td><td>Should be zero. <b>Also measure time to detect and rotate</b> — exposure happens, undetected exposure is the failure</td></tr>
+        <tr><td><b>% of production images signed and verified</b></td><td>Supply-chain posture, expressed as a percentage rather than a policy document</td></tr>
+        <tr><td><b>Access review completion</b></td><td>Standing privileged access is the finding auditors reach for first</td></tr>
+        <tr><td><b>Audit or certification findings</b>, and repeat findings</td><td><b>A repeat finding is far more damaging than a new one</b> — it says the previous remediation was cosmetic</td></tr>
+        <tr><td><b>Recovery objectives proven</b></td><td>Not stated — <b>proven by a tested restore, with the measured time</b>. An untested backup is a hypothesis</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Report adherence, not activity.</b> &ldquo;Ninety-four percent of critical
+      vulnerabilities patched within SLA, worst outstanding at eleven days&rdquo; is a sentence an executive can act on.
+      &ldquo;We closed six hundred findings&rdquo; is not — it says nothing about what remains.</div>
+    <div class="callout r"><b>The one that catches organisations out</b> is proven recovery. Everyone has backups;
+      far fewer have restored one this year and timed it. <b>Make the measured restore time a KPI</b>, because it is the
+      number your recovery objective actually depends on — and the one that turns out to be wrong during an incident.</div>
+  </div>
+</div>
+
+<!-- ============ 7. PEOPLE ============ -->
+<div class="panel c3">
+  <div class="phead">7 &nbsp;· &nbsp;PEOPLE &amp; ORGANISATION <span class="sub">the leading indicators</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:158px">KPI</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><b>Regretted attrition</b></td><td><b>Separate it from total attrition</b>, which is nearly meaningless — losing a poor fit and losing your best architect are not the same event. Report regretted only</td></tr>
+        <tr><td><b>On-call load distribution</b></td><td>Pages per engineer per week, and out-of-hours share. <b>Concentration here predicts your next resignation</b> more reliably than any survey</td></tr>
+        <tr><td><b>Pages per on-call shift</b>, trend</td><td>Rising means alerting quality is degrading. Falling to near zero may mean alerts were silenced rather than fixed</td></tr>
+        <tr><td><b>Time to first meaningful contribution</b></td><td>Measures your onboarding and documentation, not the hire</td></tr>
+        <tr><td><b>Internal mobility rate</b></td><td>People moving between teams is a health signal. Zero mobility means teams are hoarding</td></tr>
+        <tr><td><b>Bus factor</b> on critical systems</td><td>Count systems with a single knowledgeable owner. <b>This is a risk register, not a vanity metric</b></td></tr>
+        <tr><td><b>Engineering time on planned work</b></td><td>The inverse of interrupt load, and the honest explanation for a missed roadmap</td></tr>
+        <tr><td><b>Hiring pipeline health</b></td><td>Time to hire, offer acceptance rate, funnel drop-off by stage</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>On-call load is the most under-used metric on this sheet.</b> It is a leading
+      indicator of attrition, an honest measure of system health, and a direct consequence of engineering decisions —
+      unlike an engagement score, which tells you sentiment has already deteriorated. <b>It is also one of the few numbers
+      where the fix and the measure sit in the same team's hands.</b></div>
+    <div class="callout"><b>Never measure individuals with any metric on this sheet.</b> Commits, lines,
+      story points, review counts — all of them reward volume over judgement and destroy the collaboration that produces
+      good systems. <b>Team and system level only.</b></div>
+  </div>
+</div>
+
+<!-- ============ 8. ECOMMERCE ============ -->
+<div class="panel c1">
+  <div class="phead">8 &nbsp;· &nbsp;E-COMMERCE <span class="sub">conversion is the frame</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b class="star">★ Checkout success rate</b></td><td><b>The headline.</b> Every fraction of a percent is direct revenue, and it is the number the business already understands</td></tr>
+        <tr><td><b>Payment success rate</b><br><span style="color:#6b7391">by gateway and method</span></td><td><b>Split it</b> — isolates a failing provider from a failing checkout. Aggregate success rate hides a single broken method</td></tr>
+        <tr><td><b>Duplicate order rate</b></td><td>Idempotency failures. A correctness bug that costs refunds and trust, and one nobody notices until a customer complains</td></tr>
+        <tr><td><b>Oversell rate</b></td><td>Inventory consistency in one number — and a direct customer-experience failure</td></tr>
+        <tr><td><b>Product and search page latency p95</b></td><td><b>Tie it explicitly to conversion.</b> The latency-to-revenue link is the most reliable argument you have for performance work</td></tr>
+        <tr><td><b>Search zero-result rate</b></td><td>Usually the largest untapped conversion lever, and cheap to measure</td></tr>
+        <tr><td><b>Cart abandonment from technical causes</b></td><td>Separated from ordinary abandonment. Only the technical share is yours</td></tr>
+        <tr><td><b>Order-to-fulfilment success</b></td><td>Where asynchronous failures hide — the order succeeded and then quietly did not progress</td></tr>
+        <tr><td><b>Peak headroom</b></td><td>Capacity divided by forecast peak, before a sale event. <b>The metric that prevents the annual incident</b></td></tr>
+        <tr><td><b>Refund and chargeback SLA</b></td><td>Operational load and a regulatory exposure</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>The conversation this enables:</b> &ldquo;Checkout success is 97.2%. Recovering one
+      point is worth <i>X</i> in revenue, and the top cause is one payment provider's timeout behaviour.&rdquo; That is an
+      engineering finding stated as a business case — and it will be funded.</div>
+  </div>
+</div>
+
+<!-- ============ 9. STREAMING ============ -->
+<div class="panel c8">
+  <div class="phead">9 &nbsp;· &nbsp;STREAMING <span class="sub">quality of experience</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b class="star">★ Rebuffering ratio</b></td><td><b>The dominant quality metric.</b> Time spent buffering as a share of viewing time. It correlates with abandonment more strongly than any other technical measure</td></tr>
+        <tr><td><b>Time to first frame</b><br><span style="color:#6b7391">startup time, p50 and p95</span></td><td>Drives abandonment before playback even begins. The p95 is where the lost viewers are</td></tr>
+        <tr><td><b>Video start failure rate</b></td><td>Distinct from rebuffering — the stream never began at all. A different failure with a different cause</td></tr>
+        <tr><td><b>Exit before video start</b></td><td>Your startup experience expressed as lost viewers rather than milliseconds</td></tr>
+        <tr><td><b>Average delivered bitrate</b></td><td>Quality actually served, versus quality encoded. The gap is your delivery problem</td></tr>
+        <tr><td><b>CDN offload ratio</b></td><td>Share served from edge rather than origin. Drives both cost and latency</td></tr>
+        <tr><td><b>Cost per GB delivered</b> and <b>per viewing hour</b></td><td><b>Your largest bill, and the two ways to talk about it</b></td></tr>
+        <tr><td><b>DRM licence failure rate</b></td><td>Small number, disproportionate support load, and highly visible to customers</td></tr>
+        <tr><td><b>Encoding throughput and cost per content-hour</b></td><td>Pipeline efficiency, and the constraint on catalogue growth</td></tr>
+        <tr><td><b>Peak concurrent streams vs capacity</b></td><td>Especially for live events, where the peak is known in advance and unforgiving</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Segment quality metrics by device, geography and network.</b> An acceptable aggregate
+      rebuffering ratio routinely conceals one platform or one region having an unusable experience — and that segment is
+      where your churn is concentrated.</div>
+  </div>
+</div>
+
+<!-- ============ 10. SOCIAL ============ -->
+<div class="panel c7">
+  <div class="phead">10 &nbsp;· &nbsp;SOCIAL PLATFORM <span class="sub">content in, content out</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b class="star">★ Post publish success rate</b></td><td><b>Never lose a user's content.</b> A failed publish is the single most damaging experience on a social product</td></tr>
+        <tr><td><b>Media upload success rate</b> and processing time</td><td>The highest-friction path in most social apps, and disproportionately mobile-network dependent</td></tr>
+        <tr><td><b>Notification delivery rate and latency</b></td><td><b>Split iOS and Android</b> — platform behaviour differs enough that an aggregate number misleads</td></tr>
+        <tr><td><b>Graph query latency p99</b></td><td>Follower and friend traversals are the hardest thing you scale. The p99 is the account with many connections</td></tr>
+        <tr><td><b>Moderation time to action</b>, by severity</td><td><b>Increasingly a regulatory metric</b>, not merely an operational one. Track the severe categories separately</td></tr>
+        <tr><td><b>Moderation false-positive rate</b></td><td><b>The counter-metric.</b> Without it you optimise speed into over-blocking, and creators leave</td></tr>
+        <tr><td><b>Abuse detection precision and recall</b></td><td>Report both. Either alone is trivially gamed in opposite directions</td></tr>
+        <tr><td><b>Appeal volume and overturn rate</b></td><td>A high overturn rate means your enforcement is wrong, not that users are complaining</td></tr>
+        <tr><td><b>Availability weighted by traffic</b></td><td>An outage at peak is not equivalent to one at the quietest hour; weight accordingly</td></tr>
+      </tbody>
+    </table>
+    <div class="callout r"><b>Moderation is where engineering KPIs meet regulatory exposure.</b> Time to action on
+      severe categories is increasingly something you must be able to evidence to a regulator. <b>Build the measurement
+      before you are asked for it</b> — retrofitting it under a deadline is materially harder.</div>
+  </div>
+</div>
+
+<!-- ============ 11. CHAT ============ -->
+<div class="panel c2">
+  <div class="phead">11 &nbsp;· &nbsp;CHAT &amp; MESSAGING <span class="sub">correctness before latency</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b class="star">★ Message delivery success rate</b></td><td><b>Must approach one hundred percent.</b> Measure it explicitly end to end — do not infer it from service availability</td></tr>
+        <tr><td><b>Message loss rate</b></td><td><b>Should be zero.</b> Discovering a non-zero number you did not know about is the worst finding available in this domain</td></tr>
+        <tr><td><b>Delivery latency</b> p50 / p95 / p99</td><td>The p99 is the conversation that felt broken</td></tr>
+        <tr><td><b>Ordering violation rate</b></td><td>Out-of-order messages are a correctness bug users notice immediately and report as the product being broken</td></tr>
+        <tr><td><b>Duplicate delivery rate</b></td><td>The other half of exactly-once, and equally visible</td></tr>
+        <tr><td><b>Connection drop rate</b> and <b>reconnect success</b></td><td><b>Mobile networks make this your real reliability story</b> — drops are inevitable, failed reconnects are not</td></tr>
+        <tr><td><b>Offline sync time and success</b></td><td>The experience after a tunnel or a flight, and a common source of perceived loss</td></tr>
+        <tr><td><b>Push notification delivery rate</b></td><td>Per platform. Often the weakest link in perceived delivery</td></tr>
+        <tr><td><b>Media attachment success rate</b></td><td>Separate from text; different failure profile entirely</td></tr>
+        <tr><td><b>Group fan-out latency</b> by group size</td><td>Large groups are where the architecture is tested</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>This is the one domain where correctness ranks above latency.</b> Users forgive a
+      message arriving a second late; they do not forgive one arriving twice, out of order, or not at all. <b>Order your
+      KPIs accordingly</b> — and make loss rate a number someone looks at weekly, not one you assume is zero.</div>
+  </div>
+</div>
+
+<!-- ============ 12. VIDEO ============ -->
+<div class="panel c5">
+  <div class="phead">12 &nbsp;· &nbsp;VIDEO CALLING <span class="sub">connect first, then quality</span></div>
+  <div class="pbody">
+    <table>
+      <thead><tr><th style="width:150px">KPI</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b class="star">★ Call join success rate</b></td><td><b>Failing to connect is far worse than degraded quality.</b> A poor call is an annoyance; a call that will not start is a product failure</td></tr>
+        <tr><td><b>Call setup time</b></td><td>Time from join to media flowing. Directly shapes the perception of the product</td></tr>
+        <tr><td><b>Call drop rate</b></td><td>Separated from user-ended calls — which requires deliberate instrumentation</td></tr>
+        <tr><td><b>Mean opinion score</b></td><td>The standard audio-quality measure and your headline experience number</td></tr>
+        <tr><td><b>Packet loss, jitter, round-trip time</b></td><td><b>Distributions, never averages.</b> The average conceals exactly the sessions that were bad</td></tr>
+        <tr><td><b>Video freeze rate and duration</b></td><td>What users actually describe as a bad call</td></tr>
+        <tr><td><b>Audio-video sync drift</b></td><td>Small drift is more irritating to users than lower resolution</td></tr>
+        <tr><td><b>Relay usage share</b></td><td><b>Your main cost driver.</b> Relayed calls cost far more than direct peer connections — track the share and what pushes it up</td></tr>
+        <tr><td><b>Cost per participant-minute</b></td><td>The unit economics of the product</td></tr>
+        <tr><td><b>Join success by network type</b></td><td>Corporate networks and restrictive firewalls are where joins fail</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><b>Rank these deliberately: join success, then drop rate, then quality.</b> Teams
+      routinely optimise resolution and bitrate while a measurable share of calls never connect at all — and the second
+      group churns, while the first merely complains.</div>
+  </div>
+</div>
+
+<!-- ============ 13. FEED ============ -->
+<div class="panel c3 span2">
+  <div class="phead">13 &nbsp;· &nbsp;NEWS FEED AND TIMELINE — THE FAN-OUT PROBLEM, MEASURED
+    <span class="sub">Twitter-shaped products · <span class="lvl sr">STAFF</span> the tail is the architecture, so measure it separately</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%">
+    <div>
+      <table>
+        <thead><tr><th style="width:158px">KPI</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b class="star">★ Timeline generation latency p99</b></td><td><b>The defining technical constraint of the product.</b> Everything in the architecture exists to hold this number down</td></tr>
+          <tr><td><b>Feed freshness</b><br><span style="color:#6b7391">post → visible to followers</span></td><td>What your fan-out strategy actually optimises, and the number users perceive as the product being live</td></tr>
+          <tr><td><b>Fan-out completion for high-follower accounts</b></td><td><b>Track the tail separately from the median.</b> The celebrity case is a different system from the ordinary one, and averaging them hides both</td></tr>
+          <tr><td><b>Timeline cache hit rate</b></td><td>Drives latency and cost simultaneously — the highest-leverage single number after p99 latency</td></tr>
+          <tr><td><b>Ranking inference latency</b></td><td>Usually the dominant contributor to the p99 once caching is working</td></tr>
+          <tr><td><b>Write amplification ratio</b></td><td>Fan-out writes per post. <b>Capacity and cost expressed as one number</b></td></tr>
+          <tr><td><b>Hot key and hot partition incidents</b></td><td>Your recurring structural failure. Count them; the trend tells you whether mitigation is working</td></tr>
+          <tr><td><b>Search and trend indexing lag</b></td><td>How stale discovery is relative to posting</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="callout r" style="margin-top:0"><b>Why the tail deserves its own metric here more than in any
+        other domain.</b> A feed product has two populations that behave nothing alike — the ordinary account with a
+        modest following, and the small number of accounts whose every post triggers enormous fan-out. <b>A single median
+        latency figure describes neither</b>, and the second population is where both your incidents and your most visible
+        users are. Report them as separate series.</div>
+      <div class="h3">Engagement metrics you should be careful with</div>
+      <table>
+        <tbody>
+          <tr><td style="width:158px"><b>Time in feed, session length</b></td><td><b>Product metrics, not engineering ones.</b> You enable them; you do not own them — and claiming them invites a conversation you cannot win</td></tr>
+          <tr><td><b>Engagement rate</b></td><td>Driven by ranking and content, not by reliability. Useful as context for capacity planning, misleading as an engineering KPI</td></tr>
+        </tbody>
+      </table>
+      <div class="callout g"><b>What you can legitimately own:</b> that the feed loads quickly, is fresh, is
+        available, ranks within its latency budget, and costs a predictable amount per user per day. <b>Engagement is the
+        product organisation's outcome</b>, and being precise about that boundary is part of the job — it protects you
+        when engagement dips for reasons that have nothing to do with engineering.</div>
+      <div class="callout"><b>Capacity planning here is event-driven.</b> Feed products have sharp, sometimes
+        predictable peaks — a major news event, a sporting final, a product launch. <b>Peak headroom against a forecast</b>
+        belongs on your dashboard alongside the latency numbers, for the same reason it does in e-commerce.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 14. COUNTER ============ -->
+<div class="panel c5">
+  <div class="phead">14 &nbsp;· &nbsp;COUNTER-METRICS <span class="sub">every KPI needs a guard</span></div>
+  <div class="pbody">
+    <div class="callout r" style="margin-top:0"><b>Any metric optimised alone produces a pathology.</b> This is not
+      cynicism about people — it is what happens when you point an organisation at a single number. <b>The fix is
+      structural: publish each KPI with the metric that would degrade if it were gamed</b>, and review the pair together.</div>
+    <table>
+      <thead><tr><th style="width:170px">Primary KPI</th><th>Must be paired with</th></tr></thead>
+      <tbody>
+        <tr><td>Deployment frequency</td><td><b>Change failure rate</b> — otherwise you are rewarding recklessness</td></tr>
+        <tr><td>Lead time</td><td><b>Escaped defect rate</b> — speed achieved by skipping review is not speed</td></tr>
+        <tr><td>Incident count trending down</td><td><b>MTTD</b> — you may simply be detecting fewer, not causing fewer</td></tr>
+        <tr><td>MTTR trending down</td><td><b>Repeat-incident rate</b> — fast restoration of the same fault is not improvement</td></tr>
+        <tr><td>Latency</td><td><b>Cost per request</b> — latency is always purchasable with money</td></tr>
+        <tr><td>Cost reduction</td><td><b>SLO attainment</b> — savings taken out of reliability arrive as an outage later</td></tr>
+        <tr><td>Moderation time to action</td><td><b>False-positive rate</b> — speed alone produces over-blocking</td></tr>
+        <tr><td>Test coverage</td><td><b>Escaped defect rate</b> — coverage is trivially inflated with assertion-free tests</td></tr>
+        <tr><td>Throughput or velocity</td><td><b>Rework and defect rate</b> — output is not outcome</td></tr>
+        <tr><td>Utilisation</td><td><b>Lead time</b> — high utilisation lengthens queues; a fully loaded system is a slow one</td></tr>
+        <tr><td>Alert volume down</td><td><b>% incidents self-detected</b> — alerts may have been silenced rather than fixed</td></tr>
+      </tbody>
+    </table>
+    <div class="callout g"><b>Make the pairing visible on the dashboard itself</b>, side by side rather than on
+      separate pages. The discipline is not in choosing good metrics — it is in <b>never showing one without its
+      guard</b>, so the trade-off is present in every conversation rather than discovered in a retrospective.</div>
+  </div>
+</div>
+
+<!-- ============ 15. ANTIPATTERNS ============ -->
+<div class="panel c6 span3">
+  <div class="phead">15 &nbsp;· &nbsp;WHAT NEVER TO MEASURE — AND THE FAILURE MODES OF A METRICS PROGRAMME
+    <span class="sub">the things that actively cause harm, and the ways a good programme quietly stops working</span></div>
+  <div class="pbody">
+   <div style="display:grid;grid-template-columns:1fr 1fr 0.88fr;gap:18px;height:100%">
+    <div>
+      <div class="h3">Never measure these</div>
+      <table>
+        <thead><tr><th style="width:150px">Metric</th><th>Why it causes harm</th></tr></thead>
+        <tbody>
+          <tr><td><b>Lines of code</b></td><td>Rewards verbosity and punishes deletion — the most valuable change a senior engineer makes</td></tr>
+          <tr><td><b>Commit or PR counts</b></td><td>Trivially inflated by splitting work. Measures activity, never outcome</td></tr>
+          <tr><td><b>Story points or velocity as performance</b></td><td><b>Inflates within one sprint of being watched.</b> It is a planning aid for a team, and worthless the moment it leaves the team</td></tr>
+          <tr><td><b>Any individual developer metric</b></td><td><b>Destroys collaboration faster than anything else here.</b> Helping a colleague, reviewing carefully and mentoring all reduce your personal numbers</td></tr>
+          <tr><td><b>Test coverage as a target</b></td><td>Goodhart's law in its purest form — you get tests that assert nothing</td></tr>
+          <tr><td><b>Raw uptime without journey SLOs</b></td><td>99.9% while checkout is broken is a number that misleads everyone who reads it</td></tr>
+          <tr><td><b>Hours worked or presence</b></td><td>Measures compliance, not contribution, and selects for the wrong people</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">How a good programme rots</div>
+      <table>
+        <thead><tr><th style="width:150px">Failure</th><th>What it looks like</th></tr></thead>
+        <tbody>
+          <tr><td><b>Metric creep</b></td><td>Forty numbers on a dashboard, none reviewed. Add a retirement rule when you add the metric</td></tr>
+          <tr><td><b>Team signals used for appraisal</b></td><td><b>The fastest way to destroy the programme.</b> Engineers optimise the measure, and you lose both the number and the trust that produced it</td></tr>
+          <tr><td><b>Vanity reporting upward</b></td><td>Only improving metrics reach the board. The first genuine problem then arrives as a surprise, and your credibility goes with it</td></tr>
+          <tr><td><b>Averages everywhere</b></td><td>Every percentile-shaped problem becomes invisible</td></tr>
+          <tr><td><b>Borrowed benchmarks</b></td><td>Another organisation's numbers encode their domain and architecture. Chasing them produces motion without direction</td></tr>
+          <tr><td><b>Measuring what is easy</b></td><td>The available number displaces the important one. Build-duration dashboards while nobody measures checkout success</td></tr>
+          <tr><td><b>No counter-metrics</b></td><td>Every headline number drifts toward its pathology within two quarters</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="h3">Signals your programme is working</div>
+      <ul>
+        <li><b>A metric changed a decision this quarter</b> — the only test that matters</li>
+        <li><b>Teams look at their own numbers</b> without being asked, and argue about them</li>
+        <li><b>You have retired a KPI</b>, not only added ones</li>
+        <li><b>A number went the wrong way and you reported it upward anyway</b> — and the conversation was productive</li>
+        <li><b>Product plans against your error budget</b> rather than negotiating reliability after the fact</li>
+        <li><b>An engineer cites a KPI in a design review</b> unprompted</li>
+      </ul>
+      <div class="callout r"><b>The single question to ask of any dashboard:</b> <b>&ldquo;when did this last change
+        what we did?&rdquo;</b> If the honest answer is never, the dashboard is providing the appearance of oversight
+        rather than oversight — which is worse than having none, because it stops anyone looking further.</div>
+      <div class="callout g"><b>And the one cultural rule that protects everything above:</b> metrics are used to
+        <b>improve systems, never to rank people</b>. State it explicitly, repeatedly, and act consistently with it — the
+        first time a number appears in a performance conversation, every number you collect afterwards becomes less
+        true.</div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<!-- ============ 16. CADENCE ============ -->
+<div class="panel c7 span3">
+  <div class="phead">16 &nbsp;· &nbsp;OPERATING CADENCE &amp; FIRST-90-DAYS CHECKLIST <span class="sub">turning a list into a practice</span></div>
+  <div class="pbody">
+    <div class="chk">
+      <div>&#9744; <b>Named the business outcome</b> engineering is accountable to this year</div>
+      <div>&#9744; <b>Critical user journeys identified</b> and agreed with product</div>
+      <div>&#9744; <b>An SLO defined per critical journey</b>, with an error budget</div>
+      <div>&#9744; <b>Error budget policy written</b> — what happens when it is spent</div>
+      <div>&#9744; <b>Five to eight KPIs chosen</b>, tied to this year's constraint</div>
+      <div>&#9744; <b>Every KPI has a named counter-metric</b> shown beside it</div>
+      <div>&#9744; <b>Every KPI has an owner</b> and a review cadence</div>
+      <div>&#9744; <b>Baseline measured</b> before any target was set</div>
+      <div>&#9744; <b>Percentiles used</b> for everything user-facing</div>
+      <div>&#9744; <b>The metrics you cannot produce are listed</b> — that list is a finding</div>
+      <div>&#9744; <b>Delivery: deployment frequency, lead time p90, change failure rate, recovery time</b></div>
+      <div>&#9744; <b>PR review latency measured</b> before buying delivery tooling</div>
+      <div>&#9744; <b>Unplanned work share tracked</b></div>
+      <div>&#9744; <b>Reliability: SLO attainment, budget burn, MTTD separated from MTTR</b></div>
+      <div>&#9744; <b>% incidents self-detected</b> rather than customer-reported</div>
+      <div>&#9744; <b>Postmortem action closure tracked</b>, not just write-ups</div>
+      <div>&#9744; <b>Repeat-incident rate visible</b></div>
+      <div>&#9744; <b>Unit cost defined</b> for your domain and trended</div>
+      <div>&#9744; <b>Cost attributed per team</b>, and teams can see it</div>
+      <div>&#9744; <b>Infra cost as % of revenue</b> charted over time</div>
+      <div>&#9744; <b>Stalled migrations surfaced</b> with a completion % and a date</div>
+      <div>&#9744; <b>Services without an owner: zero</b></div>
+      <div>&#9744; <b>Security SLA adherence reported</b>, not finding counts</div>
+      <div>&#9744; <b>Recovery objectives proven by a timed restore</b></div>
+      <div>&#9744; <b>Regretted attrition separated</b> from total</div>
+      <div>&#9744; <b>On-call load distribution reviewed</b> monthly</div>
+      <div>&#9744; <b>Bus factor recorded</b> for critical systems</div>
+      <div>&#9744; <b>Domain KPIs chosen</b> from the relevant panel, with one headline</div>
+      <div>&#9744; <b>Domain KPIs segmented</b> by device, region or network where it matters</div>
+      <div>&#9744; <b>Peak headroom tracked</b> ahead of known events</div>
+      <div>&#9744; <b>Weekly with teams</b> — flow, incidents, on-call</div>
+      <div>&#9744; <b>Monthly with product</b> — error budget, lead time, domain KPI</div>
+      <div>&#9744; <b>Quarterly upward</b> — the five that travel, good news and bad</div>
+      <div>&#9744; <b>Teams see everything</b>; upward reporting is summarised</div>
+      <div>&#9744; <b>No individual-level metric exists</b> anywhere in the system</div>
+      <div>&#9744; <b>Team signals explicitly excluded</b> from performance conversations</div>
+      <div>&#9744; <b>A retirement rule exists</b> for metrics nobody acts on</div>
+      <div>&#9744; <b>At least one KPI retired</b> in the last two quarters</div>
+      <div>&#9744; <b>A bad number was reported upward</b> without being softened</div>
+      <div>&#9744; <b>You can name a decision a metric changed</b> this quarter</div>
+    </div>
+    <div class="callout r">The one that summarises the sheet: <b>name the business outcome you are accountable to,
+      the journey SLO that supports it, the engineering KPI that moves that SLO, and the counter-metric that stops the KPI
+      being gamed.</b> If you can state that chain for your top priority, the rest of this sheet is detail. If you cannot,
+      no number on it will help — because measurement without that chain is reporting, not management.</div>
+  </div>
+</div>
+
+</div>
