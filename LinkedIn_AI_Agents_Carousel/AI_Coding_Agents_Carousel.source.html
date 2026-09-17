@@ -1,0 +1,247 @@
+<meta charset="utf-8">
+<title>Building with AI Coding Agents — Carousel</title>
+<style>
+  @page { size: 1080px 1350px; margin: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Avenir Next","Avenir",sans-serif; -webkit-font-smoothing:antialiased; }
+
+  .slide { width:1080px; height:1350px; padding:104px 72px 128px; position:relative;
+           page-break-after:always; overflow:hidden; display:flex; flex-direction:column;
+           justify-content:center; }
+  .slide:last-child { page-break-after:auto; }
+
+  .light { background:#edeff6; color:#0f1326; }
+  .dark  { background:#101a33; color:#fff; }
+
+  /* progress + footer */
+  .num { position:absolute; top:46px; right:72px; font-size:23px; font-weight:700;
+         letter-spacing:1.6px; opacity:.44 }
+  .foot { position:absolute; bottom:44px; left:72px; right:72px;
+          display:flex; justify-content:space-between; align-items:center;
+          font-size:20px; font-weight:600; opacity:.42; letter-spacing:.4px }
+  .swipe { font-weight:700; opacity:.92 }
+
+  /* cover */
+  .kicker { font-size:25px; font-weight:700; letter-spacing:3.4px; color:#7f95d8; margin-bottom:34px }
+  .cover-h { font-size:92px; line-height:1.03; font-weight:700; letter-spacing:-1.4px }
+  .cover-h em { font-style:normal; color:#ffc857 }
+  .cover-sub { font-size:33px; line-height:1.42; color:#9fb0e0; margin-top:38px; font-weight:500 }
+  .rule { width:104px; height:7px; background:#ffc857; border-radius:4px; margin:44px 0 0 }
+
+  /* section divider */
+  .sec-label { font-size:25px; font-weight:700; letter-spacing:3.4px; opacity:.6; margin-bottom:30px }
+  .sec-h { font-size:80px; line-height:1.06; font-weight:700; letter-spacing:-1px }
+  .sec-note { font-size:30px; line-height:1.45; margin-top:36px; opacity:.72; font-weight:500 }
+
+  /* content slides */
+  .tag { display:inline-block; font-size:21px; font-weight:700; letter-spacing:2.2px;
+         padding:9px 19px; border-radius:7px; margin-bottom:32px }
+  .tag.bad  { background:#fde2e4; color:#9f1239 }
+  .tag.good { background:#d7f2e5; color:#046c4e }
+  .h { font-size:62px; line-height:1.09; font-weight:700; letter-spacing:-.8px; margin-bottom:34px }
+  .h.sm { font-size:52px }
+  .p { font-size:34px; line-height:1.5; color:#2b3350; font-weight:450 }
+  .p + .p { margin-top:26px }
+  .p b { color:#0f1326; font-weight:700 }
+
+  .quote { margin-top:56px; padding-top:32px; border-top:2px solid rgba(140,18,51,.3);
+           font-family:Charter,Georgia,serif; font-style:italic;
+           font-size:37px; line-height:1.38; font-weight:400; color:#8c1233 }
+  .quote.g { border-top-color:rgba(4,108,78,.3); color:#046c4e }
+
+  /* paired practice slides */
+  .pair { display:flex; flex-direction:column; gap:56px }
+  .item { display:flex; gap:28px; align-items:flex-start }
+  .n { flex:none; width:70px; height:70px; border-radius:16px; background:#101a33; color:#fff;
+       font-size:35px; font-weight:700; display:flex; align-items:center; justify-content:center }
+  .item h3 { font-size:45px; line-height:1.14; font-weight:700; letter-spacing:-.4px; margin-bottom:16px }
+  .item p { font-size:30px; line-height:1.46; color:#2b3350; font-weight:450 }
+  .item p b { color:#0f1326; font-weight:700 }
+
+  /* close */
+  .close-h { font-size:70px; line-height:1.08; font-weight:700; letter-spacing:-1px }
+  .close-p { font-size:31px; line-height:1.48; color:#9fb0e0; margin-top:36px; font-weight:500 }
+  .close-p b { color:#ffc857; font-weight:700 }
+  .cta { margin-top:64px; background:rgba(255,255,255,.07); border:2px solid rgba(255,200,87,.42);
+         border-radius:16px; padding:34px 36px; font-size:31px; line-height:1.42; font-weight:600 }
+  .cta b { color:#ffc857 }
+</style>
+
+<!-- 1 · COVER -->
+<div class="slide dark">
+  <div class="kicker">BUILDING WITH AI CODING AGENTS</div>
+  <div class="cover-h">The bottleneck<br>didn't disappear.<br><em>It moved.</em></div>
+  <div class="rule"></div>
+  <div class="cover-sub">5 problems nobody warns you about —<br>and the 8 practices that fixed them.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 2 · THE REFRAME -->
+<div class="slide light">
+  <div class="num">01</div>
+  <div class="h">Writing code stopped being the slow part.</div>
+  <p class="p">Knowing whether the code was <b>right</b> became the slow part.</p>
+  <p class="p">Most teams have adopted the tools without reorganising around that shift — and it is the whole game.</p>
+  <p class="p">Generation got cheap. <b>Verification didn't.</b></p>
+  <div class="quote">Unreviewed AI code is just technical debt that arrived faster.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 3 · SECTION: PROBLEMS -->
+<div class="slide dark">
+  <div class="num">02</div>
+  <div class="sec-label">PART ONE</div>
+  <div class="sec-h">What actually<br>goes wrong</div>
+  <div class="sec-note">Not the failures you read about.<br>The ones that cost me real hours.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 4 · PROBLEM 1 -->
+<div class="slide light">
+  <div class="num">03</div>
+  <div class="tag bad">PROBLEM 01</div>
+  <div class="h">Confident wrongness</div>
+  <p class="p">An agent recommended a data ingestion tool that was <b>retired in 2021</b>. Another suggested a function that had been <b>removed from the framework entirely</b>.</p>
+  <p class="p">Both answers were fluent, well-structured and completely wrong.</p>
+  <div class="quote">Training data has a cutoff.<br>Your production environment doesn't.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 5 · PROBLEM 2 -->
+<div class="slide light">
+  <div class="num">04</div>
+  <div class="tag bad">PROBLEM 02</div>
+  <div class="h">Review collapse</div>
+  <p class="p">By the fifteenth diff of the day, I was skimming.</p>
+  <p class="p">The agent produces faster than any human can genuinely review. So review quietly becomes <b>approval theatre</b> — and nobody notices the moment it happens.</p>
+  <div class="quote">Attention is now the scarce resource.<br>Not code.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 6 · PROBLEM 3 -->
+<div class="slide light">
+  <div class="num">05</div>
+  <div class="tag bad">PROBLEM 03</div>
+  <div class="h">The 80% trap</div>
+  <p class="p">Eighty percent of the feature in an hour. Then <b>four hours on the rest</b>.</p>
+  <p class="p">Not because the last part was harder — because the agent made a structural choice early that I didn't notice, and everything after it was built on top.</p>
+  <div class="quote">The speed is real.<br>The finish line is further than it looks.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 7 · PROBLEM 4 -->
+<div class="slide light">
+  <div class="num">06</div>
+  <div class="tag bad">PROBLEM 04</div>
+  <div class="h">Silent scope drift</div>
+  <p class="p">I asked for one change.</p>
+  <p class="p">I got that change, plus three <b>improvements</b> I hadn't asked for — and now had to review, understand and own forever.</p>
+  <div class="quote">Helpful and unrequested is still unrequested.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 8 · PROBLEM 5 -->
+<div class="slide light">
+  <div class="num">07</div>
+  <div class="tag bad">PROBLEM 05</div>
+  <div class="h">Tests that prove nothing</div>
+  <p class="p">Ask an agent for tests and it writes tests asserting <b>what the code does</b> — not what it should do.</p>
+  <p class="p">The bug gets encoded into the test suite as expected behaviour.</p>
+  <div class="quote">Green suite. Same bug.<br>Now with documentation.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 9 · SECTION: PRACTICES -->
+<div class="slide dark">
+  <div class="num">08</div>
+  <div class="sec-label">PART TWO</div>
+  <div class="sec-h">How I work<br>now</div>
+  <div class="sec-note">Eight practices.<br>None of them are about prompting.</div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 10 · PRACTICE 1-2 -->
+<div class="slide light">
+  <div class="num">09</div>
+  <div class="tag good">THE PRACTICES</div>
+  <div class="pair">
+    <div class="item">
+      <div class="n">1</div>
+      <div><h3>I own the architecture.<br>It owns the typing.</h3>
+      <p>Delegate implementation, never design. <b>Every expensive mistake I've made was a design decision I let it take by default.</b></p></div>
+    </div>
+    <div class="item">
+      <div class="n">2</div>
+      <div><h3>Write the check<br>before the code</h3>
+      <p>A failing test. An assertion. A measurable property. <b>If you can't state what correct means, you can't delegate it.</b></p></div>
+    </div>
+  </div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 11 · PRACTICE 3-4 -->
+<div class="slide light">
+  <div class="num">10</div>
+  <div class="tag good">THE PRACTICES</div>
+  <div class="pair">
+    <div class="item">
+      <div class="n">3</div>
+      <div><h3>Ground anything<br>version-sensitive</h3>
+      <p>Make it look things up rather than recall them. Versions, deprecations, API signatures, licence terms. <b>Verify, don't trust.</b></p></div>
+    </div>
+    <div class="item">
+      <div class="n">4</div>
+      <div><h3>One concern<br>per change</h3>
+      <p>Small enough that reviewing it is genuinely possible — <b>not theatre.</b> If you can't hold the diff in your head, it's too big.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 12 · PRACTICE 5-6 -->
+<div class="slide light">
+  <div class="num">11</div>
+  <div class="tag good">THE PRACTICES</div>
+  <div class="pair">
+    <div class="item">
+      <div class="n">5</div>
+      <div><h3>Make it prove the work,<br>not claim it</h3>
+      <p>Never accept &ldquo;done&rdquo;. <b>Ask for the command output, the passing test, the rendered result.</b> Evidence, not assurance.</p></div>
+    </div>
+    <div class="item">
+      <div class="n">6</div>
+      <div><h3>Review the diff,<br>not the explanation</h3>
+      <p>The prose is always convincing — it was optimised to be. <b>The diff is the only thing that ships.</b></p></div>
+    </div>
+  </div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 13 · PRACTICE 7-8 -->
+<div class="slide light">
+  <div class="num">12</div>
+  <div class="tag good">THE PRACTICES</div>
+  <div class="pair">
+    <div class="item">
+      <div class="n">7</div>
+      <div><h3>Start fresh when<br>the thread degrades</h3>
+      <p>Long sessions drift and constraints get forgotten. <b>A clean context beats arguing with a confused one.</b></p></div>
+    </div>
+    <div class="item">
+      <div class="n">8</div>
+      <div><h3>You define done.<br>Never the agent.</h3>
+      <p>It will tell you the work is complete. <b>That is a prediction about text, not a judgement about your system.</b></p></div>
+    </div>
+  </div>
+  <div class="foot"><span>&nbsp;</span><span class="swipe">Swipe →</span></div>
+</div>
+
+<!-- 14 · CLOSE -->
+<div class="slide dark">
+  <div class="num">13</div>
+  <div class="sec-label">THE UNDERLYING SHIFT</div>
+  <div class="close-h">These tools move you<br>from <b style="color:#ffc857;font-weight:700">author</b> to <b style="color:#ffc857;font-weight:700">reviewer</b>.</div>
+  <div class="close-p">That's a genuine productivity gain. It's also a <b>different skill</b> — and one most of us have practised far less.</div>
+  <div class="close-p">The engineers getting the most out of this aren't writing the cleverest prompts.<br><br><b>They got rigorous about verification.</b></div>
+  <div class="cta">What's broken for you that this list doesn't cover?<br><b>↓ Tell me in the comments.</b></div>
+</div>
